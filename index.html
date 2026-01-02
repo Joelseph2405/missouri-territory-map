@@ -839,7 +839,15 @@
 
             try {
                 // Load the Missouri zip codes GeoJSON file
-                const response = await fetch('./data/mo-zipcodes.geojson');
+                // Try local file first, fallback to external CDN if not available (for GitHub Pages)
+                let response = await fetch('./data/mo-zipcodes.geojson');
+
+                if (!response.ok) {
+                    console.log('Local GeoJSON not found, fetching from external source...');
+                    // Fallback to external source
+                    response = await fetch('https://raw.githubusercontent.com/OpenDataDE/State-zip-code-GeoJSON/master/mo_missouri_zip_codes_geo.min.json');
+                }
+
                 if (!response.ok) {
                     throw new Error('Could not load zip code data');
                 }
