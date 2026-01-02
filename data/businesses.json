@@ -1,0 +1,72 @@
+{
+  "businesses": [
+    {
+      "id": 1,
+      "name": "Example Business Inc.",
+      "address": "123 Main Street",
+      "city": "St. Charles",
+      "zipCode": "63301",
+      "lat": 38.7881,
+      "lng": -90.4974,
+      "type": "Retail",
+      "customerStatus": "existing",
+      "interactionCount": 8,
+      "lastVisit": "2025-12-15",
+      "priority": "high",
+      "visits": [
+        {
+          "date": "2025-12-15",
+          "notes": "Discussed Q1 2026 pricing strategy. Customer interested in bulk ordering for the new year. Follow up in 2 weeks.",
+          "duration": "45 min"
+        },
+        {
+          "date": "2025-11-20",
+          "notes": "Delivered product samples. Positive feedback from their team. They want to schedule a demo.",
+          "duration": "30 min"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "ABC Manufacturing",
+      "address": "456 Industrial Drive",
+      "city": "St. Peters",
+      "zipCode": "63376",
+      "lat": 38.8003,
+      "lng": -90.6298,
+      "type": "Manufacturing",
+      "customerStatus": "prospective",
+      "interactionCount": 2,
+      "lastVisit": "2025-12-01",
+      "priority": "medium",
+      "visits": [
+        {
+          "date": "2025-12-01",
+          "notes": "Initial meeting. Discussed their current supplier situation. They're open to proposals. Send quote by end of week.",
+          "duration": "60 min"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "O'Fallon Coffee Shop",
+      "address": "789 Main St",
+      "city": "O'Fallon",
+      "zipCode": "63368",
+      "lat": 38.8106,
+      "lng": -90.7126,
+      "type": "Food Service",
+      "customerStatus": "existing",
+      "interactionCount": 4,
+      "lastVisit": "2025-12-10",
+      "priority": "medium",
+      "visits": [
+        {
+          "date": "2025-12-10",
+          "notes": "Regular monthly check-in. Everything running smoothly. They're interested in our new seasonal products.",
+          "duration": "20 min"
+        }
+      ]
+    }
+  ]
+}

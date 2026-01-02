@@ -1,0 +1,1931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Territory Map - Missouri Sales Territory</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Map container - full screen */
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Title banner */
+        .map-title {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* Loading indicator */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            background: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-size: 16px;
+            display: none;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        /* Customize Leaflet controls */
+        .leaflet-control-attribution {
+            font-size: 10px;
+        }
+
+        /* Legend */
+        .legend {
+            position: absolute;
+            bottom: 30px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            font-size: 14px;
+        }
+
+        .legend-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .legend-item {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border: 2px solid white;
+            box-shadow: 0 0 3px rgba(0,0,0,0.4);
+            border-radius: 3px;
+        }
+
+        /* Voice Input Modal */
+        .voice-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .voice-modal.active {
+            display: flex;
+        }
+
+        .voice-modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .voice-modal-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #111827;
+        }
+
+        .mic-button {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: none;
+            background: #3b82f6;
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .mic-button:hover {
+            background: #2563eb;
+            transform: scale(1.05);
+        }
+
+        .mic-button.listening {
+            background: #ef4444;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            50% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+        }
+
+        .transcription-area {
+            min-height: 120px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #374151;
+            background: #f9fafb;
+        }
+
+        .transcription-area:empty:before {
+            content: "Click the microphone and start speaking...";
+            color: #9ca3af;
+        }
+
+        .voice-status {
+            text-align: center;
+            font-size: 14px;
+            color: #6b7280;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+
+        .voice-status.listening {
+            color: #ef4444;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-button-primary {
+            background: #22c55e;
+            color: white;
+        }
+
+        .modal-button-primary:hover {
+            background: #16a34a;
+        }
+
+        .modal-button-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .modal-button-secondary:hover {
+            background: #d1d5db;
+        }
+
+        /* Search and Filter Panel */
+        .search-panel {
+            position: absolute;
+            top: 70px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            width: 300px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+        }
+
+        .search-panel-header {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #111827;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .collapse-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .search-panel.collapsed .search-panel-content {
+            display: none;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            font-family: inherit;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .filter-section {
+            margin-bottom: 15px;
+        }
+
+        .filter-section-title {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+
+        .filter-checkbox {
+            display: flex;
+            align-items: center;
+            margin: 6px 0;
+            font-size: 13px;
+            color: #4b5563;
+            cursor: pointer;
+        }
+
+        .filter-checkbox input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        .clear-filters-btn {
+            width: 100%;
+            padding: 8px;
+            background: #6b7280;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .clear-filters-btn:hover {
+            background: #4b5563;
+        }
+
+        .search-results {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .no-results {
+            color: #ef4444;
+            font-weight: 500;
+        }
+
+        /* Add Business Button - Floating Action Button */
+        .fab-button {
+            position: fixed;
+            bottom: 30px;
+            left: 10px;
+            z-index: 1000;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .fab-button:hover {
+            background: #059669;
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.6);
+        }
+
+        /* Business Form Modal */
+        .business-form-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .business-form-modal.active {
+            display: flex;
+        }
+
+        .business-form-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-header {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #111827;
+        }
+
+        .form-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 20px;
+        }
+
+        .voice-prompt {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 12px 16px;
+            margin: 15px 0;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #1e40af;
+            font-weight: 500;
+        }
+
+        .voice-prompt.speaking {
+            animation: glow 1.5s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { background: #eff6ff; }
+            50% { background: #dbeafe; }
+        }
+
+        .form-field {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            font-size: 14px;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            background: white;
+        }
+
+        .geocode-status {
+            font-size: 12px;
+            margin-top: 5px;
+            color: #6b7280;
+        }
+
+        .geocode-status.success {
+            color: #10b981;
+        }
+
+        .geocode-status.error {
+            color: #ef4444;
+        }
+
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .form-button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .form-button-primary {
+            background: #10b981;
+            color: white;
+        }
+
+        .form-button-primary:hover {
+            background: #059669;
+        }
+
+        .form-button-voice {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .form-button-voice:hover {
+            background: #2563eb;
+        }
+
+        .form-button-voice.listening {
+            background: #ef4444;
+            animation: pulse 1.5s infinite;
+        }
+
+        .form-button-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .form-button-secondary:hover {
+            background: #d1d5db;
+        }
+
+        /* Data Management Panel */
+        .data-panel {
+            position: absolute;
+            bottom: 110px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            display: none;
+        }
+
+        .data-panel.active {
+            display: block;
+        }
+
+        .data-button {
+            display: block;
+            width: 100%;
+            padding: 8px 16px;
+            margin: 5px 0;
+            background: #6b7280;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .data-button:hover {
+            background: #4b5563;
+        }
+    </style>
+</head>
+<body>
+    <!-- Map Title -->
+    <div class="map-title">
+        Missouri Sales Territory Map
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="loading">
+        Loading territory data...
+    </div>
+
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- Search and Filter Panel -->
+    <div id="searchPanel" class="search-panel">
+        <div class="search-panel-header">
+            <span>Search & Filter</span>
+            <button class="collapse-btn" onclick="toggleSearchPanel()">−</button>
+        </div>
+        <div class="search-panel-content">
+            <!-- Search Input -->
+            <input type="text" id="searchInput" class="search-input"
+                   placeholder="Search businesses, addresses, zip codes...">
+
+            <!-- Customer Status Filter -->
+            <div class="filter-section">
+                <div class="filter-section-title">Customer Status</div>
+                <label class="filter-checkbox">
+                    <input type="checkbox" id="filterExisting" checked onchange="applyFilters()">
+                    <span>Existing Customers</span>
+                </label>
+                <label class="filter-checkbox">
+                    <input type="checkbox" id="filterProspective" checked onchange="applyFilters()">
+                    <span>Prospective Customers</span>
+                </label>
+            </div>
+
+            <!-- Interaction Level Filter -->
+            <div class="filter-section">
+                <div class="filter-section-title">Activity Level</div>
+                <label class="filter-checkbox">
+                    <input type="checkbox" id="filterHighActivity" checked onchange="applyFilters()">
+                    <span>High Activity (6+ visits)</span>
+                </label>
+                <label class="filter-checkbox">
+                    <input type="checkbox" id="filterMediumActivity" checked onchange="applyFilters()">
+                    <span>Medium Activity (3-5 visits)</span>
+                </label>
+                <label class="filter-checkbox">
+                    <input type="checkbox" id="filterLowActivity" checked onchange="applyFilters()">
+                    <span>Low Activity (1-2 visits)</span>
+                </label>
+            </div>
+
+            <!-- Priority Filter -->
+            <div class="filter-section">
+                <div class="filter-section-title">Priority</div>
+                <label class="filter-checkbox">
+                    <input type="checkbox" id="filterHighPriority" onchange="applyFilters()">
+                    <span>High Priority Only</span>
+                </label>
+            </div>
+
+            <!-- Map Display Filter -->
+            <div class="filter-section">
+                <div class="filter-section-title">Map Display</div>
+                <label class="filter-checkbox">
+                    <input type="checkbox" id="showZipBoundaries" checked onchange="toggleZipBoundaries()">
+                    <span>Show Zip Code Boundaries</span>
+                </label>
+                <label class="filter-checkbox">
+                    <input type="checkbox" id="showBusinessMarkers" checked onchange="toggleBusinessMarkers()">
+                    <span>Show Business Markers</span>
+                </label>
+            </div>
+
+            <!-- Clear Filters Button -->
+            <button class="clear-filters-btn" onclick="clearAllFilters()">Clear All Filters</button>
+
+            <!-- Search Results Info -->
+            <div id="searchResults" class="search-results"></div>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+        <div class="legend-title">Territory Zip Codes</div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #e41a1c;"></div>
+            <span>63301 - St. Charles</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #377eb8;"></div>
+            <span>63376 - St. Peters</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #4daf4a;"></div>
+            <span>63368 - O'Fallon</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #984ea3;"></div>
+            <span>63385 - Winfield</span>
+        </div>
+    </div>
+
+    <!-- Voice Input Modal -->
+    <div id="voiceModal" class="voice-modal">
+        <div class="voice-modal-content">
+            <div class="voice-modal-header" id="modalBusinessName">Add Visit Note</div>
+
+            <div class="voice-status" id="voiceStatus">Click the microphone to start</div>
+
+            <button id="micButton" class="mic-button">🎤</button>
+
+            <div id="transcription" class="transcription-area" contenteditable="true"></div>
+
+            <div class="modal-buttons">
+                <button class="modal-button modal-button-secondary" onclick="closeVoiceModal()">Cancel</button>
+                <button class="modal-button modal-button-primary" onclick="saveVisitNote()">Save Note</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Business Form Modal -->
+    <div id="businessFormModal" class="business-form-modal">
+        <div class="business-form-content">
+            <div class="form-header">Add New Business</div>
+            <div class="form-subtitle">Fill out the form below or use voice guidance</div>
+
+            <div id="voicePromptArea" class="voice-prompt" style="display: none;">
+                Click "Voice Guide" to get started with voice-prompted data entry
+            </div>
+
+            <form id="businessForm">
+                <div class="form-field">
+                    <label class="form-label" for="businessName">Business Name *</label>
+                    <input type="text" id="businessName" class="form-input" required>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="businessAddress">Street Address *</label>
+                    <input type="text" id="businessAddress" class="form-input" required>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="businessCity">City *</label>
+                    <input type="text" id="businessCity" class="form-input" required>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="businessZip">Zip Code *</label>
+                    <select id="businessZip" class="form-select" required>
+                        <option value="">Select zip code...</option>
+                        <option value="63301">63301 - St. Charles</option>
+                        <option value="63376">63376 - St. Peters</option>
+                        <option value="63368">63368 - O'Fallon</option>
+                        <option value="63385">63385 - Winfield</option>
+                    </select>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="businessType">Business Type *</label>
+                    <select id="businessType" class="form-select" required>
+                        <option value="">Select type...</option>
+                        <option value="Retail">Retail</option>
+                        <option value="Manufacturing">Manufacturing</option>
+                        <option value="Food Service">Food Service</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Professional Services">Professional Services</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="customerStatus">Customer Status *</label>
+                    <select id="customerStatus" class="form-select" required>
+                        <option value="prospective">Prospective</option>
+                        <option value="existing">Existing Customer</option>
+                    </select>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="businessPriority">Priority</label>
+                    <select id="businessPriority" class="form-select">
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+
+                <div id="geocodeStatus" class="geocode-status"></div>
+
+                <div class="form-buttons">
+                    <button type="button" class="form-button form-button-secondary" onclick="closeBusinessForm()">Cancel</button>
+                    <button type="button" id="voiceGuideBtn" class="form-button form-button-voice" onclick="startVoiceGuide()">
+                        🎤 Voice Guide
+                    </button>
+                    <button type="submit" class="form-button form-button-primary">Save Business</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Business Button (Floating Action Button) -->
+    <button class="fab-button" onclick="openBusinessForm()" title="Add New Business">+</button>
+
+    <!-- Data Management Panel -->
+    <div id="dataPanel" class="data-panel">
+        <button class="data-button" onclick="exportData()">📥 Export All Data</button>
+        <button class="data-button" onclick="importData()">📤 Import Data</button>
+    </div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // ============================================
+        // PHASE 1: BASIC MAP INITIALIZATION
+        // ============================================
+
+        // Show loading indicator
+        document.getElementById('loading').classList.add('active');
+        document.getElementById('loading').textContent = 'Loading map...';
+
+        // Initialize the map
+        // Center on St. Charles County, Missouri (average of the 4 zip codes)
+        // Coordinates: approximately 38.78°N, 90.55°W
+        const map = L.map('map').setView([38.78, -90.55], 11);
+
+        // Add OpenStreetMap tile layer (free, no API key needed)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19,
+            minZoom: 3
+        }).addTo(map);
+
+        // Add scale control to show distances
+        L.control.scale({
+            imperial: true,  // Show miles
+            metric: true     // Also show kilometers
+        }).addTo(map);
+
+        // ============================================
+        // PHASE 2: ZIP CODE TERRITORIES
+        // ============================================
+
+        // Territory configuration
+        const territoryConfig = {
+            "63301": { color: "#e41a1c", name: "St. Charles" },
+            "63376": { color: "#377eb8", name: "St. Peters" },
+            "63368": { color: "#4daf4a", name: "O'Fallon" },
+            "63385": { color: "#984ea3", name: "Winfield" }
+        };
+
+        // Zip code center coordinates (approximate)
+        const zipCenters = {
+            "63301": [38.7881, -90.4974],  // St. Charles
+            "63376": [38.8003, -90.6298],  // St. Peters
+            "63368": [38.8106, -90.7126],  // O'Fallon
+            "63385": [38.9867, -90.7387]   // Winfield
+        };
+
+        // Layer to hold all zip code boundaries
+        let zipBoundariesLayer = L.layerGroup().addTo(map);
+
+        // Function to load zip code boundaries from local GeoJSON file
+        async function loadZipBoundaries() {
+            document.getElementById('loading').textContent = 'Loading territory boundaries...';
+
+            try {
+                // Load the Missouri zip codes GeoJSON file
+                const response = await fetch('./data/mo-zipcodes.geojson');
+                if (!response.ok) {
+                    throw new Error('Could not load zip code data');
+                }
+
+                const allZipCodesGeoJSON = await response.json();
+
+                // Filter to show only our territory zip codes
+                const territoryZipCodes = Object.keys(territoryConfig);
+
+                // Process each feature (zip code boundary)
+                allZipCodesGeoJSON.features.forEach(feature => {
+                    const zipCode = feature.properties.ZCTA5CE10 || feature.properties.GEOID10 || feature.properties.zipcode;
+
+                    // Only add if it's one of our territory zip codes
+                    if (territoryZipCodes.includes(zipCode)) {
+                        const config = territoryConfig[zipCode];
+
+                        L.geoJSON(feature, {
+                            style: {
+                                fillColor: config.color,
+                                fillOpacity: 0.3,
+                                color: config.color,
+                                weight: 3,
+                                opacity: 0.8
+                            },
+                            onEachFeature: function(feature, layer) {
+                                // Add popup on click
+                                layer.bindPopup(`
+                                    <div style="padding: 5px;">
+                                        <strong>${config.name}</strong><br>
+                                        Zip Code: <strong>${zipCode}</strong>
+                                    </div>
+                                `);
+
+                                // Highlight on hover
+                                layer.on('mouseover', function() {
+                                    this.setStyle({
+                                        fillOpacity: 0.5,
+                                        weight: 4
+                                    });
+                                });
+
+                                layer.on('mouseout', function() {
+                                    this.setStyle({
+                                        fillOpacity: 0.3,
+                                        weight: 3
+                                    });
+                                });
+                            }
+                        }).addTo(zipBoundariesLayer);
+                    }
+                });
+
+                console.log('Loaded actual zip code boundaries');
+
+            } catch (error) {
+                console.error('Error loading zip boundaries:', error);
+
+                // Fallback: show circular markers
+                console.log('Using fallback: showing approximate boundaries');
+                const territoryZipCodes = Object.keys(territoryConfig);
+
+                for (const zipCode of territoryZipCodes) {
+                    const config = territoryConfig[zipCode];
+                    const center = zipCenters[zipCode];
+
+                    // Add a circle marker for each zip code
+                    L.circle(center, {
+                        color: config.color,
+                        fillColor: config.color,
+                        fillOpacity: 0.2,
+                        radius: 3000,  // 3km radius
+                        weight: 3
+                    }).addTo(zipBoundariesLayer)
+                      .bindPopup(`
+                          <div style="padding: 5px;">
+                              <strong>${config.name}</strong><br>
+                              Zip Code: <strong>${zipCode}</strong><br>
+                              <em>(Approximate boundary)</em>
+                          </div>
+                      `);
+                }
+            }
+
+            // Hide loading indicator
+            document.getElementById('loading').classList.remove('active');
+        }
+
+        // Load boundaries after map is ready
+        map.whenReady(function() {
+            loadZipBoundaries();
+            loadBusinesses();
+        });
+
+        // ============================================
+        // PHASE 3: BUSINESS MARKERS WITH CRM FEATURES
+        // ============================================
+
+        // Store businesses data globally
+        let businessesData = [];
+        let businessMarkersLayer = L.layerGroup().addTo(map);
+
+        // Function to create custom marker icon based on business status and activity
+        function createCustomMarker(business) {
+            const isExisting = business.customerStatus === 'existing';
+            const interactions = business.interactionCount || 0;
+
+            // Color: Green for existing, Blue for prospective
+            const color = isExisting ? '#22c55e' : '#3b82f6';
+
+            // Size based on interactions
+            let size = 'small';
+            if (interactions >= 6) size = 'large';
+            else if (interactions >= 3) size = 'medium';
+
+            const sizeMap = { small: 25, medium: 35, large: 45 };
+            const iconSize = sizeMap[size];
+
+            // Create HTML for custom marker
+            const priorityStar = business.priority === 'high' ? '⭐' : '';
+
+            const iconHTML = `
+                <div style="position: relative;">
+                    <svg width="${iconSize}" height="${iconSize + 10}" viewBox="0 0 24 34">
+                        <path d="M12 0C7.58 0 4 3.58 4 8c0 5.5 8 13 8 13s8-7.5 8-13c0-4.42-3.58-8-8-8z"
+                              fill="${color}" stroke="white" stroke-width="2"/>
+                        <circle cx="12" cy="8" r="3" fill="white"/>
+                    </svg>
+                    ${interactions >= 6 ? `
+                        <div style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: white;
+                                    border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center;
+                                    justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid white;">
+                            ${interactions}
+                        </div>
+                    ` : ''}
+                    ${priorityStar ? `
+                        <div style="position: absolute; top: -8px; left: -8px; font-size: 16px;">
+                            ${priorityStar}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            return L.divIcon({
+                html: iconHTML,
+                className: 'custom-marker',
+                iconSize: [iconSize, iconSize + 10],
+                iconAnchor: [iconSize / 2, iconSize + 10],
+                popupAnchor: [0, -(iconSize + 10)]
+            });
+        }
+
+        // Function to create popup content for a business
+        function createBusinessPopup(business) {
+            const statusBadgeColor = business.customerStatus === 'existing' ? '#22c55e' : '#3b82f6';
+            const statusText = business.customerStatus === 'existing' ? 'Existing Customer' : 'Prospective';
+
+            const lastVisitDate = business.lastVisit ? new Date(business.lastVisit).toLocaleDateString() : 'No visits yet';
+
+            let visitsHTML = '';
+            if (business.visits && business.visits.length > 0) {
+                visitsHTML = `
+                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
+                        <strong>Recent Visits:</strong>
+                        <div style="max-height: 200px; overflow-y: auto; margin-top: 8px;">
+                            ${business.visits.slice(0, 3).map(visit => `
+                                <div style="margin: 8px 0; padding: 8px; background: #f9fafb; border-radius: 4px; font-size: 12px;">
+                                    <div style="font-weight: 600; color: #374151;">
+                                        ${new Date(visit.date).toLocaleDateString()}
+                                        ${visit.duration ? `<span style="color: #6b7280;">(${visit.duration})</span>` : ''}
+                                    </div>
+                                    <div style="margin-top: 4px; color: #4b5563;">${visit.notes}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div style="min-width: 280px; max-width: 350px; font-family: system-ui, -apple-system, sans-serif;">
+                    <div style="margin-bottom: 10px;">
+                        <h3 style="margin: 0 0 8px 0; color: #111827; font-size: 18px;">
+                            ${business.name}
+                        </h3>
+                        <span style="background: ${statusBadgeColor}; color: white; padding: 3px 10px;
+                                     border-radius: 12px; font-size: 11px; font-weight: 600;">
+                            ${statusText}
+                        </span>
+                        ${business.priority === 'high' ?
+                            '<span style="background: #fbbf24; color: #92400e; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 5px;">HIGH PRIORITY</span>'
+                            : ''}
+                    </div>
+
+                    <div style="color: #4b5563; font-size: 14px; line-height: 1.6;">
+                        <div><strong>Address:</strong> ${business.address}, ${business.city}, MO ${business.zipCode}</div>
+                        <div><strong>Type:</strong> ${business.type}</div>
+                        <div><strong>Interactions:</strong> ${business.interactionCount} visits</div>
+                        <div><strong>Last Visit:</strong> ${lastVisitDate}</div>
+                    </div>
+
+                    ${visitsHTML}
+
+                    <div style="margin-top: 15px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
+                        <button onclick="addVisitNote(${business.id})"
+                                style="background: #3b82f6; color: white; border: none; padding: 8px 16px;
+                                       border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; margin-right: 8px;">
+                            🎤 Add Visit Note
+                        </button>
+                        <button onclick="toggleCustomerStatus(${business.id})"
+                                style="background: #6b7280; color: white; border: none; padding: 8px 16px;
+                                       border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                            Toggle Status
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Save business data to localStorage
+        function saveBusinessData() {
+            try {
+                localStorage.setItem('territoryMapBusinesses', JSON.stringify({ businesses: businessesData }));
+                console.log('Business data saved to localStorage');
+            } catch (error) {
+                console.error('Could not save to localStorage:', error);
+            }
+        }
+
+        // Load businesses from localStorage first, then fall back to JSON file
+        async function loadBusinesses() {
+            try {
+                // First, try to load from localStorage (for any changes made in the app)
+                const savedData = localStorage.getItem('territoryMapBusinesses');
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+                    businessesData = data.businesses || [];
+                    console.log(`Loaded ${businessesData.length} businesses from localStorage`);
+                } else {
+                    // Fall back to loading from JSON file
+                    const response = await fetch('./data/businesses.json');
+                    if (!response.ok) {
+                        console.log('No businesses file found yet. You can add businesses later.');
+                        return;
+                    }
+
+                    const data = await response.json();
+                    businessesData = data.businesses || [];
+                    console.log(`Loaded ${businessesData.length} businesses from file`);
+
+                    // Save to localStorage for future edits
+                    saveBusinessData();
+                }
+
+                // Clear existing markers
+                businessMarkersLayer.clearLayers();
+
+                // Add marker for each business
+                businessesData.forEach(business => {
+                    const marker = L.marker([business.lat, business.lng], {
+                        icon: createCustomMarker(business)
+                    }).addTo(businessMarkersLayer);
+
+                    marker.bindPopup(createBusinessPopup(business), {
+                        maxWidth: 400,
+                        className: 'business-popup'
+                    });
+
+                    // Store business data with marker
+                    marker.businessData = business;
+                });
+
+            } catch (error) {
+                console.log('Could not load businesses:', error);
+            }
+        }
+
+        // Function to toggle customer status
+        window.toggleCustomerStatus = function(businessId) {
+            const business = businessesData.find(b => b.id === businessId);
+            if (business) {
+                business.customerStatus = business.customerStatus === 'existing' ? 'prospective' : 'existing';
+
+                // Save to localStorage
+                saveBusinessData();
+
+                // Reload to update markers
+                loadBusinesses();
+
+                alert(`✅ ${business.name} is now marked as ${business.customerStatus}.\n\nChanges are saved in your browser!`);
+            }
+        };
+
+        // ============================================
+        // PHASE 4: VOICE INPUT AND VISIT TRACKING
+        // ============================================
+
+        let currentBusinessId = null;
+        let recognition = null;
+        let isListening = false;
+
+        // Initialize Web Speech API
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            let finalTranscript = '';
+            let interimTranscript = '';
+
+            recognition.onstart = function() {
+                isListening = true;
+                document.getElementById('micButton').classList.add('listening');
+                document.getElementById('voiceStatus').textContent = 'Listening... speak now';
+                document.getElementById('voiceStatus').classList.add('listening');
+            };
+
+            recognition.onresult = function(event) {
+                interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript + ' ';
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                // Update the transcription area
+                const transcriptionDiv = document.getElementById('transcription');
+                transcriptionDiv.textContent = finalTranscript + interimTranscript;
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                isListening = false;
+                document.getElementById('micButton').classList.remove('listening');
+                document.getElementById('voiceStatus').textContent = 'Error: ' + event.error;
+                document.getElementById('voiceStatus').classList.remove('listening');
+            };
+
+            recognition.onend = function() {
+                isListening = false;
+                document.getElementById('micButton').classList.remove('listening');
+                document.getElementById('voiceStatus').textContent = 'Click microphone to continue or save your note';
+                document.getElementById('voiceStatus').classList.remove('listening');
+            };
+        }
+
+        // Open voice input modal
+        window.addVisitNote = function(businessId) {
+            const business = businessesData.find(b => b.id === businessId);
+            if (!business) return;
+
+            // Check if browser supports speech recognition
+            if (!recognition) {
+                alert('Voice input is not supported in this browser.\n\nPlease use Chrome, Edge, or Safari for voice input.\n\nYou can still type your notes manually in the text area.');
+            }
+
+            currentBusinessId = businessId;
+            document.getElementById('modalBusinessName').textContent = `Add Visit Note - ${business.name}`;
+            document.getElementById('transcription').textContent = '';
+            document.getElementById('voiceStatus').textContent = 'Click the microphone to start';
+            document.getElementById('voiceModal').classList.add('active');
+
+            // Close any open popups
+            map.closePopup();
+        };
+
+        // Close voice modal
+        window.closeVoiceModal = function() {
+            if (isListening && recognition) {
+                recognition.stop();
+            }
+            document.getElementById('voiceModal').classList.remove('active');
+            currentBusinessId = null;
+        };
+
+        // Toggle voice recognition
+        document.getElementById('micButton').addEventListener('click', function() {
+            if (!recognition) {
+                alert('Voice recognition is not supported in your browser.\n\nPlease use Chrome, Edge, or Safari.\n\nYou can still type your notes manually.');
+                return;
+            }
+
+            if (isListening) {
+                recognition.stop();
+            } else {
+                // Get existing text to append to
+                const existingText = document.getElementById('transcription').textContent;
+
+                // Start new recognition session
+                try {
+                    recognition.start();
+                } catch (error) {
+                    console.error('Recognition start error:', error);
+                    // If already started, try stopping and restarting
+                    recognition.stop();
+                    setTimeout(() => recognition.start(), 100);
+                }
+            }
+        });
+
+        // Save visit note
+        window.saveVisitNote = function() {
+            const transcription = document.getElementById('transcription').textContent.trim();
+
+            if (!transcription) {
+                alert('Please speak or type a note before saving.');
+                return;
+            }
+
+            if (!currentBusinessId) {
+                alert('Error: No business selected.');
+                closeVoiceModal();
+                return;
+            }
+
+            const business = businessesData.find(b => b.id === currentBusinessId);
+            if (!business) {
+                alert('Error: Business not found.');
+                closeVoiceModal();
+                return;
+            }
+
+            // Create new visit object
+            const newVisit = {
+                date: new Date().toISOString().split('T')[0],  // YYYY-MM-DD format
+                notes: transcription,
+                duration: 'Just now'
+            };
+
+            // Add visit to business
+            if (!business.visits) {
+                business.visits = [];
+            }
+            business.visits.unshift(newVisit);  // Add to beginning
+
+            // Update interaction count
+            business.interactionCount = (business.interactionCount || 0) + 1;
+
+            // Update last visit date
+            business.lastVisit = newVisit.date;
+
+            // Save to localStorage
+            saveBusinessData();
+
+            // Reload businesses to update markers
+            loadBusinesses();
+
+            // Show success message
+            alert(`✅ Visit note saved successfully!\n\nBusiness: ${business.name}\nInteraction count: ${business.interactionCount}\n\nNote: Changes are saved in your browser. To make them permanent, export your data (feature coming in Phase 6).`);
+
+            // Close modal
+            closeVoiceModal();
+        };
+
+        // ============================================
+        // PHASE 5: SEARCH AND FILTER FEATURES
+        // ============================================
+
+        // Store all markers for filtering
+        let allMarkers = [];
+
+        // Toggle search panel collapse
+        window.toggleSearchPanel = function() {
+            const panel = document.getElementById('searchPanel');
+            const btn = panel.querySelector('.collapse-btn');
+            panel.classList.toggle('collapsed');
+            btn.textContent = panel.classList.contains('collapsed') ? '+' : '−';
+        };
+
+        // Toggle zip code boundaries visibility
+        window.toggleZipBoundaries = function() {
+            const show = document.getElementById('showZipBoundaries').checked;
+            if (show) {
+                map.addLayer(zipBoundariesLayer);
+            } else {
+                map.removeLayer(zipBoundariesLayer);
+            }
+        };
+
+        // Toggle business markers visibility
+        window.toggleBusinessMarkers = function() {
+            const show = document.getElementById('showBusinessMarkers').checked;
+            if (show) {
+                map.addLayer(businessMarkersLayer);
+            } else {
+                map.removeLayer(businessMarkersLayer);
+            }
+        };
+
+        // Apply all filters and search
+        window.applyFilters = function() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+            // Get filter states
+            const showExisting = document.getElementById('filterExisting').checked;
+            const showProspective = document.getElementById('filterProspective').checked;
+            const showHighActivity = document.getElementById('filterHighActivity').checked;
+            const showMediumActivity = document.getElementById('filterMediumActivity').checked;
+            const showLowActivity = document.getElementById('filterLowActivity').checked;
+            const showOnlyHighPriority = document.getElementById('filterHighPriority').checked;
+
+            let visibleCount = 0;
+            let totalCount = 0;
+
+            // Clear and re-add markers based on filters
+            businessMarkersLayer.clearLayers();
+
+            businessesData.forEach(business => {
+                totalCount++;
+
+                // Check customer status filter
+                if (business.customerStatus === 'existing' && !showExisting) return;
+                if (business.customerStatus === 'prospective' && !showProspective) return;
+
+                // Check activity level filter
+                const interactions = business.interactionCount || 0;
+                let activityMatches = false;
+                if (interactions >= 6 && showHighActivity) activityMatches = true;
+                if (interactions >= 3 && interactions <= 5 && showMediumActivity) activityMatches = true;
+                if (interactions >= 1 && interactions <= 2 && showLowActivity) activityMatches = true;
+                if (interactions === 0 && showLowActivity) activityMatches = true;  // Include 0 interactions in low
+                if (!activityMatches) return;
+
+                // Check priority filter
+                if (showOnlyHighPriority && business.priority !== 'high') return;
+
+                // Check search term
+                if (searchTerm) {
+                    const searchableText = [
+                        business.name,
+                        business.address,
+                        business.city,
+                        business.zipCode,
+                        business.type,
+                        business.customerStatus,
+                        ...(business.visits || []).map(v => v.notes)
+                    ].join(' ').toLowerCase();
+
+                    if (!searchableText.includes(searchTerm)) return;
+                }
+
+                // Business passed all filters - add to map
+                const marker = L.marker([business.lat, business.lng], {
+                    icon: createCustomMarker(business)
+                }).addTo(businessMarkersLayer);
+
+                marker.bindPopup(createBusinessPopup(business), {
+                    maxWidth: 400,
+                    className: 'business-popup'
+                });
+
+                marker.businessData = business;
+                visibleCount++;
+            });
+
+            // Update search results text
+            const resultsDiv = document.getElementById('searchResults');
+            if (visibleCount === 0) {
+                resultsDiv.innerHTML = '<span class="no-results">No businesses match your filters</span>';
+            } else if (visibleCount < totalCount) {
+                resultsDiv.textContent = `Showing ${visibleCount} of ${totalCount} businesses`;
+            } else {
+                resultsDiv.textContent = `Showing all ${totalCount} businesses`;
+            }
+        };
+
+        // Clear all filters
+        window.clearAllFilters = function() {
+            // Clear search
+            document.getElementById('searchInput').value = '';
+
+            // Reset all checkboxes to checked
+            document.getElementById('filterExisting').checked = true;
+            document.getElementById('filterProspective').checked = true;
+            document.getElementById('filterHighActivity').checked = true;
+            document.getElementById('filterMediumActivity').checked = true;
+            document.getElementById('filterLowActivity').checked = true;
+            document.getElementById('filterHighPriority').checked = false;  // This one defaults to off
+            document.getElementById('showZipBoundaries').checked = true;
+            document.getElementById('showBusinessMarkers').checked = true;
+
+            // Ensure layers are visible
+            map.addLayer(zipBoundariesLayer);
+            map.addLayer(businessMarkersLayer);
+
+            // Reapply filters (which will show all)
+            applyFilters();
+        };
+
+        // Real-time search as user types
+        document.getElementById('searchInput').addEventListener('input', function() {
+            applyFilters();
+        });
+
+        // ============================================
+        // PHASE 7: VOICE-GUIDED BUSINESS ENTRY & DATA MANAGEMENT
+        // ============================================
+
+        let voiceGuideActive = false;
+        let voiceGuideStep = 0;
+        let formRecognition = null;
+        let speechSynthesis = window.speechSynthesis;
+
+        // Initialize speech recognition for form
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            formRecognition = new SpeechRecognition();
+            formRecognition.continuous = false;
+            formRecognition.interimResults = false;
+            formRecognition.lang = 'en-US';
+        }
+
+        // Open business form
+        window.openBusinessForm = function() {
+            document.getElementById('businessFormModal').classList.add('active');
+            document.getElementById('businessForm').reset();
+            document.getElementById('geocodeStatus').textContent = '';
+            voiceGuideActive = false;
+            voiceGuideStep = 0;
+        };
+
+        // Close business form
+        window.closeBusinessForm = function() {
+            document.getElementById('businessFormModal').classList.remove('active');
+            voiceGuideActive = false;
+            stopSpeaking();
+        };
+
+        // Speak text using browser's text-to-speech
+        function speak(text) {
+            stopSpeaking();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;
+            utterance.pitch = 1;
+            speechSynthesis.speak(utterance);
+
+            // Show visual prompt
+            const promptArea = document.getElementById('voicePromptArea');
+            promptArea.textContent = text;
+            promptArea.style.display = 'block';
+            promptArea.classList.add('speaking');
+
+            utterance.onend = function() {
+                promptArea.classList.remove('speaking');
+            };
+        }
+
+        function stopSpeaking() {
+            if (speechSynthesis.speaking) {
+                speechSynthesis.cancel();
+            }
+            document.getElementById('voicePromptArea').classList.remove('speaking');
+        }
+
+        // Voice guide workflow
+        const voiceSteps = [
+            {
+                field: 'businessName',
+                prompt: "What's the name of the business?",
+                process: (text) => text
+            },
+            {
+                field: 'businessAddress',
+                prompt: "What's the street address?",
+                process: (text) => text
+            },
+            {
+                field: 'businessCity',
+                prompt: "What city is it in?",
+                process: (text) => text
+            },
+            {
+                field: 'businessZip',
+                prompt: "What's the zip code? Say just the numbers.",
+                process: (text) => text.replace(/\D/g, '').substring(0, 5)
+            },
+            {
+                field: 'businessType',
+                prompt: "What type of business is it? For example: retail, manufacturing, food service, healthcare, or professional services.",
+                process: (text) => {
+                    const lower = text.toLowerCase();
+                    if (lower.includes('retail')) return 'Retail';
+                    if (lower.includes('manufact')) return 'Manufacturing';
+                    if (lower.includes('food') || lower.includes('restaurant')) return 'Food Service';
+                    if (lower.includes('health') || lower.includes('medical')) return 'Healthcare';
+                    if (lower.includes('professional') || lower.includes('service')) return 'Professional Services';
+                    return 'Other';
+                }
+            },
+            {
+                field: 'customerStatus',
+                prompt: "Is this an existing customer or a prospective customer?",
+                process: (text) => {
+                    const lower = text.toLowerCase();
+                    return lower.includes('existing') ? 'existing' : 'prospective';
+                }
+            },
+            {
+                field: 'businessPriority',
+                prompt: "What's the priority level? High, medium, or low?",
+                process: (text) => {
+                    const lower = text.toLowerCase();
+                    if (lower.includes('high')) return 'high';
+                    if (lower.includes('low')) return 'low';
+                    return 'medium';
+                }
+            }
+        ];
+
+        // Start voice-guided entry
+        window.startVoiceGuide = function() {
+            if (!formRecognition) {
+                alert('Voice recognition is not supported in your browser.\n\nPlease use Chrome, Edge, or Safari.');
+                return;
+            }
+
+            voiceGuideActive = !voiceGuideActive;
+            const btn = document.getElementById('voiceGuideBtn');
+
+            if (voiceGuideActive) {
+                btn.textContent = '⏸️ Pause Guide';
+                btn.classList.add('listening');
+                voiceGuideStep = 0;
+                processNextStep();
+            } else {
+                btn.textContent = '🎤 Voice Guide';
+                btn.classList.remove('listening');
+                stopSpeaking();
+            }
+        };
+
+        function processNextStep() {
+            if (!voiceGuideActive || voiceGuideStep >= voiceSteps.length) {
+                if (voiceGuideStep >= voiceSteps.length) {
+                    speak("All done! Please review the information and click Save Business.");
+                    document.getElementById('voiceGuideBtn').textContent = '🎤 Voice Guide';
+                    document.getElementById('voiceGuideBtn').classList.remove('listening');
+                    voiceGuideActive = false;
+                }
+                return;
+            }
+
+            const step = voiceSteps[voiceGuideStep];
+            speak(step.prompt);
+
+            // Wait for speech to finish, then listen
+            setTimeout(() => {
+                if (!voiceGuideActive) return;
+
+                formRecognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    const processedValue = step.process(transcript);
+
+                    document.getElementById(step.field).value = processedValue;
+
+                    // Special handling for zip code
+                    if (step.field === 'businessZip') {
+                        // Try to match to one of our zip codes
+                        const zips = ['63301', '63376', '63368', '63385'];
+                        if (zips.includes(processedValue)) {
+                            document.getElementById(step.field).value = processedValue;
+                        }
+                    }
+
+                    voiceGuideStep++;
+                    setTimeout(() => processNextStep(), 500);
+                };
+
+                formRecognition.onerror = function(event) {
+                    console.error('Recognition error:', event.error);
+                    speak("Sorry, I didn't catch that. Let's try the next field.");
+                    voiceGuideStep++;
+                    setTimeout(() => processNextStep(), 1000);
+                };
+
+                try {
+                    formRecognition.start();
+                } catch (e) {
+                    console.error('Recognition start error:', e);
+                }
+            }, 2000); // Wait 2 seconds for speech to finish
+        }
+
+        // Geocode address to get lat/lng
+        async function geocodeAddress(address, city, zip) {
+            const fullAddress = `${address}, ${city}, MO ${zip}, USA`;
+            const geocodeStatus = document.getElementById('geocodeStatus');
+
+            geocodeStatus.textContent = 'Finding coordinates...';
+            geocodeStatus.className = 'geocode-status';
+
+            try {
+                // Using Nominatim (OpenStreetMap) geocoding service
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`;
+                const response = await fetch(url, {
+                    headers: {
+                        'User-Agent': 'Territory Map Application'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lng = parseFloat(data[0].lon);
+                    geocodeStatus.textContent = `✓ Coordinates found: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                    geocodeStatus.classList.add('success');
+                    return { lat, lng };
+                } else {
+                    throw new Error('Address not found');
+                }
+            } catch (error) {
+                console.error('Geocoding error:', error);
+                geocodeStatus.textContent = '✗ Could not find exact coordinates. Using zip code center.';
+                geocodeStatus.classList.add('error');
+
+                // Fallback to zip code center
+                const zipCenters = {
+                    "63301": [38.7881, -90.4974],
+                    "63376": [38.8003, -90.6298],
+                    "63368": [38.8106, -90.7126],
+                    "63385": [38.9867, -90.7387]
+                };
+
+                const center = zipCenters[zip] || [38.78, -90.55];
+                return { lat: center[0], lng: center[1] };
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('businessForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('businessName').value;
+            const address = document.getElementById('businessAddress').value;
+            const city = document.getElementById('businessCity').value;
+            const zipCode = document.getElementById('businessZip').value;
+            const type = document.getElementById('businessType').value;
+            const status = document.getElementById('customerStatus').value;
+            const priority = document.getElementById('businessPriority').value;
+
+            // Get coordinates
+            const coords = await geocodeAddress(address, city, zipCode);
+
+            // Create new business object
+            const newBusiness = {
+                id: Date.now(), // Use timestamp as unique ID
+                name: name,
+                address: address,
+                city: city,
+                zipCode: zipCode,
+                lat: coords.lat,
+                lng: coords.lng,
+                type: type,
+                customerStatus: status,
+                interactionCount: 0,
+                lastVisit: null,
+                priority: priority,
+                visits: []
+            };
+
+            // Add to businesses array
+            businessesData.push(newBusiness);
+
+            // Save to localStorage
+            saveBusinessData();
+
+            // Reload markers
+            loadBusinesses();
+
+            // Close form
+            closeBusinessForm();
+
+            // Zoom to new business
+            map.setView([coords.lat, coords.lng], 15);
+
+            // Show success message
+            alert(`✅ ${name} added successfully!\n\nThe new business has been added to your map and saved.`);
+        });
+
+        // Export data
+        window.exportData = function() {
+            const dataStr = JSON.stringify({ businesses: businessesData }, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `territory-map-backup-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            alert('✅ Data exported!\n\nYour business data has been downloaded as a JSON file.\n\nKeep this file as a backup!');
+        };
+
+        // Import data
+        window.importData = function() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+
+                reader.onload = function(event) {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        if (data.businesses && Array.isArray(data.businesses)) {
+                            const confirmReplace = confirm(
+                                `This will replace your current data with ${data.businesses.length} businesses from the file.\n\n` +
+                                `Current data: ${businessesData.length} businesses\n` +
+                                `File data: ${data.businesses.length} businesses\n\n` +
+                                `Do you want to continue?`
+                            );
+
+                            if (confirmReplace) {
+                                businessesData = data.businesses;
+                                saveBusinessData();
+                                loadBusinesses();
+                                alert('✅ Data imported successfully!\n\nYour map has been updated with the imported data.');
+                            }
+                        } else {
+                            alert('❌ Invalid file format.\n\nThe file must contain a "businesses" array.');
+                        }
+                    } catch (error) {
+                        alert('❌ Error reading file.\n\nMake sure the file is a valid JSON export.');
+                        console.error('Import error:', error);
+                    }
+                };
+
+                reader.readAsText(file);
+            };
+
+            input.click();
+        };
+
+        // Add edit and delete buttons to business popups
+        const originalCreateBusinessPopup = createBusinessPopup;
+        createBusinessPopup = function(business) {
+            const originalPopup = originalCreateBusinessPopup(business);
+
+            // Add edit and delete buttons
+            const editDeleteSection = `
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e5e7eb;">
+                    <button onclick="editBusiness(${business.id})"
+                            style="background: #f59e0b; color: white; border: none; padding: 6px 12px;
+                                   border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; margin-right: 8px;">
+                        ✏️ Edit
+                    </button>
+                    <button onclick="deleteBusiness(${business.id})"
+                            style="background: #ef4444; color: white; border: none; padding: 6px 12px;
+                                   border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        🗑️ Delete
+                    </button>
+                </div>
+            `;
+
+            return originalPopup.replace('</div>', editDeleteSection + '</div>');
+        };
+
+        // Edit business
+        window.editBusiness = function(businessId) {
+            const business = businessesData.find(b => b.id === businessId);
+            if (!business) return;
+
+            // Close popup
+            map.closePopup();
+
+            // Open form with existing data
+            document.getElementById('businessFormModal').classList.add('active');
+            document.getElementById('businessName').value = business.name;
+            document.getElementById('businessAddress').value = business.address;
+            document.getElementById('businessCity').value = business.city;
+            document.getElementById('businessZip').value = business.zipCode;
+            document.getElementById('businessType').value = business.type;
+            document.getElementById('customerStatus').value = business.customerStatus;
+            document.getElementById('businessPriority').value = business.priority;
+
+            // Change form to edit mode
+            const form = document.getElementById('businessForm');
+            form.onsubmit = async function(e) {
+                e.preventDefault();
+
+                // Update business
+                business.name = document.getElementById('businessName').value;
+                business.address = document.getElementById('businessAddress').value;
+                business.city = document.getElementById('businessCity').value;
+                business.zipCode = document.getElementById('businessZip').value;
+                business.type = document.getElementById('businessType').value;
+                business.customerStatus = document.getElementById('customerStatus').value;
+                business.priority = document.getElementById('businessPriority').value;
+
+                // Re-geocode if address changed
+                const coords = await geocodeAddress(business.address, business.city, business.zipCode);
+                business.lat = coords.lat;
+                business.lng = coords.lng;
+
+                // Save and reload
+                saveBusinessData();
+                loadBusinesses();
+                closeBusinessForm();
+
+                alert(`✅ ${business.name} updated successfully!`);
+
+                // Reset form handler
+                form.onsubmit = null;
+            };
+        };
+
+        // Delete business
+        window.deleteBusiness = function(businessId) {
+            const business = businessesData.find(b => b.id === businessId);
+            if (!business) return;
+
+            const confirmDelete = confirm(
+                `Are you sure you want to delete this business?\n\n` +
+                `${business.name}\n${business.address}\n\n` +
+                `This cannot be undone.`
+            );
+
+            if (confirmDelete) {
+                // Remove from array
+                const index = businessesData.findIndex(b => b.id === businessId);
+                if (index > -1) {
+                    businessesData.splice(index, 1);
+                }
+
+                // Save and reload
+                saveBusinessData();
+                loadBusinesses();
+
+                // Close popup
+                map.closePopup();
+
+                alert(`✅ Business deleted.`);
+            }
+        };
+
+        // ============================================
+        // HELPFUL INFORMATION
+        // ============================================
+
+        /*
+         * WHAT YOU HAVE NOW (Phases 1-5 Complete!):
+         * ✅ Interactive map centered on your Missouri territory
+         * ✅ Colored zip code boundaries for your 4 territories
+         * ✅ Legend showing what each color means
+         * ✅ Click any zip code to see its information
+         * ✅ Business markers with smart visual indicators:
+         *    - Green pins = Existing customers
+         *    - Blue pins = Prospective customers
+         *    - Larger pins = More interactions
+         *    - Red badge with number = 6+ interactions
+         *    - Star icon = High priority customers
+         * ✅ Click any business to see:
+         *    - Full details and contact info
+         *    - Customer status and interaction count
+         *    - Recent visit history with notes
+         *    - Voice input for hands-free documentation
+         * ✅ Voice input functionality for hands-free note-taking
+         * ✅ Visit tracking with automatic timestamps
+         * ✅ Data persistence to save your changes
+         * ✅ Search and filter features:
+         *    - Real-time search across all business data
+         *    - Filter by customer status (existing/prospective)
+         *    - Filter by activity level (high/medium/low)
+         *    - Filter by priority
+         *    - Toggle map elements on/off
+         *
+         * NEXT (Phase 6):
+         * - Final polish and complete documentation
+         * - Export/import functionality
+         * - Mobile responsiveness improvements
+         *
+         * HOW TO USE:
+         * 1. Open http://localhost:8000 in your browser
+         * 2. Use the Search & Filter panel on the left to find businesses
+         * 3. Click markers to see details and add visit notes
+         * 4. Use voice input to document visits hands-free
+         * 5. All changes are saved automatically in your browser
+         */
+    </script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "zipCodes": {
+    "63301": {
+      "color": "#e41a1c",
+      "name": "St. Charles",
+      "description": "St. Charles area"
+    },
+    "63376": {
+      "color": "#377eb8",
+      "name": "St. Peters",
+      "description": "St. Peters area"
+    },
+    "63368": {
+      "color": "#4daf4a",
+      "name": "O'Fallon",
+      "description": "O'Fallon area"
+    },
+    "63385": {
+      "color": "#984ea3",
+      "name": "Winfield",
+      "description": "Winfield area"
+    }
+  }
+}
