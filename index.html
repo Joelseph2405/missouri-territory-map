@@ -80,6 +80,9 @@
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
             font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            width: 250px;
         }
 
         .legend-title {
@@ -655,22 +658,7 @@
     <!-- Legend -->
     <div class="legend">
         <div class="legend-title">Territory Zip Codes</div>
-        <div class="legend-item">
-            <div class="legend-color" style="background-color: #e41a1c;"></div>
-            <span>63301 - St. Charles</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background-color: #377eb8;"></div>
-            <span>63376 - St. Peters</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background-color: #4daf4a;"></div>
-            <span>63368 - O'Fallon</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background-color: #984ea3;"></div>
-            <span>63385 - Winfield</span>
-        </div>
+        <!-- Legend items will be populated dynamically from territory.json -->
     </div>
 
     <!-- Voice Input Modal -->
@@ -721,10 +709,7 @@
                     <label class="form-label" for="businessZip">Zip Code *</label>
                     <select id="businessZip" class="form-select" required>
                         <option value="">Select zip code...</option>
-                        <option value="63301">63301 - St. Charles</option>
-                        <option value="63376">63376 - St. Peters</option>
-                        <option value="63368">63368 - O'Fallon</option>
-                        <option value="63385">63385 - Winfield</option>
+                        <!-- Options will be populated dynamically from territory.json -->
                     </select>
                 </div>
 
@@ -814,24 +799,80 @@
         // PHASE 2: ZIP CODE TERRITORIES
         // ============================================
 
-        // Territory configuration
-        const territoryConfig = {
-            "63301": { color: "#e41a1c", name: "St. Charles" },
-            "63376": { color: "#377eb8", name: "St. Peters" },
-            "63368": { color: "#4daf4a", name: "O'Fallon" },
-            "63385": { color: "#984ea3", name: "Winfield" }
-        };
+        // Territory configuration - will be loaded from territory.json
+        let territoryConfig = {};
 
-        // Zip code center coordinates (approximate)
-        const zipCenters = {
-            "63301": [38.7881, -90.4974],  // St. Charles
-            "63376": [38.8003, -90.6298],  // St. Peters
-            "63368": [38.8106, -90.7126],  // O'Fallon
-            "63385": [38.9867, -90.7387]   // Winfield
-        };
+        // Zip code center coordinates - will be calculated from boundaries
+        const zipCenters = {};
 
         // Layer to hold all zip code boundaries
         let zipBoundariesLayer = L.layerGroup().addTo(map);
+
+        // Function to load territory configuration from territory.json
+        async function loadTerritoryConfig() {
+            try {
+                const response = await fetch('./data/territory.json');
+                if (!response.ok) {
+                    throw new Error('Could not load territory configuration');
+                }
+                const data = await response.json();
+                territoryConfig = data.zipCodes;
+
+                // Populate the legend dynamically
+                populateLegend();
+
+                // Populate the zip code dropdown in the business form
+                populateZipCodeDropdown();
+
+                return territoryConfig;
+            } catch (error) {
+                console.error('Error loading territory config:', error);
+                document.getElementById('loading').textContent = 'Error loading territory configuration. Please refresh the page.';
+                throw error;
+            }
+        }
+
+        // Function to populate the legend with all zip codes
+        function populateLegend() {
+            const legendContainer = document.querySelector('.legend');
+
+            // Clear existing legend items (keep title)
+            const legendItems = legendContainer.querySelectorAll('.legend-item');
+            legendItems.forEach(item => item.remove());
+
+            // Add legend items for each zip code
+            const zipCodes = Object.keys(territoryConfig).sort();
+            zipCodes.forEach(zipCode => {
+                const config = territoryConfig[zipCode];
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+                legendItem.innerHTML = `
+                    <div class="legend-color" style="background-color: ${config.color};"></div>
+                    <span>${zipCode} - ${config.name}</span>
+                `;
+                legendContainer.appendChild(legendItem);
+            });
+        }
+
+        // Function to populate the zip code dropdown in the business form
+        function populateZipCodeDropdown() {
+            const zipSelect = document.getElementById('businessZip');
+
+            // Clear existing options (except the first placeholder)
+            while (zipSelect.options.length > 1) {
+                zipSelect.remove(1);
+            }
+
+            // Add options for each zip code
+            const zipCodes = Object.keys(territoryConfig).sort();
+            zipCodes.forEach(zipCode => {
+                const config = territoryConfig[zipCode];
+                const option = document.createElement('option');
+                option.value = zipCode;
+                option.textContent = `${zipCode} - ${config.name}`;
+                zipSelect.appendChild(option);
+            });
+        }
 
         // Function to load zip code boundaries from local GeoJSON file
         async function loadZipBoundaries() {
@@ -936,10 +977,18 @@
             document.getElementById('loading').classList.remove('active');
         }
 
-        // Load boundaries after map is ready
-        map.whenReady(function() {
-            loadZipBoundaries();
-            loadBusinesses();
+        // Load territory config and boundaries after map is ready
+        map.whenReady(async function() {
+            try {
+                // Load territory configuration first
+                await loadTerritoryConfig();
+                // Then load zip boundaries
+                await loadZipBoundaries();
+                // Finally load businesses
+                loadBusinesses();
+            } catch (error) {
+                console.error('Error during initialization:', error);
+            }
         });
 
         // ============================================

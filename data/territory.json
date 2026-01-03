@@ -1,24 +1,269 @@
 {
   "zipCodes": {
+    "62006": {
+      "color": "#e6194B",
+      "name": "Batchtown",
+      "description": "Batchtown, IL"
+    },
+    "62013": {
+      "color": "#3cb44b",
+      "name": "Brussels",
+      "description": "Brussels, IL"
+    },
+    "62036": {
+      "color": "#ffe119",
+      "name": "Golden Eagle",
+      "description": "Golden Eagle, IL"
+    },
+    "63005": {
+      "color": "#4363d8",
+      "name": "Chesterfield",
+      "description": "Chesterfield, MO"
+    },
+    "63011": {
+      "color": "#f58231",
+      "name": "Ballwin",
+      "description": "Ballwin, MO"
+    },
+    "63013": {
+      "color": "#911eb4",
+      "name": "Beaufort",
+      "description": "Beaufort, MO"
+    },
+    "63014": {
+      "color": "#42d4f4",
+      "name": "Berger",
+      "description": "Berger, MO"
+    },
+    "63015": {
+      "color": "#f032e6",
+      "name": "Catawissa",
+      "description": "Catawissa, MO"
+    },
+    "63016": {
+      "color": "#bfef45",
+      "name": "Cedar Hill",
+      "description": "Cedar Hill, MO"
+    },
+    "63021": {
+      "color": "#fabed4",
+      "name": "Manchester",
+      "description": "Manchester, MO"
+    },
+    "63025": {
+      "color": "#469990",
+      "name": "Wildwood",
+      "description": "Wildwood, MO"
+    },
+    "63038": {
+      "color": "#dcbeff",
+      "name": "Wildwood",
+      "description": "Wildwood, MO"
+    },
+    "63039": {
+      "color": "#9A6324",
+      "name": "Wildwood",
+      "description": "Wildwood, MO"
+    },
+    "63040": {
+      "color": "#fffac8",
+      "name": "Ellisville",
+      "description": "Ellisville, MO"
+    },
+    "63049": {
+      "color": "#800000",
+      "name": "High Ridge",
+      "description": "High Ridge, MO"
+    },
+    "63051": {
+      "color": "#aaffc3",
+      "name": "House Springs",
+      "description": "House Springs, MO"
+    },
+    "63055": {
+      "color": "#808000",
+      "name": "Labadie",
+      "description": "Labadie, MO"
+    },
+    "63056": {
+      "color": "#ffd8b1",
+      "name": "Leslie",
+      "description": "Leslie, MO"
+    },
+    "63068": {
+      "color": "#000075",
+      "name": "New Haven",
+      "description": "New Haven, MO"
+    },
+    "63069": {
+      "color": "#a9a9a9",
+      "name": "Pacific",
+      "description": "Pacific, MO"
+    },
+    "63072": {
+      "color": "#ff6347",
+      "name": "Robertsville",
+      "description": "Robertsville, MO"
+    },
+    "63073": {
+      "color": "#20b2aa",
+      "name": "Saint Albans",
+      "description": "Saint Albans, MO"
+    },
+    "63077": {
+      "color": "#ff1493",
+      "name": "Saint Clair",
+      "description": "Saint Clair, MO"
+    },
+    "63084": {
+      "color": "#32cd32",
+      "name": "Union",
+      "description": "Union, MO"
+    },
+    "63088": {
+      "color": "#8b4513",
+      "name": "Valley Park",
+      "description": "Valley Park, MO"
+    },
+    "63089": {
+      "color": "#ff00ff",
+      "name": "Villa Ridge",
+      "description": "Villa Ridge, MO"
+    },
+    "63090": {
+      "color": "#00ced1",
+      "name": "Washington",
+      "description": "Washington, MO"
+    },
     "63301": {
       "color": "#e41a1c",
-      "name": "St. Charles",
-      "description": "St. Charles area"
+      "name": "Saint Charles",
+      "description": "Saint Charles, MO"
     },
-    "63376": {
-      "color": "#377eb8",
-      "name": "St. Peters",
-      "description": "St. Peters area"
+    "63304": {
+      "color": "#ff4500",
+      "name": "Saint Charles",
+      "description": "Saint Charles, MO"
+    },
+    "63332": {
+      "color": "#da70d6",
+      "name": "Augusta",
+      "description": "Augusta, MO"
+    },
+    "63341": {
+      "color": "#7fff00",
+      "name": "Defiance",
+      "description": "Defiance, MO"
+    },
+    "63342": {
+      "color": "#00bfff",
+      "name": "Dutzow",
+      "description": "Dutzow, MO"
+    },
+    "63343": {
+      "color": "#ff69b4",
+      "name": "Elsberry",
+      "description": "Elsberry, MO"
+    },
+    "63346": {
+      "color": "#cd853f",
+      "name": "Flinthill",
+      "description": "Flinthill, MO"
+    },
+    "63347": {
+      "color": "#adff2f",
+      "name": "Foley",
+      "description": "Foley, MO"
+    },
+    "63348": {
+      "color": "#ff6347",
+      "name": "Foristell",
+      "description": "Foristell, MO"
+    },
+    "63349": {
+      "color": "#4682b4",
+      "name": "Hawk Point",
+      "description": "Hawk Point, MO"
+    },
+    "63357": {
+      "color": "#d2691e",
+      "name": "Marthasville",
+      "description": "Marthasville, MO"
+    },
+    "63362": {
+      "color": "#6495ed",
+      "name": "Moscow Mills",
+      "description": "Moscow Mills, MO"
+    },
+    "63365": {
+      "color": "#dc143c",
+      "name": "New Melle",
+      "description": "New Melle, MO"
+    },
+    "63366": {
+      "color": "#00fa9a",
+      "name": "Dardenne Prairie",
+      "description": "Dardenne Prairie, MO"
+    },
+    "63367": {
+      "color": "#9370db",
+      "name": "Lake Saint Louis",
+      "description": "Lake Saint Louis, MO"
     },
     "63368": {
       "color": "#4daf4a",
       "name": "O'Fallon",
-      "description": "O'Fallon area"
+      "description": "O'Fallon, MO"
+    },
+    "63369": {
+      "color": "#ffa07a",
+      "name": "Old Monroe",
+      "description": "Old Monroe, MO"
+    },
+    "63376": {
+      "color": "#377eb8",
+      "name": "Saint Peters",
+      "description": "Saint Peters, MO"
+    },
+    "63377": {
+      "color": "#f0e68c",
+      "name": "Silex",
+      "description": "Silex, MO"
+    },
+    "63378": {
+      "color": "#dda0dd",
+      "name": "Treloar",
+      "description": "Treloar, MO"
+    },
+    "63379": {
+      "color": "#b0c4de",
+      "name": "Troy",
+      "description": "Troy, MO"
+    },
+    "63380": {
+      "color": "#ffdab9",
+      "name": "Truesdale",
+      "description": "Truesdale, MO"
+    },
+    "63383": {
+      "color": "#87ceeb",
+      "name": "Warrenton",
+      "description": "Warrenton, MO"
     },
     "63385": {
       "color": "#984ea3",
+      "name": "Wentzville",
+      "description": "Wentzville, MO"
+    },
+    "63389": {
+      "color": "#ffb6c1",
       "name": "Winfield",
-      "description": "Winfield area"
+      "description": "Winfield, MO"
+    },
+    "63390": {
+      "color": "#228b22",
+      "name": "Wright City",
+      "description": "Wright City, MO"
     }
   }
 }
