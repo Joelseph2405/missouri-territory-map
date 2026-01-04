@@ -5,29 +5,21 @@ import json
 import os
 
 from init_db import init_db
+import database
 
 app = Flask(__name__, static_folder='.')
 CORS(app)
 
-# Determine database path
-# Render persistent disk is mounted at /var/lib/data if configured in render.yaml
-if os.path.exists('/var/lib/data'):
-    DB_FILE = '/var/lib/data/businesses.db'
-    print(f"Using persistent storage at {DB_FILE}")
-else:
-    DB_FILE = 'businesses.db'
-    print(f"Using local storage at {DB_FILE}")
-
-# Initialize database if it doesn't exist
-if not os.path.exists(DB_FILE):
-    print("Database not found. Initializing...")
-    init_db(DB_FILE)
-
+# Initialize database if needed (mostly for local SQLite)
+# For Postgres, one-time migration script is better, but this check is harmless if fast
+# Initialize database (checks for tables/data and seeds if empty)
+try:
+    init_db()
+except Exception as e:
+    print(f"Startup initialization failed (non-critical if DB exists): {e}")
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return database.get_connection()
 
 def business_from_row(row):
     b = dict(row)
@@ -55,7 +47,10 @@ def serve_static(path):
 @app.route('/api/businesses', methods=['GET'])
 def get_businesses():
     conn = get_db_connection()
-    businesses = conn.execute('SELECT * FROM businesses').fetchall()
+    cursor = conn.cursor()
+    # No params, simple query
+    cursor.execute('SELECT * FROM businesses')
+    businesses = cursor.fetchall()
     conn.close()
     
     return jsonify({
@@ -79,13 +74,18 @@ def add_business():
     # The current frontend setup often relies on maxId + 1 logic.
     # For this backend approach, it's safer to let the DB generate the ID if it's new.
     
-    cursor.execute('''
+    # The current frontend setup often relies on maxId + 1 logic.
+    # For this backend approach, it's safer to let the DB generate the ID if it's new.
+    
+    sql = '''
         INSERT INTO businesses (
             name, address, city, zipCode, lat, lng, type, 
             customerStatus, interactionCount, lastVisit, priority, phone, 
             contacts, visits
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (
+    '''
+    
+    params = (
         new_business.get('name'),
         new_business.get('address'),
         new_business.get('city'),
@@ -100,9 +100,9 @@ def add_business():
         new_business.get('phone'),
         contacts_json,
         visits_json
-    ))
+    )
     
-    new_id = cursor.lastrowid
+    new_id = database.execute_insert_returning_id(cursor, sql, params)
     conn.commit()
     conn.close()
     
@@ -121,13 +121,17 @@ def update_business(id):
     visits_json = json.dumps(updated_business.get('visits', []))
     
     conn = get_db_connection()
-    conn.execute('''
+    cursor = conn.cursor()
+    
+    sql = '''
         UPDATE businesses SET
             name = ?, address = ?, city = ?, zipCode = ?, lat = ?, lng = ?, 
             type = ?, customerStatus = ?, interactionCount = ?, lastVisit = ?, 
             priority = ?, phone = ?, contacts = ?, visits = ?
         WHERE id = ?
-    ''', (
+    '''
+    
+    cursor.execute(database.prepare_query(sql), (
         updated_business.get('name'),
         updated_business.get('address'),
         updated_business.get('city'),
@@ -153,19 +157,17 @@ def update_business(id):
 @app.route('/api/businesses/<int:id>', methods=['DELETE'])
 def delete_business(id):
     conn = get_db_connection()
-    conn.execute('DELETE FROM businesses WHERE id = ?', (id,))
+    cursor = conn.cursor()
+    
+    sql = 'DELETE FROM businesses WHERE id = ?'
+    cursor.execute(database.prepare_query(sql), (id,))
+    
     conn.commit()
     conn.close()
     
     return jsonify({'success': True})
 
 if __name__ == '__main__':
-    # Initialize DB if it doesn't exist
-    if not os.path.exists(DB_FILE):
-        print("Initializing database...")
-        # We can import the init function if needed, or just handle it manually
-        # ideally the user runs init_db.py separately, but let's be helpful?
-        # For now, rely on manual init per instructions.
-        pass
+
         
     app.run(debug=True, port=5000)
