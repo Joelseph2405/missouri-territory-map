@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -35,11 +36,11 @@
             top: 10px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 1000;
+            z-index: 400;
             background: white;
             padding: 10px 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
             font-size: 18px;
             font-weight: 600;
             color: #333;
@@ -55,7 +56,7 @@
             background: white;
             padding: 20px 40px;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             font-size: 16px;
             display: none;
         }
@@ -78,7 +79,7 @@
             background: white;
             padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
             font-size: 14px;
             max-height: 400px;
             overflow-y: auto;
@@ -102,7 +103,7 @@
             height: 20px;
             margin-right: 10px;
             border: 2px solid white;
-            box-shadow: 0 0 3px rgba(0,0,0,0.4);
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
             border-radius: 3px;
         }
 
@@ -166,8 +167,15 @@
         }
 
         @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            50% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+
+            50% {
+                box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
+            }
         }
 
         .transcription-area {
@@ -236,6 +244,396 @@
             background: #d1d5db;
         }
 
+        /* Business Card Scanner Modal */
+        .card-scanner-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-scanner-modal.active {
+            display: flex;
+        }
+
+        .card-scanner-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .scanner-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #111827;
+        }
+
+        .scanner-input-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .scanner-button {
+            flex: 1;
+            padding: 12px 20px;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            background: white;
+            color: #3b82f6;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .scanner-button:hover {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .scanner-button.active {
+            background: #3b82f6;
+            color: white;
+        }
+
+        #cardImagePreview {
+            width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+            border: 2px solid #e5e7eb;
+        }
+
+        #cardImagePreview.active {
+            display: block;
+        }
+
+        .ocr-status {
+            text-align: center;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .ocr-status.active {
+            display: block;
+        }
+
+        .ocr-status.processing {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .ocr-status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .ocr-status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .extracted-data {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .extracted-data.active {
+            display: block;
+        }
+
+        .data-field {
+            margin-bottom: 15px;
+        }
+
+        .data-field label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .data-field input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .data-field input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            margin: 15px 0;
+            display: none;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .video-container.active {
+            display: block;
+        }
+
+        #cardVideo {
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        .capture-button {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: white;
+            border: 4px solid #3b82f6;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .capture-button:hover {
+            transform: translateX(-50%) scale(1.1);
+        }
+
+        /* Contact List in Business Popup */
+        .contacts-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #e5e7eb;
+        }
+
+        .contacts-header {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .contact-item {
+            background: #f9fafb;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .contact-name {
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .contact-title {
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+        .contact-details {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #4b5563;
+        }
+
+        .primary-badge {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        .add-contact-btn {
+            font-size: 12px;
+            padding: 6px 12px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .add-contact-btn:hover {
+            background: #2563eb;
+        }
+
+        /* Business Lookup Suggestion Modal */
+        .business-lookup-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 10001;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .business-lookup-modal.active {
+            display: flex;
+        }
+
+        .business-lookup-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .business-lookup-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .business-lookup-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .lookup-message {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .business-match {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .business-match:hover {
+            border-color: #667eea;
+            background: #f9fafb;
+            transform: translateX(5px);
+        }
+
+        .business-match-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 5px;
+        }
+
+        .business-match-details {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+
+        .business-match-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 5px;
+            margin-top: 5px;
+        }
+
+        .badge-existing {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-prospective {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-high-priority {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .lookup-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .lookup-button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .lookup-button-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .lookup-button-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .lookup-button-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .lookup-button-primary:hover {
+            background: #5568d3;
+        }
+
         /* Search and Filter Panel */
         .search-panel {
             position: absolute;
@@ -245,7 +643,7 @@
             background: white;
             padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
             width: 300px;
             max-height: calc(100vh - 100px);
             overflow-y: auto;
@@ -373,6 +771,30 @@
             box-shadow: 0 6px 16px rgba(16, 185, 129, 0.6);
         }
 
+        /* Scan Card FAB Button */
+        .fab-scan-button {
+            position: fixed;
+            bottom: 30px;
+            left: 80px;
+            z-index: 1000;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .fab-scan-button:hover {
+            background: #7c3aed;
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(139, 92, 246, 0.6);
+        }
+
         /* Business Form Modal */
         .business-form-modal {
             display: none;
@@ -431,8 +853,15 @@
         }
 
         @keyframes glow {
-            0%, 100% { background: #eff6ff; }
-            50% { background: #dbeafe; }
+
+            0%,
+            100% {
+                background: #eff6ff;
+            }
+
+            50% {
+                background: #dbeafe;
+            }
         }
 
         .form-field {
@@ -543,7 +972,7 @@
             background: white;
             padding: 12px;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
             display: none;
         }
 
@@ -570,6 +999,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Map Title -->
     <div class="map-title">
@@ -593,7 +1023,7 @@
         <div class="search-panel-content">
             <!-- Search Input -->
             <input type="text" id="searchInput" class="search-input"
-                   placeholder="Search businesses, addresses, zip codes...">
+                placeholder="Search businesses, addresses, zip codes...">
 
             <!-- Customer Status Filter -->
             <div class="filter-section">
@@ -666,15 +1096,146 @@
         <div class="voice-modal-content">
             <div class="voice-modal-header" id="modalBusinessName">Add Visit Note</div>
 
+            <!-- Contact and Activity Fields -->
+            <div style="margin-bottom: 15px;">
+                <label
+                    style="display: block; font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 5px;">Met
+                    With</label>
+                <select id="visitContact"
+                    style="width: 100%; padding: 8px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px;">
+                    <option value="">Select contact...</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label
+                    style="display: block; font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 5px;">Activity
+                    Type</label>
+                <select id="activityType"
+                    style="width: 100%; padding: 8px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px;">
+                    <option value="Sales Call">Sales Call</option>
+                    <option value="Discovery Call">Discovery Call</option>
+                    <option value="Product Demo">Product Demo</option>
+                    <option value="Account Review">Account Review</option>
+                    <option value="Follow-up">Follow-up</option>
+                    <option value="Delivery">Delivery</option>
+                    <option value="Service Call">Service Call</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
             <div class="voice-status" id="voiceStatus">Click the microphone to start</div>
 
             <button id="micButton" class="mic-button">🎤</button>
 
+            <label
+                style="display: block; font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 5px; margin-top: 15px;">Visit
+                Notes</label>
             <div id="transcription" class="transcription-area" contenteditable="true"></div>
+
+            <div style="margin-top: 15px;">
+                <label
+                    style="display: block; font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 5px;">Opportunity
+                    Notes (Deals/Follow-ups)</label>
+                <textarea id="opportunityNotes"
+                    style="width: 100%; min-height: 80px; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical;"
+                    placeholder="Enter any opportunities, deals, or required follow-ups..."></textarea>
+            </div>
 
             <div class="modal-buttons">
                 <button class="modal-button modal-button-secondary" onclick="closeVoiceModal()">Cancel</button>
                 <button class="modal-button modal-button-primary" onclick="saveVisitNote()">Save Note</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Business Card Scanner Modal -->
+    <div id="cardScannerModal" class="card-scanner-modal">
+        <div class="card-scanner-content">
+            <div class="scanner-header">📷 Scan Business Card</div>
+
+            <div class="scanner-input-buttons">
+                <button class="scanner-button" onclick="startCamera()">📷 Use Camera</button>
+                <button class="scanner-button" onclick="document.getElementById('cardFileInput').click()">📁 Upload
+                    Photo</button>
+            </div>
+
+            <input type="file" id="cardFileInput" accept="image/*" style="display: none;"
+                onchange="handleFileUpload(event)">
+
+            <div id="videoContainer" class="video-container">
+                <video id="cardVideo" autoplay playsinline></video>
+                <button class="capture-button" onclick="capturePhoto()"></button>
+            </div>
+
+            <canvas id="cardCanvas" style="display: none;"></canvas>
+            <img id="cardImagePreview" alt="Business card preview">
+
+            <div id="ocrStatus" class="ocr-status"></div>
+
+            <div id="extractedData" class="extracted-data">
+                <div class="data-field">
+                    <label>Contact Name</label>
+                    <input type="text" id="extractedName">
+                </div>
+
+                <div class="data-field">
+                    <label>Job Title</label>
+                    <input type="text" id="extractedTitle">
+                </div>
+
+                <div class="data-field">
+                    <label>Company</label>
+                    <input type="text" id="extractedCompany">
+                </div>
+
+                <div class="data-field">
+                    <label>Phone</label>
+                    <input type="text" id="extractedPhone">
+                </div>
+
+                <div class="data-field">
+                    <label>Email</label>
+                    <input type="text" id="extractedEmail">
+                </div>
+
+                <div class="data-field">
+                    <label>Address</label>
+                    <input type="text" id="extractedAddress">
+                </div>
+
+                <div class="data-field">
+                    <label>Notes</label>
+                    <input type="text" id="extractedNotes">
+                </div>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="modal-button modal-button-secondary" onclick="closeCardScanner()">Cancel</button>
+                <button id="saveContactBtn" class="modal-button modal-button-primary" onclick="saveExtractedContact()"
+                    style="display: none;">Add Contact to Business</button>
+                <button id="createBusinessBtn" class="modal-button modal-button-primary"
+                    onclick="createBusinessFromCard()" style="display: none; background: #10b981;">Create New
+                    Business</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Business Lookup Suggestion Modal -->
+    <div id="businessLookupModal" class="business-lookup-modal">
+        <div class="business-lookup-content">
+            <div class="business-lookup-header">🔍 Found Matching Businesses</div>
+            <div class="business-lookup-body">
+                <div class="lookup-message">
+                    I found some businesses that match "<span id="lookupSearchTerm"></span>". Would you like to use one
+                    of these existing businesses, or create a new one?
+                </div>
+                <div id="businessMatches"></div>
+                <div class="lookup-actions">
+                    <button class="lookup-button lookup-button-secondary" onclick="continueWithNewBusiness()">Create New
+                        Business</button>
+                    <button class="lookup-button lookup-button-primary" onclick="closeLookupModal()">Cancel</button>
+                </div>
             </div>
         </div>
     </div>
@@ -691,8 +1252,24 @@
 
             <form id="businessForm">
                 <div class="form-field">
+                    <label class="form-label" for="searchZipCode">Your Location Zip Code (for nearby search)</label>
+                    <input type="text" id="searchZipCode" class="form-input" placeholder="e.g., 63301" maxlength="5"
+                        pattern="[0-9]{5}">
+                    <small style="color: #666; font-size: 0.85em;">Optional - helps find nearby businesses. Leave blank
+                        to use GPS location.</small>
+                </div>
+
+                <div class="form-field">
                     <label class="form-label" for="businessName">Business Name *</label>
-                    <input type="text" id="businessName" class="form-input" required>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="businessName" class="form-input" required style="flex: 1;">
+                        <button type="button" id="searchBusinessBtn" class="btn-primary"
+                            style="white-space: nowrap; padding: 8px 16px;">
+                            🔍 Search
+                        </button>
+                    </div>
+                    <small style="color: #666; font-size: 0.85em;">Type a business name and click Search to find matches
+                        in your area</small>
                 </div>
 
                 <div class="form-field">
@@ -746,8 +1323,10 @@
                 <div id="geocodeStatus" class="geocode-status"></div>
 
                 <div class="form-buttons">
-                    <button type="button" class="form-button form-button-secondary" onclick="closeBusinessForm()">Cancel</button>
-                    <button type="button" id="voiceGuideBtn" class="form-button form-button-voice" onclick="startVoiceGuide()">
+                    <button type="button" class="form-button form-button-secondary"
+                        onclick="closeBusinessForm()">Cancel</button>
+                    <button type="button" id="voiceGuideBtn" class="form-button form-button-voice"
+                        onclick="startVoiceGuide()">
                         🎤 Voice Guide
                     </button>
                     <button type="submit" class="form-button form-button-primary">Save Business</button>
@@ -756,8 +1335,72 @@
         </div>
     </div>
 
+    <!-- Add Contact Modal -->
+    <div id="contactModal" class="business-form-modal">
+        <div class="business-form-content">
+            <div class="form-header">Add Contact</div>
+            <div class="form-subtitle">Add a contact manually or use voice guidance</div>
+
+            <div id="contactVoicePromptArea" class="voice-prompt" style="display: none;">
+                <div
+                    style="padding: 15px; background: #dbeafe; border-left: 4px solid #3b82f6; border-radius: 6px; margin-bottom: 15px;">
+                    <div style="font-weight: 600; margin-bottom: 5px;">🎤 Voice Guide Active</div>
+                    <div id="contactVoicePromptText" style="color: #1e40af;"></div>
+                </div>
+            </div>
+
+            <form id="contactForm">
+                <div class="form-field">
+                    <label class="form-label" for="contactName">Contact Name *</label>
+                    <input type="text" id="contactName" class="form-input" required>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="contactTitle">Title/Position</label>
+                    <input type="text" id="contactTitle" class="form-input" placeholder="e.g., Manager, Owner">
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="contactPhone">Phone Number</label>
+                    <input type="tel" id="contactPhone" class="form-input" placeholder="(636) 555-1234">
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="contactEmail">Email Address</label>
+                    <input type="email" id="contactEmail" class="form-input" placeholder="contact@example.com">
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="contactNotes">Notes</label>
+                    <textarea id="contactNotes" class="form-input" rows="3"
+                        placeholder="e.g., Decision maker for bulk orders"></textarea>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-checkbox-label">
+                        <input type="checkbox" id="contactIsPrimary" class="form-checkbox">
+                        <span>Set as Primary Contact</span>
+                    </label>
+                </div>
+
+                <div class="form-buttons">
+                    <button type="button" class="form-button form-button-secondary"
+                        onclick="closeContactModal()">Cancel</button>
+                    <button type="button" id="contactVoiceGuideBtn" class="form-button form-button-voice"
+                        onclick="startContactVoiceGuide()">
+                        🎤 Voice Guide
+                    </button>
+                    <button type="submit" class="form-button form-button-primary">Save Contact</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Add Business Button (Floating Action Button) -->
     <button class="fab-button" onclick="openBusinessForm()" title="Add New Business">+</button>
+
+    <!-- Scan Business Card Button (Floating Action Button) -->
+    <button class="fab-scan-button" onclick="openCardScannerStandalone()" title="Scan Business Card">📷</button>
 
     <!-- Data Management Panel -->
     <div id="dataPanel" class="data-panel">
@@ -767,6 +1410,9 @@
 
     <!-- Leaflet JavaScript -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Tesseract.js for OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
     <script>
         // ============================================
@@ -914,7 +1560,7 @@
                                 weight: 3,
                                 opacity: 0.8
                             },
-                            onEachFeature: function(feature, layer) {
+                            onEachFeature: function (feature, layer) {
                                 // Add popup on click
                                 layer.bindPopup(`
                                     <div style="padding: 5px;">
@@ -924,14 +1570,14 @@
                                 `);
 
                                 // Highlight on hover
-                                layer.on('mouseover', function() {
+                                layer.on('mouseover', function () {
                                     this.setStyle({
                                         fillOpacity: 0.5,
                                         weight: 4
                                     });
                                 });
 
-                                layer.on('mouseout', function() {
+                                layer.on('mouseout', function () {
                                     this.setStyle({
                                         fillOpacity: 0.3,
                                         weight: 3
@@ -963,7 +1609,7 @@
                         radius: 3000,  // 3km radius
                         weight: 3
                     }).addTo(zipBoundariesLayer)
-                      .bindPopup(`
+                        .bindPopup(`
                           <div style="padding: 5px;">
                               <strong>${config.name}</strong><br>
                               Zip Code: <strong>${zipCode}</strong><br>
@@ -978,7 +1624,7 @@
         }
 
         // Load territory config and boundaries after map is ready
-        map.whenReady(async function() {
+        map.whenReady(async function () {
             try {
                 // Load territory configuration first
                 await loadTerritoryConfig();
@@ -1050,6 +1696,44 @@
         }
 
         // Function to create popup content for a business
+        // Helper function to create contacts HTML for business popup
+        function createContactsHTML(business) {
+            const hasContacts = business.contacts && business.contacts.length > 0;
+
+            const contactsHTML = hasContacts ? business.contacts.map(contact => `
+                <div style="margin: 8px 0; padding: 10px; background: #f9fafb; border-radius: 6px; font-size: 13px;">
+                    <div style="font-weight: 600; color: #111827;">
+                        ${contact.name}
+                        ${contact.isPrimary ? '<span style="display: inline-block; background: #3b82f6; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-left: 5px;">PRIMARY</span>' : ''}
+                    </div>
+                    ${contact.title ? `<div style="color: #6b7280; font-size: 12px; margin-top: 2px;">${contact.title}</div>` : ''}
+                    <div style="margin-top: 5px; font-size: 12px; color: #4b5563;">
+                        ${contact.phone ? `<div>📞 ${contact.phone}</div>` : ''}
+                        ${contact.email ? `<div>✉️ ${contact.email}</div>` : ''}
+                        ${contact.notes ? `<div style="margin-top: 3px; font-style: italic; color: #6b7280;">${contact.notes}</div>` : ''}
+                    </div>
+                </div>
+            `).join('') : '<div style="color: #9ca3af; font-style: italic; font-size: 13px; padding: 10px; text-align: center;">No contacts yet. Add one below or scan a business card.</div>';
+
+            return `
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #111827;">
+                            Contacts ${hasContacts ? `(${business.contacts.length})` : ''}
+                        </div>
+                        <button onclick="addContactManually(${business.id})"
+                                style="background: #10b981; color: white; border: none; padding: 4px 12px;
+                                       border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                            ➕ Add Contact
+                        </button>
+                    </div>
+                    <div style="max-height: 200px; overflow-y: auto;">
+                        ${contactsHTML}
+                    </div>
+                </div>
+            `;
+        }
+
         function createBusinessPopup(business) {
             const statusBadgeColor = business.customerStatus === 'existing' ? '#22c55e' : '#3b82f6';
             const statusText = business.customerStatus === 'existing' ? 'Existing Customer' : 'Prospective';
@@ -1063,12 +1747,17 @@
                         <strong>Recent Visits:</strong>
                         <div style="max-height: 200px; overflow-y: auto; margin-top: 8px;">
                             ${business.visits.slice(0, 3).map(visit => `
-                                <div style="margin: 8px 0; padding: 8px; background: #f9fafb; border-radius: 4px; font-size: 12px;">
-                                    <div style="font-weight: 600; color: #374151;">
-                                        ${new Date(visit.date).toLocaleDateString()}
-                                        ${visit.duration ? `<span style="color: #6b7280;">(${visit.duration})</span>` : ''}
+                                <div style="margin: 8px 0; padding: 10px; background: #f9fafb; border-radius: 6px; font-size: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 6px;">
+                                        <div style="font-weight: 600; color: #374151;">
+                                            ${new Date(visit.date).toLocaleDateString()}
+                                        </div>
+                                        ${visit.activityType ? `<span style="background: #3b82f6; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">${visit.activityType}</span>` : ''}
                                     </div>
-                                    <div style="margin-top: 4px; color: #4b5563;">${visit.notes}</div>
+                                    ${visit.metWith ? `<div style="color: #6b7280; font-size: 11px; margin-bottom: 4px;">👤 Met with: ${visit.metWith}</div>` : ''}
+                                    ${visit.duration ? `<div style="color: #6b7280; font-size: 11px; margin-bottom: 6px;">⏱️ ${visit.duration}</div>` : ''}
+                                    <div style="margin-top: 4px; color: #4b5563; line-height: 1.4;">${visit.notes}</div>
+                                    ${visit.opportunityNotes ? `<div style="margin-top: 6px; padding: 6px; background: #fef3c7; border-left: 3px solid #f59e0b; color: #92400e; font-size: 11px; border-radius: 3px;"><strong>💼 Opportunity:</strong> ${visit.opportunityNotes}</div>` : ''}
                                 </div>
                             `).join('')}
                         </div>
@@ -1087,28 +1776,36 @@
                             ${statusText}
                         </span>
                         ${business.priority === 'high' ?
-                            '<span style="background: #fbbf24; color: #92400e; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 5px;">HIGH PRIORITY</span>'
-                            : ''}
+                    '<span style="background: #fbbf24; color: #92400e; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 5px;">HIGH PRIORITY</span>'
+                    : ''}
                     </div>
 
                     <div style="color: #4b5563; font-size: 14px; line-height: 1.6;">
                         <div><strong>Address:</strong> ${business.address}, ${business.city}, MO ${business.zipCode}</div>
                         <div><strong>Type:</strong> ${business.type}</div>
+                        ${business.phone ? `<div><strong>Phone:</strong> ${business.phone}</div>` : ''}
                         <div><strong>Interactions:</strong> ${business.interactionCount} visits</div>
                         <div><strong>Last Visit:</strong> ${lastVisitDate}</div>
                     </div>
+
+                    ${createContactsHTML(business)}
 
                     ${visitsHTML}
 
                     <div style="margin-top: 15px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
                         <button onclick="addVisitNote(${business.id})"
                                 style="background: #3b82f6; color: white; border: none; padding: 8px 16px;
-                                       border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; margin-right: 8px;">
+                                       border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; margin-right: 8px; margin-bottom: 8px;">
                             🎤 Add Visit Note
+                        </button>
+                        <button onclick="openCardScanner(${business.id})"
+                                style="background: #8b5cf6; color: white; border: none; padding: 8px 16px;
+                                       border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; margin-right: 8px; margin-bottom: 8px;">
+                            📷 Scan Business Card
                         </button>
                         <button onclick="toggleCustomerStatus(${business.id})"
                                 style="background: #6b7280; color: white; border: none; padding: 8px 16px;
-                                       border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                                       border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; margin-bottom: 8px;">
                             Toggle Status
                         </button>
                     </div>
@@ -1116,39 +1813,54 @@
             `;
         }
 
-        // Save business data to localStorage
-        function saveBusinessData() {
-            try {
-                localStorage.setItem('territoryMapBusinesses', JSON.stringify({ businesses: businessesData }));
-                console.log('Business data saved to localStorage');
-            } catch (error) {
-                console.error('Could not save to localStorage:', error);
-            }
+        // ============================================
+        // API CLIENT
+        // ============================================
+
+        const API_URL = '/api/businesses';
+
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const options = {
+                method,
+                headers: { 'Content-Type': 'application/json' }
+            };
+            if (body) options.body = JSON.stringify(body);
+            const res = await fetch(endpoint, options);
+            if (!res.ok) throw new Error(`API Error: ${res.status}`);
+            return res.json();
         }
 
-        // Load businesses from localStorage first, then fall back to JSON file
+        // Save business data to localStorage - DEPRECATED / REMOVED
+        function saveBusinessData() {
+            console.log('Client-side save triggered - delegating to API calls in specific functions.');
+        }
+
+        // Update business marker on the map
+        function updateBusinessMarker(business) {
+            // Find and update the marker for this business
+            businessMarkersLayer.eachLayer(function (layer) {
+                if (layer.businessData && layer.businessData.id === business.id) {
+                    // Update the business data
+                    layer.businessData = business;
+
+                    // Update the popup content
+                    layer.setPopupContent(createBusinessPopup(business));
+
+                    // Update the marker icon
+                    layer.setIcon(createCustomMarker(business));
+                }
+            });
+        }
+
+        // Load businesses from API
         async function loadBusinesses() {
             try {
-                // First, try to load from localStorage (for any changes made in the app)
-                const savedData = localStorage.getItem('territoryMapBusinesses');
-                if (savedData) {
-                    const data = JSON.parse(savedData);
-                    businessesData = data.businesses || [];
-                    console.log(`Loaded ${businessesData.length} businesses from localStorage`);
+                const response = await apiCall(API_URL);
+                if (response.businesses) {
+                    businessesData = response.businesses;
+                    console.log(`Loaded ${businessesData.length} businesses from API`);
                 } else {
-                    // Fall back to loading from JSON file
-                    const response = await fetch('./data/businesses.json');
-                    if (!response.ok) {
-                        console.log('No businesses file found yet. You can add businesses later.');
-                        return;
-                    }
-
-                    const data = await response.json();
-                    businessesData = data.businesses || [];
-                    console.log(`Loaded ${businessesData.length} businesses from file`);
-
-                    // Save to localStorage for future edits
-                    saveBusinessData();
+                    businessesData = [];
                 }
 
                 // Clear existing markers
@@ -1170,23 +1882,30 @@
                 });
 
             } catch (error) {
-                console.log('Could not load businesses:', error);
+                console.error('Could not load businesses from API:', error);
+                alert('Error loading data from server. Is the server running?');
             }
         }
 
         // Function to toggle customer status
-        window.toggleCustomerStatus = function(businessId) {
+        window.toggleCustomerStatus = async function (businessId) {
             const business = businessesData.find(b => b.id === businessId);
             if (business) {
-                business.customerStatus = business.customerStatus === 'existing' ? 'prospective' : 'existing';
+                const newStatus = business.customerStatus === 'existing' ? 'prospective' : 'existing';
+                business.customerStatus = newStatus;
 
-                // Save to localStorage
-                saveBusinessData();
+                try {
+                    // Save to API
+                    await apiCall(`${API_URL}/${businessId}`, 'PUT', business);
 
-                // Reload to update markers
-                loadBusinesses();
+                    // Reload to update markers
+                    loadBusinesses();
 
-                alert(`✅ ${business.name} is now marked as ${business.customerStatus}.\n\nChanges are saved in your browser!`);
+                    alert(`✅ ${business.name} is now marked as ${business.customerStatus}.\n\nSaved to database!`);
+                } catch (e) {
+                    console.error('Error updating status:', e);
+                    alert('Error saving status update.');
+                }
             }
         };
 
@@ -1209,14 +1928,14 @@
             let finalTranscript = '';
             let interimTranscript = '';
 
-            recognition.onstart = function() {
+            recognition.onstart = function () {
                 isListening = true;
                 document.getElementById('micButton').classList.add('listening');
                 document.getElementById('voiceStatus').textContent = 'Listening... speak now';
                 document.getElementById('voiceStatus').classList.add('listening');
             };
 
-            recognition.onresult = function(event) {
+            recognition.onresult = function (event) {
                 interimTranscript = '';
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     const transcript = event.results[i][0].transcript;
@@ -1232,7 +1951,7 @@
                 transcriptionDiv.textContent = finalTranscript + interimTranscript;
             };
 
-            recognition.onerror = function(event) {
+            recognition.onerror = function (event) {
                 console.error('Speech recognition error:', event.error);
                 isListening = false;
                 document.getElementById('micButton').classList.remove('listening');
@@ -1240,7 +1959,7 @@
                 document.getElementById('voiceStatus').classList.remove('listening');
             };
 
-            recognition.onend = function() {
+            recognition.onend = function () {
                 isListening = false;
                 document.getElementById('micButton').classList.remove('listening');
                 document.getElementById('voiceStatus').textContent = 'Click microphone to continue or save your note';
@@ -1249,7 +1968,7 @@
         }
 
         // Open voice input modal
-        window.addVisitNote = function(businessId) {
+        window.addVisitNote = function (businessId) {
             const business = businessesData.find(b => b.id === businessId);
             if (!business) return;
 
@@ -1261,7 +1980,28 @@
             currentBusinessId = businessId;
             document.getElementById('modalBusinessName').textContent = `Add Visit Note - ${business.name}`;
             document.getElementById('transcription').textContent = '';
+            document.getElementById('opportunityNotes').value = '';
             document.getElementById('voiceStatus').textContent = 'Click the microphone to start';
+
+            // Populate contacts dropdown
+            const contactSelect = document.getElementById('visitContact');
+            contactSelect.innerHTML = '<option value="">Select contact...</option>';
+
+            if (business.contacts && business.contacts.length > 0) {
+                business.contacts.forEach(contact => {
+                    const option = document.createElement('option');
+                    option.value = contact.name;
+                    option.textContent = contact.name + (contact.title ? ` (${contact.title})` : '');
+                    if (contact.isPrimary) {
+                        option.selected = true;
+                    }
+                    contactSelect.appendChild(option);
+                });
+            }
+
+            // Reset activity type to default
+            document.getElementById('activityType').value = 'Sales Call';
+
             document.getElementById('voiceModal').classList.add('active');
 
             // Close any open popups
@@ -1269,7 +2009,7 @@
         };
 
         // Close voice modal
-        window.closeVoiceModal = function() {
+        window.closeVoiceModal = function () {
             if (isListening && recognition) {
                 recognition.stop();
             }
@@ -1278,7 +2018,7 @@
         };
 
         // Toggle voice recognition
-        document.getElementById('micButton').addEventListener('click', function() {
+        document.getElementById('micButton').addEventListener('click', function () {
             if (!recognition) {
                 alert('Voice recognition is not supported in your browser.\n\nPlease use Chrome, Edge, or Safari.\n\nYou can still type your notes manually.');
                 return;
@@ -1303,8 +2043,11 @@
         });
 
         // Save visit note
-        window.saveVisitNote = function() {
+        window.saveVisitNote = async function () {
             const transcription = document.getElementById('transcription').textContent.trim();
+            const metWith = document.getElementById('visitContact').value;
+            const activityType = document.getElementById('activityType').value;
+            const opportunityNotes = document.getElementById('opportunityNotes').value.trim();
 
             if (!transcription) {
                 alert('Please speak or type a note before saving.');
@@ -1324,11 +2067,14 @@
                 return;
             }
 
-            // Create new visit object
+            // Create new visit object with enhanced fields
             const newVisit = {
                 date: new Date().toISOString().split('T')[0],  // YYYY-MM-DD format
                 notes: transcription,
-                duration: 'Just now'
+                duration: 'Just now',
+                metWith: metWith || 'Not specified',
+                activityType: activityType,
+                opportunityNotes: opportunityNotes || undefined
             };
 
             // Add visit to business
@@ -1343,17 +2089,724 @@
             // Update last visit date
             business.lastVisit = newVisit.date;
 
-            // Save to localStorage
-            saveBusinessData();
+            try {
+                // Save to API
+                await apiCall(`${API_URL}/${currentBusinessId}`, 'PUT', business);
 
-            // Reload businesses to update markers
-            loadBusinesses();
+                // Reload businesses to update markers
+                loadBusinesses();
 
-            // Show success message
-            alert(`✅ Visit note saved successfully!\n\nBusiness: ${business.name}\nInteraction count: ${business.interactionCount}\n\nNote: Changes are saved in your browser. To make them permanent, export your data (feature coming in Phase 6).`);
+                // Show success message
+                const successMessage = `✅ Visit note saved successfully!\n\nBusiness: ${business.name}\nMet with: ${metWith || 'Not specified'}\nActivity: ${activityType}\nInteraction count: ${business.interactionCount}`;
+                alert(successMessage);
+            } catch (e) {
+                console.error('Error saving visit:', e);
+                alert('Error saving visit note.');
+            }
 
             // Close modal
             closeVoiceModal();
+        };
+
+        // ============================================
+        // BUSINESS CARD SCANNER WITH OCR
+        // ============================================
+
+        let currentScanBusinessId = null;
+        let videoStream = null;
+
+        // Open business card scanner modal
+        // Open card scanner for existing business (add contact)
+        // Store current business ID for contact form
+        let currentContactBusinessId = null;
+
+        // Add contact manually (opens modal)
+        window.addContactManually = function (businessId) {
+            // Find the business
+            const business = businessesData.find(b => b.id === businessId);
+            if (!business) {
+                alert('Business not found.');
+                return;
+            }
+
+            // Store business ID for form submission
+            currentContactBusinessId = businessId;
+
+            // Reset and open contact form
+            resetContactForm();
+            document.getElementById('contactModal').classList.add('active');
+        };
+
+        // Reset contact form
+        function resetContactForm() {
+            document.getElementById('contactForm').reset();
+            document.getElementById('contactVoicePromptArea').style.display = 'none';
+            isContactVoiceGuideActive = false;
+            currentContactVoiceStep = 0;
+
+            // Reset button text
+            const voiceBtn = document.getElementById('contactVoiceGuideBtn');
+            if (voiceBtn) {
+                voiceBtn.textContent = '🎤 Voice Guide';
+                voiceBtn.classList.remove('active');
+            }
+        }
+
+        // Close contact modal
+        window.closeContactModal = function () {
+            document.getElementById('contactModal').classList.remove('active');
+            currentContactBusinessId = null;
+            resetContactForm();
+
+            // Stop recognition if active
+            if (recognition && isContactVoiceGuideActive) {
+                recognition.stop();
+            }
+        };
+
+        // Handle contact form submission
+        document.getElementById('contactForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            // Find the business
+            const business = businessesData.find(b => b.id === currentContactBusinessId);
+            if (!business) {
+                alert('Business not found.');
+                return;
+            }
+
+            // Get form values
+            const name = document.getElementById('contactName').value.trim();
+            const title = document.getElementById('contactTitle').value.trim();
+            const phone = document.getElementById('contactPhone').value.trim();
+            const email = document.getElementById('contactEmail').value.trim();
+            const notes = document.getElementById('contactNotes').value.trim();
+            const isPrimary = document.getElementById('contactIsPrimary').checked;
+
+            // Validate required fields
+            if (!name) {
+                alert('Contact name is required.');
+                return;
+            }
+
+            // Initialize contacts array if it doesn't exist
+            if (!business.contacts) {
+                business.contacts = [];
+            }
+
+            // If setting as primary, unset any existing primary
+            if (isPrimary) {
+                business.contacts.forEach(c => c.isPrimary = false);
+            }
+
+            // Generate new contact ID
+            const newContactId = business.contacts.length > 0
+                ? Math.max(...business.contacts.map(c => c.id)) + 1
+                : 1;
+
+            // Create new contact
+            const newContact = {
+                id: newContactId,
+                name: name,
+                title: title,
+                phone: phone,
+                email: email,
+                notes: notes,
+                isPrimary: isPrimary
+            };
+
+            // Add contact to business
+            business.contacts.push(newContact);
+
+            try {
+                // Save to API
+                await apiCall(`${API_URL}/${business.id}`, 'PUT', business);
+
+                updateBusinessMarker(business);
+                closeContactModal();
+                alert(`✅ Contact "${name}" added successfully!`);
+            } catch (e) {
+                console.error('Error saving contact:', e);
+                alert('Error saving contact.');
+            }
+        });
+
+        // Voice guide for contact form
+        let isContactVoiceGuideActive = false;
+        let currentContactVoiceStep = 0;
+        const contactVoiceSteps = [
+            {
+                field: 'contactName',
+                prompt: 'What is the contact\'s full name?',
+                process: (text) => text.trim()
+            },
+            {
+                field: 'contactTitle',
+                prompt: 'What is their title or position? Say "none" to skip.',
+                process: (text) => text.toLowerCase() === 'none' ? '' : text.trim()
+            },
+            {
+                field: 'contactPhone',
+                prompt: 'What is their phone number? Say "none" to skip.',
+                process: (text) => {
+                    if (text.toLowerCase() === 'none') return '';
+                    // Extract numbers from speech
+                    return text.replace(/[^0-9]/g, '');
+                }
+            },
+            {
+                field: 'contactEmail',
+                prompt: 'What is their email address? Say "none" to skip.',
+                process: (text) => {
+                    if (text.toLowerCase() === 'none') return '';
+                    // Basic email formatting from speech
+                    return text.toLowerCase()
+                        .replace(/\s+at\s+/g, '@')
+                        .replace(/\s+dot\s+/g, '.')
+                        .replace(/\s+/g, '')
+                        .trim();
+                }
+            },
+            {
+                field: 'contactNotes',
+                prompt: 'Any notes about this contact? Say "none" to skip.',
+                process: (text) => text.toLowerCase() === 'none' ? '' : text.trim()
+            }
+        ];
+
+        window.startContactVoiceGuide = function () {
+            if (!formRecognition) {
+                alert('Voice recognition is not supported in your browser.\n\nPlease use Chrome, Edge, or Safari.');
+                return;
+            }
+
+            isContactVoiceGuideActive = !isContactVoiceGuideActive;
+            const btn = document.getElementById('contactVoiceGuideBtn');
+
+            if (isContactVoiceGuideActive) {
+                btn.textContent = '⏸️ Pause Guide';
+                btn.classList.add('listening');
+                document.getElementById('contactVoicePromptArea').style.display = 'block';
+                currentContactVoiceStep = 0;
+                processNextContactStep();
+            } else {
+                btn.textContent = '🎤 Voice Guide';
+                btn.classList.remove('listening');
+                document.getElementById('contactVoicePromptArea').style.display = 'none';
+                stopSpeaking();
+            }
+        };
+
+        function processNextContactStep() {
+            if (!isContactVoiceGuideActive || currentContactVoiceStep >= contactVoiceSteps.length) {
+                if (currentContactVoiceStep >= contactVoiceSteps.length) {
+                    speak("All done! Please review the contact information and click Save Contact. You can also check the box to set this as the primary contact.");
+                    document.getElementById('contactVoiceGuideBtn').textContent = '🎤 Voice Guide';
+                    document.getElementById('contactVoiceGuideBtn').classList.remove('listening');
+                    document.getElementById('contactVoicePromptArea').style.display = 'none';
+                    isContactVoiceGuideActive = false;
+                }
+                return;
+            }
+
+            const step = contactVoiceSteps[currentContactVoiceStep];
+
+            // Update prompt display
+            document.getElementById('contactVoicePromptText').textContent = step.prompt;
+
+            speak(step.prompt);
+
+            // Wait for speech to finish, then listen
+            setTimeout(() => {
+                if (!isContactVoiceGuideActive) return;
+
+                formRecognition.onresult = function (event) {
+                    const transcript = event.results[0][0].transcript;
+                    const processedValue = step.process(transcript);
+
+                    document.getElementById(step.field).value = processedValue;
+
+                    currentContactVoiceStep++;
+                    setTimeout(() => processNextContactStep(), 500);
+                };
+
+                formRecognition.onerror = function (event) {
+                    console.error('Recognition error:', event.error);
+                    speak("Sorry, I didn't catch that. Let's try the next field.");
+                    currentContactVoiceStep++;
+                    setTimeout(() => processNextContactStep(), 1000);
+                };
+
+                try {
+                    formRecognition.start();
+                } catch (e) {
+                    console.error('Recognition start error:', e);
+                }
+            }, 2000);
+        }
+
+        window.openCardScanner = function (businessId) {
+            currentScanBusinessId = businessId;
+            resetCardScannerModal();
+            document.getElementById('cardScannerModal').classList.add('active');
+        };
+
+        // Open card scanner standalone (create new business)
+        window.openCardScannerStandalone = function () {
+            currentScanBusinessId = null; // No business ID means create new
+            resetCardScannerModal();
+            document.getElementById('cardScannerModal').classList.add('active');
+        };
+
+        // Helper function to reset the scanner modal
+        function resetCardScannerModal() {
+            // Reset the modal
+            document.getElementById('videoContainer').classList.remove('active');
+            document.getElementById('cardImagePreview').classList.remove('active');
+            document.getElementById('ocrStatus').classList.remove('active');
+            document.getElementById('extractedData').classList.remove('active');
+            document.getElementById('saveContactBtn').style.display = 'none';
+            document.getElementById('createBusinessBtn').style.display = 'none';
+
+            // Clear extracted fields
+            document.getElementById('extractedName').value = '';
+            document.getElementById('extractedTitle').value = '';
+            document.getElementById('extractedCompany').value = '';
+            document.getElementById('extractedPhone').value = '';
+            document.getElementById('extractedEmail').value = '';
+            document.getElementById('extractedAddress').value = '';
+            document.getElementById('extractedNotes').value = '';
+        }
+
+        // Close business card scanner
+        window.closeCardScanner = function () {
+            // Stop video stream if active
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+
+            document.getElementById('cardScannerModal').classList.remove('active');
+            currentScanBusinessId = null;
+        };
+
+        // Start camera for business card capture
+        window.startCamera = async function () {
+            try {
+                const video = document.getElementById('cardVideo');
+                const videoContainer = document.getElementById('videoContainer');
+
+                // Request camera access
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }
+                });
+
+                video.srcObject = videoStream;
+                videoContainer.classList.add('active');
+
+                // Hide image preview if showing
+                document.getElementById('cardImagePreview').classList.remove('active');
+                document.getElementById('ocrStatus').classList.remove('active');
+                document.getElementById('extractedData').classList.remove('active');
+
+            } catch (error) {
+                console.error('Camera access error:', error);
+                alert('Unable to access camera.\n\nPlease ensure camera permissions are enabled or use the "Upload Photo" option instead.');
+            }
+        };
+
+        // Capture photo from video stream
+        window.capturePhoto = function () {
+            const video = document.getElementById('cardVideo');
+            const canvas = document.getElementById('cardCanvas');
+            const imagePreview = document.getElementById('cardImagePreview');
+
+            // Set canvas size to video size
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Draw video frame to canvas
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+
+            // Convert canvas to image
+            const imageData = canvas.toDataURL('image/jpeg');
+            imagePreview.src = imageData;
+            imagePreview.classList.add('active');
+
+            // Hide video
+            document.getElementById('videoContainer').classList.remove('active');
+
+            // Stop video stream
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+
+            // Process the image with OCR
+            processImageWithOCR(imageData);
+        };
+
+        // Handle file upload
+        window.handleFileUpload = function (event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const imageData = e.target.result;
+                const imagePreview = document.getElementById('cardImagePreview');
+
+                imagePreview.src = imageData;
+                imagePreview.classList.add('active');
+
+                // Hide video if showing
+                document.getElementById('videoContainer').classList.remove('active');
+
+                // Process the image with OCR
+                processImageWithOCR(imageData);
+            };
+
+            reader.readAsDataURL(file);
+        };
+
+        // Process image with Tesseract OCR
+        async function processImageWithOCR(imageData) {
+            const statusDiv = document.getElementById('ocrStatus');
+            statusDiv.textContent = '🔍 Processing business card...';
+            statusDiv.className = 'ocr-status active processing';
+
+            try {
+                // Run Tesseract OCR
+                const result = await Tesseract.recognize(
+                    imageData,
+                    'eng',
+                    {
+                        logger: info => {
+                            if (info.status === 'recognizing text') {
+                                const progress = Math.round(info.progress * 100);
+                                statusDiv.textContent = `🔍 Processing... ${progress}%`;
+                            }
+                        }
+                    }
+                );
+
+                // Extract text from OCR result
+                const text = result.data.text;
+                console.log('OCR Result:', text);
+
+                // Parse the text to extract contact information
+                const extractedInfo = parseBusinessCardText(text);
+
+                // Populate the form fields
+                document.getElementById('extractedName').value = extractedInfo.name || '';
+                document.getElementById('extractedTitle').value = extractedInfo.title || '';
+                document.getElementById('extractedCompany').value = extractedInfo.company || '';
+                document.getElementById('extractedPhone').value = extractedInfo.phone || '';
+                document.getElementById('extractedEmail').value = extractedInfo.email || '';
+                document.getElementById('extractedAddress').value = extractedInfo.address || '';
+
+                // Show success message
+                statusDiv.textContent = '✅ Business card processed! Review and edit the information below.';
+                statusDiv.className = 'ocr-status active success';
+
+                // Show extracted data form
+                document.getElementById('extractedData').classList.add('active');
+
+                // Show the appropriate button based on context
+                if (currentScanBusinessId) {
+                    // Adding contact to existing business
+                    document.getElementById('saveContactBtn').style.display = 'block';
+                    document.getElementById('createBusinessBtn').style.display = 'none';
+                } else {
+                    // Creating new business
+                    document.getElementById('saveContactBtn').style.display = 'none';
+                    document.getElementById('createBusinessBtn').style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error('OCR Error:', error);
+                statusDiv.textContent = '❌ Error processing image. Please try again or enter information manually.';
+                statusDiv.className = 'ocr-status active error';
+
+                // Still show the form so user can enter manually
+                document.getElementById('extractedData').classList.add('active');
+
+                // Show the appropriate button based on context
+                if (currentScanBusinessId) {
+                    document.getElementById('saveContactBtn').style.display = 'block';
+                    document.getElementById('createBusinessBtn').style.display = 'none';
+                } else {
+                    document.getElementById('saveContactBtn').style.display = 'none';
+                    document.getElementById('createBusinessBtn').style.display = 'block';
+                }
+            }
+        }
+
+        // Parse business card text to extract contact information
+        function parseBusinessCardText(text) {
+            const info = {
+                name: '',
+                title: '',
+                company: '',
+                phone: '',
+                email: '',
+                address: ''
+            };
+
+            const lines = text.split('\n').filter(line => line.trim());
+
+            // Extract email (look for @ symbol)
+            const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+            const emailMatch = text.match(emailRegex);
+            if (emailMatch) {
+                info.email = emailMatch[0];
+            }
+
+            // Extract phone (various formats)
+            const phoneRegex = /(\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
+            const phoneMatch = text.match(phoneRegex);
+            if (phoneMatch) {
+                info.phone = phoneMatch[0];
+            }
+
+            // Extract address (look for street number patterns and common address keywords)
+            const addressKeywords = ['street', 'st', 'avenue', 'ave', 'road', 'rd', 'drive', 'dr', 'lane', 'ln', 'boulevard', 'blvd', 'suite', 'ste'];
+            const addressLine = lines.find(line => {
+                const lower = line.toLowerCase();
+                return /\d+/.test(line) && addressKeywords.some(keyword => lower.includes(keyword));
+            });
+            if (addressLine) {
+                info.address = addressLine.trim();
+            }
+
+            // Heuristic: First line is often the name
+            if (lines.length > 0) {
+                info.name = lines[0].trim();
+            }
+
+            // Second line is often title or company
+            if (lines.length > 1) {
+                const secondLine = lines[1].trim();
+                // If it contains common title words, it's likely a title
+                const titleWords = ['manager', 'director', 'president', 'ceo', 'cfo', 'coo', 'owner', 'founder', 'vp', 'vice', 'chief', 'head', 'lead'];
+                if (titleWords.some(word => secondLine.toLowerCase().includes(word))) {
+                    info.title = secondLine;
+                    if (lines.length > 2) {
+                        info.company = lines[2].trim();
+                    }
+                } else {
+                    info.company = secondLine;
+                    if (lines.length > 2) {
+                        info.title = lines[2].trim();
+                    }
+                }
+            }
+
+            return info;
+        }
+
+        // Save extracted contact to business
+        window.saveExtractedContact = async function () {
+            if (!currentScanBusinessId) return;
+
+            const business = businessesData.find(b => b.id === currentScanBusinessId);
+            if (!business) return;
+
+            // Get extracted values
+            const contactName = document.getElementById('extractedName').value.trim();
+            const contactTitle = document.getElementById('extractedTitle').value.trim();
+            const contactPhone = document.getElementById('extractedPhone').value.trim();
+            const contactEmail = document.getElementById('extractedEmail').value.trim();
+            const contactNotes = document.getElementById('extractedNotes').value.trim();
+
+            if (!contactName) {
+                alert('Please enter a contact name.');
+                return;
+            }
+
+            // Initialize contacts array if it doesn't exist
+            if (!business.contacts) {
+                business.contacts = [];
+            }
+
+            // Generate new contact ID
+            const newContactId = business.contacts.length > 0
+                ? Math.max(...business.contacts.map(c => c.id)) + 1
+                : 1;
+
+            // Create new contact
+            const newContact = {
+                id: newContactId,
+                name: contactName,
+                title: contactTitle,
+                phone: contactPhone,
+                email: contactEmail,
+                notes: contactNotes,
+                isPrimary: business.contacts.length === 0 // First contact is primary
+            };
+
+            // Add contact to business
+            business.contacts.push(newContact);
+
+            // Update business phone if not set
+            if (!business.phone && contactPhone) {
+                business.phone = contactPhone;
+            }
+
+            try {
+                // Save to API
+                await apiCall(`${API_URL}/${business.id}`, 'PUT', business);
+
+                updateBusinessMarker(business);
+                closeCardScanner();
+                alert(`✅ Contact added successfully!\n\nContact: ${contactName}\nBusiness: ${business.name}`);
+            } catch (e) {
+                console.error('Error saving extracted contact:', e);
+                alert('Error saving contact.');
+            }
+        };
+
+        // Create new business from scanned business card
+        window.createBusinessFromCard = async function () {
+            // Get extracted values
+            const contactName = document.getElementById('extractedName').value.trim();
+            const contactTitle = document.getElementById('extractedTitle').value.trim();
+            const companyName = document.getElementById('extractedCompany').value.trim();
+            const contactPhone = document.getElementById('extractedPhone').value.trim();
+            const contactEmail = document.getElementById('extractedEmail').value.trim();
+            const address = document.getElementById('extractedAddress').value.trim();
+            const contactNotes = document.getElementById('extractedNotes').value.trim();
+
+            if (!companyName) {
+                alert('Please enter a company name.');
+                return;
+            }
+
+            if (!contactName) {
+                alert('Please enter a contact name.');
+                return;
+            }
+
+            // Show geocoding status
+            const statusDiv = document.getElementById('ocrStatus');
+            statusDiv.textContent = '📍 Finding location on map...';
+            statusDiv.className = 'ocr-status active processing';
+
+            try {
+                // Geocode the address to get coordinates
+                let lat = null;
+                let lng = null;
+                let city = '';
+                let zipCode = '';
+
+                if (address) {
+                    // Use Nominatim geocoding service (free, no API key)
+                    const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ', Missouri, USA')}`;
+                    const geocodeResponse = await fetch(geocodeUrl);
+                    const geocodeData = await geocodeResponse.json();
+
+                    if (geocodeData && geocodeData.length > 0) {
+                        lat = parseFloat(geocodeData[0].lat);
+                        lng = parseFloat(geocodeData[0].lon);
+
+                        // Try to extract city and zip from the address
+                        const addressParts = geocodeData[0].display_name.split(',').map(p => p.trim());
+                        city = addressParts[0] || companyName;
+
+                        // Try to find zip code in address
+                        const zipMatch = address.match(/\b\d{5}\b/);
+                        if (zipMatch) {
+                            zipCode = zipMatch[0];
+                        } else if (territoryConfig) {
+                            // Default to first zip code in territory
+                            zipCode = Object.keys(territoryConfig)[0] || '63301';
+                        }
+                    }
+                }
+
+                // If geocoding failed or no address, ask user to place on map or use default
+                if (!lat || !lng) {
+                    // Use center of first territory zip code as default
+                    const firstZip = Object.keys(territoryConfig)[0] || '63301';
+                    lat = 38.78;
+                    lng = -90.55;
+                    city = companyName;
+                    zipCode = firstZip;
+
+                    alert('⚠️ Could not find exact location from address.\n\nBusiness will be placed at territory center.\n\nYou can edit the location later.');
+                }
+
+                // ID is generated by server
+
+
+                // Create the contact object
+                const primaryContact = {
+                    id: 1,
+                    name: contactName,
+                    title: contactTitle,
+                    phone: contactPhone,
+                    email: contactEmail,
+                    notes: contactNotes,
+                    isPrimary: true
+                };
+
+                // Create new business object
+                const newBusiness = {
+                    name: companyName,
+                    address: address || 'Address not specified',
+                    city: city,
+                    zipCode: zipCode,
+                    lat: lat,
+                    lng: lng,
+                    type: 'Other',
+                    customerStatus: 'prospective',
+                    interactionCount: 0,
+                    lastVisit: null,
+                    priority: 'medium',
+                    phone: contactPhone || '',
+                    contacts: [primaryContact],
+                    visits: []
+                };
+
+                // Save to API
+                const createdBusiness = await apiCall(API_URL, 'POST', newBusiness);
+
+                // Add to local array
+                businessesData.push(createdBusiness);
+                const newBusinessId = createdBusiness.id;
+
+                // Reload businesses to show new marker
+                await loadBusinesses();
+
+                // Success message
+                statusDiv.textContent = '✅ Business created successfully!';
+                statusDiv.className = 'ocr-status active success';
+
+                // Zoom to the new business
+                map.setView([lat, lng], 15);
+
+                // Find and open the popup for the new business
+                setTimeout(() => {
+                    businessMarkersLayer.eachLayer(function (layer) {
+                        if (layer.businessData && layer.businessData.id === newBusinessId) {
+                            layer.openPopup();
+                        }
+                    });
+                }, 500);
+
+                // Close scanner modal after a moment
+                setTimeout(() => {
+                    closeCardScanner();
+                    alert(`✅ Business created successfully!\n\nBusiness: ${companyName}\nContact: ${contactName}\n\nThe business has been added to the map!`);
+                }, 1000);
+
+            } catch (error) {
+                console.error('Error creating business:', error);
+                statusDiv.textContent = '❌ Error creating business. Please try again.';
+                statusDiv.className = 'ocr-status active error';
+                alert('Error creating business. Please check the address and try again.');
+            }
         };
 
         // ============================================
@@ -1364,7 +2817,7 @@
         let allMarkers = [];
 
         // Toggle search panel collapse
-        window.toggleSearchPanel = function() {
+        window.toggleSearchPanel = function () {
             const panel = document.getElementById('searchPanel');
             const btn = panel.querySelector('.collapse-btn');
             panel.classList.toggle('collapsed');
@@ -1372,7 +2825,7 @@
         };
 
         // Toggle zip code boundaries visibility
-        window.toggleZipBoundaries = function() {
+        window.toggleZipBoundaries = function () {
             const show = document.getElementById('showZipBoundaries').checked;
             if (show) {
                 map.addLayer(zipBoundariesLayer);
@@ -1382,7 +2835,7 @@
         };
 
         // Toggle business markers visibility
-        window.toggleBusinessMarkers = function() {
+        window.toggleBusinessMarkers = function () {
             const show = document.getElementById('showBusinessMarkers').checked;
             if (show) {
                 map.addLayer(businessMarkersLayer);
@@ -1392,7 +2845,7 @@
         };
 
         // Apply all filters and search
-        window.applyFilters = function() {
+        window.applyFilters = function () {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
 
             // Get filter states
@@ -1469,7 +2922,7 @@
         };
 
         // Clear all filters
-        window.clearAllFilters = function() {
+        window.clearAllFilters = function () {
             // Clear search
             document.getElementById('searchInput').value = '';
 
@@ -1492,7 +2945,7 @@
         };
 
         // Real-time search as user types
-        document.getElementById('searchInput').addEventListener('input', function() {
+        document.getElementById('searchInput').addEventListener('input', function () {
             applyFilters();
         });
 
@@ -1515,7 +2968,7 @@
         }
 
         // Open business form
-        window.openBusinessForm = function() {
+        window.openBusinessForm = function () {
             document.getElementById('businessFormModal').classList.add('active');
             document.getElementById('businessForm').reset();
             document.getElementById('geocodeStatus').textContent = '';
@@ -1524,7 +2977,7 @@
         };
 
         // Close business form
-        window.closeBusinessForm = function() {
+        window.closeBusinessForm = function () {
             document.getElementById('businessFormModal').classList.remove('active');
             voiceGuideActive = false;
             stopSpeaking();
@@ -1544,7 +2997,7 @@
             promptArea.style.display = 'block';
             promptArea.classList.add('speaking');
 
-            utterance.onend = function() {
+            utterance.onend = function () {
                 promptArea.classList.remove('speaking');
             };
         }
@@ -1612,7 +3065,7 @@
         ];
 
         // Start voice-guided entry
-        window.startVoiceGuide = function() {
+        window.startVoiceGuide = function () {
             if (!formRecognition) {
                 alert('Voice recognition is not supported in your browser.\n\nPlease use Chrome, Edge, or Safari.');
                 return;
@@ -1651,11 +3104,22 @@
             setTimeout(() => {
                 if (!voiceGuideActive) return;
 
-                formRecognition.onresult = function(event) {
+                formRecognition.onresult = async function (event) {
                     const transcript = event.results[0][0].transcript;
                     const processedValue = step.process(transcript);
 
                     document.getElementById(step.field).value = processedValue;
+
+                    // Special handling for business name - check for matches
+                    if (step.field === 'businessName') {
+                        // Search both local and external databases
+                        const matches = await searchBusinessByName(processedValue);
+                        if (matches.length > 0) {
+                            // Show lookup modal with matches
+                            showBusinessLookup(processedValue, matches);
+                            return; // Don't proceed to next step yet
+                        }
+                    }
 
                     // Special handling for zip code
                     if (step.field === 'businessZip') {
@@ -1670,7 +3134,7 @@
                     setTimeout(() => processNextStep(), 500);
                 };
 
-                formRecognition.onerror = function(event) {
+                formRecognition.onerror = function (event) {
                     console.error('Recognition error:', event.error);
                     speak("Sorry, I didn't catch that. Let's try the next field.");
                     voiceGuideStep++;
@@ -1731,8 +3195,378 @@
             }
         }
 
+        // ============================================
+        // SMART BUSINESS LOOKUP FEATURE
+        // ============================================
+
+        // Search for businesses - searches both local database AND external business APIs
+        async function searchBusinessByName(searchTerm) {
+            if (!searchTerm || searchTerm.trim().length < 3) {
+                return [];
+            }
+
+            const search = searchTerm.toLowerCase().trim();
+            const allMatches = [];
+
+            // 1. Search local database first
+            businessesData.forEach(business => {
+                const businessName = business.name.toLowerCase();
+
+                if (businessName === search) {
+                    allMatches.push({ business, score: 100, source: 'local' });
+                }
+                else if (businessName.startsWith(search)) {
+                    allMatches.push({ business, score: 90, source: 'local' });
+                }
+                else if (businessName.includes(search)) {
+                    allMatches.push({ business, score: 80, source: 'local' });
+                }
+                else {
+                    const businessWords = businessName.split(/\s+/);
+                    const searchWords = search.split(/\s+/);
+
+                    for (let searchWord of searchWords) {
+                        for (let businessWord of businessWords) {
+                            if (businessWord.startsWith(searchWord) && searchWord.length >= 3) {
+                                allMatches.push({ business, score: 70, source: 'local' });
+                                return;
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 2. Search external APIs (OpenStreetMap for businesses in Missouri)
+            try {
+                const externalResults = await searchExternalBusinesses(searchTerm);
+                externalResults.forEach(business => {
+                    allMatches.push({ business, score: 60, source: 'external' });
+                });
+            } catch (error) {
+                console.error('External search error:', error);
+            }
+
+            // Sort by score (highest first) - local results prioritized
+            allMatches.sort((a, b) => b.score - a.score);
+
+            // Return top 5, mark source
+            return allMatches.slice(0, 5).map(m => ({ ...m.business, source: m.source }));
+        }
+
+        // Get user's current location (geolocation)
+        let userLocation = null;
+
+        function getUserLocation() {
+            return new Promise((resolve) => {
+                if (!navigator.geolocation) {
+                    resolve(null);
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        userLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        console.log('User location acquired:', userLocation);
+                        resolve(userLocation);
+                    },
+                    (error) => {
+                        console.log('Geolocation not available:', error.message);
+                        resolve(null);
+                    },
+                    { timeout: 5000, enableHighAccuracy: false }
+                );
+            });
+        }
+
+        // Get location from zip code (alternative to GPS)
+        async function getLocationFromZipCode(zipCode) {
+            try {
+                console.log('🔍 Geocoding zip code:', zipCode);
+
+                // Geocode the zip code using Nominatim - be more specific with Missouri
+                const url = `https://nominatim.openstreetmap.org/search?` +
+                    `postalcode=${encodeURIComponent(zipCode)}&` +
+                    `state=Missouri&` +
+                    `country=us&` +
+                    `format=json&` +
+                    `limit=1`;
+
+                const response = await fetch(url, {
+                    headers: {
+                        'User-Agent': 'Territory Map Application'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data && data.length > 0) {
+                    userLocation = {
+                        lat: parseFloat(data[0].lat),
+                        lng: parseFloat(data[0].lon)
+                    };
+                    console.log('✅ Location from zip code ' + zipCode + ':', userLocation);
+                    console.log('   Display name:', data[0].display_name);
+                    return userLocation;
+                } else {
+                    console.log('❌ Could not geocode zip code:', zipCode);
+                    return null;
+                }
+            } catch (error) {
+                console.error('❌ Error geocoding zip code:', error);
+                return null;
+            }
+        }
+
+        // Calculate distance between two points (in miles)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 3959; // Earth's radius in miles
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        // Search external business databases (OpenStreetMap Nominatim)
+        async function searchExternalBusinesses(searchTerm) {
+            const businesses = [];
+
+            try {
+                // Try to get user's current location for better results
+                if (!userLocation) {
+                    await getUserLocation();
+                }
+
+                // Build search URL with location parameters
+                // Add Missouri to search query for better results
+                const searchQuery = `${searchTerm}, Missouri`;
+
+                let url = `https://nominatim.openstreetmap.org/search?` +
+                    `q=${encodeURIComponent(searchQuery)}&` +
+                    `format=json&` +
+                    `addressdetails=1&` +
+                    `extratags=1&` +
+                    `limit=50`;
+
+                // If we have user location, prioritize nearby results
+                if (userLocation) {
+                    url += `&lat=${userLocation.lat}&lon=${userLocation.lng}`;
+                    console.log('Searching near user location:', userLocation);
+                } else {
+                    // Otherwise, use Missouri bounding box (tighter around St. Charles area)
+                    const bbox = '-91.0,38.5,-90.0,39.0';
+                    url += `&bounded=1&viewbox=${bbox}`;
+                }
+
+                const response = await fetch(url, {
+                    headers: {
+                        'User-Agent': 'Territory Map Application'
+                    }
+                });
+
+                const data = await response.json();
+
+                console.log(`Found ${data.length} total results from OpenStreetMap for "${searchTerm}"`);
+
+                // Filter for commercial/business results - be more inclusive
+                data.forEach(place => {
+                    // Debug: Log what we're seeing
+                    if (data.length <= 5) {
+                        console.log('Place found:', {
+                            name: place.name,
+                            class: place.class,
+                            type: place.type,
+                            display_name: place.display_name
+                        });
+                    }
+
+                    // Accept businesses, shops, amenities, tourism, and named places
+                    const isBusinessLike =
+                        place.class === 'shop' ||
+                        place.class === 'amenity' ||
+                        place.class === 'office' ||
+                        place.class === 'tourism' ||
+                        place.class === 'leisure' ||
+                        place.class === 'building' ||
+                        (place.name && (
+                            place.type === 'restaurant' ||
+                            place.type === 'cafe' ||
+                            place.type === 'shop' ||
+                            place.type === 'commercial' ||
+                            place.type === 'retail' ||
+                            place.type === 'hotel' ||
+                            place.type === 'fast_food' ||
+                            place.type === 'bar' ||
+                            place.type === 'pub'
+                        ));
+
+                    if (isBusinessLike && place.name) {
+                        const businessLat = parseFloat(place.lat);
+                        const businessLng = parseFloat(place.lon);
+
+                        // Calculate distance if we have user location
+                        let distance = null;
+                        if (userLocation) {
+                            distance = calculateDistance(
+                                userLocation.lat,
+                                userLocation.lng,
+                                businessLat,
+                                businessLng
+                            );
+                        }
+
+                        const business = {
+                            name: place.name,
+                            address: place.address?.road || place.address?.street || place.address?.house_number || '',
+                            city: place.address?.city || place.address?.town || place.address?.village || '',
+                            zipCode: place.address?.postcode || '',
+                            lat: businessLat,
+                            lng: businessLng,
+                            type: capitalizeType(place.type) || capitalizeType(place.class) || 'Other',
+                            phone: place.extratags?.phone || '',
+                            customerStatus: 'prospective',
+                            priority: 'medium',
+                            interactionCount: 0,
+                            contacts: [],
+                            visits: [],
+                            isExternal: true,
+                            distance: distance // Add distance in miles
+                        };
+
+                        // Only add if we have name and coordinates
+                        if (business.name && business.lat && business.lng) {
+                            businesses.push(business);
+                        }
+                    }
+                });
+
+                console.log(`Filtered to ${businesses.length} business results`);
+
+                // Sort by distance if we have user location
+                if (userLocation) {
+                    businesses.sort((a, b) => (a.distance || 999) - (b.distance || 999));
+                }
+
+            } catch (error) {
+                console.error('Error searching external businesses:', error);
+            }
+
+            return businesses;
+        }
+
+        // Helper to capitalize business type
+        function capitalizeType(type) {
+            if (!type) return 'Other';
+            return type.charAt(0).toUpperCase() + type.slice(1);
+        }
+
+        // Show business lookup modal with matches
+        function showBusinessLookup(searchTerm, matches) {
+            document.getElementById('lookupSearchTerm').textContent = searchTerm;
+
+            const matchesContainer = document.getElementById('businessMatches');
+            matchesContainer.innerHTML = '';
+
+            matches.forEach(business => {
+                const matchDiv = document.createElement('div');
+                matchDiv.className = 'business-match';
+                matchDiv.onclick = () => selectMatchedBusiness(business);
+
+                // Source badge - show if from external database
+                const sourceBadge = business.source === 'external'
+                    ? '<span class="business-match-badge" style="background: #fef3c7; color: #92400e;">📡 Public Database</span>'
+                    : '<span class="business-match-badge" style="background: #d1fae5; color: #065f46;">💾 Your Database</span>';
+
+                const statusBadge = business.customerStatus === 'existing'
+                    ? '<span class="business-match-badge badge-existing">Existing Customer</span>'
+                    : '';
+
+                const priorityBadge = business.priority === 'high'
+                    ? '<span class="business-match-badge badge-high-priority">High Priority</span>'
+                    : '';
+
+                const address = business.address || 'Address not specified';
+                const city = business.city || '';
+                const zip = business.zipCode || '';
+                const interactions = business.source === 'local' ? `${business.interactionCount || 0} interactions` : 'New business';
+
+                // Distance badge if available
+                const distanceBadge = business.distance !== null && business.distance !== undefined
+                    ? `<span class="business-match-badge" style="background: #e0f2fe; color: #075985;">📍 ${business.distance.toFixed(1)} mi away</span>`
+                    : '';
+
+                matchDiv.innerHTML = `
+                    <div class="business-match-name">${business.name}${distanceBadge ? ' ' + distanceBadge : ''}</div>
+                    <div class="business-match-details">
+                        📍 ${address}${city ? ', ' + city : ''}${zip ? ', MO ' + zip : ''}
+                    </div>
+                    <div class="business-match-details">
+                        ${business.type} • ${interactions}
+                    </div>
+                    <div>
+                        ${sourceBadge}
+                        ${statusBadge}
+                        ${priorityBadge}
+                    </div>
+                `;
+
+                matchesContainer.appendChild(matchDiv);
+            });
+
+            document.getElementById('businessLookupModal').classList.add('active');
+            stopSpeaking(); // Stop voice guide while showing modal
+        }
+
+        // User selected a matched business - auto-fill all fields
+        window.selectMatchedBusiness = function (business) {
+            // Auto-fill all form fields with the matched business data
+            document.getElementById('businessName').value = business.name || '';
+            document.getElementById('businessAddress').value = business.address || '';
+            document.getElementById('businessCity').value = business.city || '';
+            document.getElementById('businessZip').value = business.zipCode || '';
+            document.getElementById('businessType').value = business.type || 'Other';
+            document.getElementById('customerStatus').value = business.customerStatus || 'prospective';
+            document.getElementById('businessPriority').value = business.priority || 'medium';
+
+            // Close the lookup modal
+            closeLookupModal();
+
+            // Different confirmation message based on source
+            if (business.source === 'external') {
+                speak(`Found ${business.name} in public database. Address and details have been auto-filled. Please review and save to add to your map.`);
+            } else {
+                speak(`Found ${business.name} in your database. All fields have been filled. You can edit them if needed, or save to update this business.`);
+            }
+
+            // Resume voice guide from the end (all fields filled)
+            voiceGuideStep = voiceSteps.length;
+            voiceGuideActive = false;
+            document.getElementById('voiceGuideBtn').textContent = '🎤 Voice Guide';
+            document.getElementById('voiceGuideBtn').classList.remove('listening');
+        };
+
+        // User chose to continue with new business
+        window.continueWithNewBusiness = function () {
+            closeLookupModal();
+
+            // Continue voice guide to next step
+            speak("Okay, creating a new business. What's the street address?");
+            voiceGuideStep++; // Move to address step
+            setTimeout(() => processNextStep(), 500);
+        };
+
+        // Close lookup modal
+        window.closeLookupModal = function () {
+            document.getElementById('businessLookupModal').classList.remove('active');
+        };
+
         // Handle form submission
-        document.getElementById('businessForm').addEventListener('submit', async function(e) {
+        document.getElementById('businessForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const name = document.getElementById('businessName').value;
@@ -1748,7 +3582,6 @@
 
             // Create new business object
             const newBusiness = {
-                id: Date.now(), // Use timestamp as unique ID
                 name: name,
                 address: address,
                 city: city,
@@ -1763,27 +3596,78 @@
                 visits: []
             };
 
-            // Add to businesses array
-            businessesData.push(newBusiness);
+            try {
+                // Save to API
+                await apiCall(API_URL, 'POST', newBusiness);
 
-            // Save to localStorage
-            saveBusinessData();
+                // Reload markers
+                loadBusinesses();
 
-            // Reload markers
-            loadBusinesses();
+                // Close form
+                closeBusinessForm();
 
-            // Close form
-            closeBusinessForm();
+                // Zoom to new business
+                map.setView([coords.lat, coords.lng], 15);
 
-            // Zoom to new business
-            map.setView([coords.lat, coords.lng], 15);
+                // Show success message
+                alert(`✅ ${name} added successfully!\n\nThe new business has been added to your map and saved.`);
+            } catch (e) {
+                console.error('Error creating business:', e);
+                alert('Error creating business.');
+            }
+        });
 
-            // Show success message
-            alert(`✅ ${name} added successfully!\n\nThe new business has been added to your map and saved.`);
+        // Add manual search button click handler
+        document.getElementById('searchBusinessBtn').addEventListener('click', async function () {
+            const searchTerm = document.getElementById('businessName').value.trim();
+
+            // Validate search term
+            if (searchTerm.length < 3) {
+                alert('Please enter at least 3 characters to search for a business.');
+                return;
+            }
+
+            // Get location preference (zip code or GPS)
+            const zipCode = document.getElementById('searchZipCode').value.trim();
+
+            // If zip code provided, geocode it to get location
+            if (zipCode && zipCode.length === 5) {
+                console.log('Using zip code for location:', zipCode);
+                await getLocationFromZipCode(zipCode);
+            } else {
+                // Otherwise try GPS (better for mobile)
+                console.log('Using GPS for location');
+                await getUserLocation();
+            }
+
+            // Show loading indicator
+            const btn = document.getElementById('searchBusinessBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Searching...';
+            btn.disabled = true;
+
+            try {
+                // Search for matches
+                const matches = await searchBusinessByName(searchTerm);
+
+                // Show suggestions if matches found
+                if (matches.length > 0) {
+                    showBusinessLookup(searchTerm, matches);
+                } else {
+                    alert('No businesses found matching "' + searchTerm + '". You can still add it manually.');
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                alert('Error searching for businesses. Please try again.');
+            } finally {
+                // Restore button
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
         });
 
         // Export data
-        window.exportData = function() {
+        window.exportData = function () {
             const dataStr = JSON.stringify({ businesses: businessesData }, null, 2);
             const dataBlob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(dataBlob);
@@ -1797,16 +3681,16 @@
         };
 
         // Import data
-        window.importData = function() {
+        window.importData = function () {
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.json';
 
-            input.onchange = function(e) {
+            input.onchange = function (e) {
                 const file = e.target.files[0];
                 const reader = new FileReader();
 
-                reader.onload = function(event) {
+                reader.onload = function (event) {
                     try {
                         const data = JSON.parse(event.target.result);
                         if (data.businesses && Array.isArray(data.businesses)) {
@@ -1840,7 +3724,7 @@
 
         // Add edit and delete buttons to business popups
         const originalCreateBusinessPopup = createBusinessPopup;
-        createBusinessPopup = function(business) {
+        createBusinessPopup = function (business) {
             const originalPopup = originalCreateBusinessPopup(business);
 
             // Add edit and delete buttons
@@ -1863,7 +3747,7 @@
         };
 
         // Edit business
-        window.editBusiness = function(businessId) {
+        window.editBusiness = function (businessId) {
             const business = businessesData.find(b => b.id === businessId);
             if (!business) return;
 
@@ -1882,7 +3766,7 @@
 
             // Change form to edit mode
             const form = document.getElementById('businessForm');
-            form.onsubmit = async function(e) {
+            form.onsubmit = async function (e) {
                 e.preventDefault();
 
                 // Update business
@@ -1899,12 +3783,18 @@
                 business.lat = coords.lat;
                 business.lng = coords.lng;
 
-                // Save and reload
-                saveBusinessData();
-                loadBusinesses();
-                closeBusinessForm();
+                try {
+                    // Save to API
+                    await apiCall(`${API_URL}/${businessId}`, 'PUT', business);
 
-                alert(`✅ ${business.name} updated successfully!`);
+                    loadBusinesses();
+                    closeBusinessForm();
+
+                    alert(`✅ ${business.name} updated successfully!`);
+                } catch (e) {
+                    console.error('Error updating business:', e);
+                    alert('Error updating business.');
+                }
 
                 // Reset form handler
                 form.onsubmit = null;
@@ -1912,7 +3802,7 @@
         };
 
         // Delete business
-        window.deleteBusiness = function(businessId) {
+        window.deleteBusiness = async function (businessId) {
             const business = businessesData.find(b => b.id === businessId);
             if (!business) return;
 
@@ -1923,20 +3813,21 @@
             );
 
             if (confirmDelete) {
-                // Remove from array
-                const index = businessesData.findIndex(b => b.id === businessId);
-                if (index > -1) {
-                    businessesData.splice(index, 1);
+                try {
+                    // Delete from API
+                    await apiCall(`${API_URL}/${businessId}`, 'DELETE');
+
+                    // Reload
+                    loadBusinesses();
+
+                    // Close popup
+                    map.closePopup();
+
+                    alert(`✅ Business deleted.`);
+                } catch (e) {
+                    console.error('Error deleting business:', e);
+                    alert('Error deleting business.');
                 }
-
-                // Save and reload
-                saveBusinessData();
-                loadBusinesses();
-
-                // Close popup
-                map.closePopup();
-
-                alert(`✅ Business deleted.`);
             }
         };
 
@@ -1985,4 +3876,5 @@
          */
     </script>
 </body>
+
 </html>

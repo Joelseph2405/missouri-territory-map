@@ -13,16 +13,33 @@
       "interactionCount": 8,
       "lastVisit": "2025-12-15",
       "priority": "high",
+      "phone": "(636) 555-0100",
+      "contacts": [
+        {
+          "id": 1,
+          "name": "John Smith",
+          "title": "Purchasing Manager",
+          "phone": "(636) 555-0101",
+          "email": "jsmith@examplebusiness.com",
+          "notes": "Decision maker for bulk orders",
+          "isPrimary": true
+        }
+      ],
       "visits": [
         {
           "date": "2025-12-15",
           "notes": "Discussed Q1 2026 pricing strategy. Customer interested in bulk ordering for the new year. Follow up in 2 weeks.",
-          "duration": "45 min"
+          "duration": "45 min",
+          "metWith": "John Smith",
+          "activityType": "Sales Call",
+          "opportunityNotes": "Potential Q1 bulk order - 500 units. Follow up in 2 weeks."
         },
         {
           "date": "2025-11-20",
           "notes": "Delivered product samples. Positive feedback from their team. They want to schedule a demo.",
-          "duration": "30 min"
+          "duration": "30 min",
+          "metWith": "John Smith",
+          "activityType": "Product Demo"
         }
       ]
     },
@@ -39,11 +56,26 @@
       "interactionCount": 2,
       "lastVisit": "2025-12-01",
       "priority": "medium",
+      "phone": "(636) 555-0200",
+      "contacts": [
+        {
+          "id": 1,
+          "name": "Sarah Johnson",
+          "title": "Operations Director",
+          "phone": "(636) 555-0201",
+          "email": "sjohnson@abcmfg.com",
+          "notes": "Key decision maker",
+          "isPrimary": true
+        }
+      ],
       "visits": [
         {
           "date": "2025-12-01",
           "notes": "Initial meeting. Discussed their current supplier situation. They're open to proposals. Send quote by end of week.",
-          "duration": "60 min"
+          "duration": "60 min",
+          "metWith": "Sarah Johnson",
+          "activityType": "Discovery Call",
+          "opportunityNotes": "Potential new account - send quote by end of week."
         }
       ]
     },
@@ -60,11 +92,26 @@
       "interactionCount": 4,
       "lastVisit": "2025-12-10",
       "priority": "medium",
+      "phone": "(636) 555-0300",
+      "contacts": [
+        {
+          "id": 1,
+          "name": "Mike O'Brien",
+          "title": "Owner",
+          "phone": "(636) 555-0301",
+          "email": "mike@ofalloncoffee.com",
+          "notes": "Owner and primary contact",
+          "isPrimary": true
+        }
+      ],
       "visits": [
         {
           "date": "2025-12-10",
           "notes": "Regular monthly check-in. Everything running smoothly. They're interested in our new seasonal products.",
-          "duration": "20 min"
+          "duration": "20 min",
+          "metWith": "Mike O'Brien",
+          "activityType": "Account Review",
+          "opportunityNotes": "Interest in seasonal products - send catalog."
         }
       ]
     }

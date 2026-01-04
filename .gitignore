@@ -1,6 +1,17 @@
 # Large data files (too big for GitHub)
 data/mo-zipcodes.geojson
 
+# Database
+*.db
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
 # System files
 .DS_Store
 ._.DS_Store

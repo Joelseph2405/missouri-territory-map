@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: territory-map
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    disk:
+      name: data
+      mountPath: /var/lib/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+
+databases: []

@@ -5,7 +5,20 @@
       "Bash(python3:*)",
       "Bash(git --version:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: Missouri Territory Map with Voice-Guided CRM\n\nComplete interactive territory map application featuring:\n- 4 Missouri zip codes with colored boundaries \\(63301, 63376, 63368, 63385\\)\n- Business location markers with visual CRM indicators\n- Voice-guided data entry with text-to-speech prompts\n- Voice input for visit documentation\n- Search and filter functionality\n- Export/import data capabilities\n- Mobile responsive design\n\nAll phases complete \\(1-6\\) and production ready.\n\n🤖 Generated with Claude Code \\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git config:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(gh repo view:*)",
+      "Bash(https://api.github.com/repos/Joelseph2405/missouri-territory-map/pages )",
+      "Bash(https://api.github.com/repos/Joelseph2405/missouri-territory-map/pages)",
+      "Bash(git lfs:*)",
+      "Bash(brew install:*)",
+      "Bash(git commit:*)",
+      "Bash(cat:*)"
     ]
   }
 }
