@@ -2624,7 +2624,11 @@
         function resetCardScannerModal() {
             // Reset the modal
             document.getElementById('videoContainer').classList.remove('active');
-            document.getElementById('cardImagePreview').classList.remove('active');
+
+            // Fix: Replaced obsolete 'cardImagePreview' with new elements
+            document.getElementById('cardImageFront').style.display = 'none';
+            document.getElementById('cardImageBack').style.display = 'none';
+
             document.getElementById('ocrStatus').classList.remove('active');
             document.getElementById('extractedData').classList.remove('active');
             document.getElementById('saveContactBtn').style.display = 'none';
@@ -2638,6 +2642,9 @@
             document.getElementById('extractedEmail').value = '';
             document.getElementById('extractedAddress').value = '';
             document.getElementById('extractedNotes').value = '';
+
+            // Auto-start camera for better UX
+            startCamera();
         }
 
         // Close business card scanner
