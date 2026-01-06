@@ -228,13 +228,74 @@
             max-height: 300px;
             overflow-y: auto;
             padding: 15px;
-            border: 2px solid #e5e7eb;
+            border: 2px solid #1e293b;
             border-radius: 8px;
             margin: 20px 0;
             font-size: 14px;
             line-height: 1.6;
-            color: #374151;
-            background: #f9fafb;
+            color: #e2e8f0;
+            background: #0f172a;
+        }
+
+        /* Permission Help Modal */
+        .permission-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 20000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .permission-modal.active {
+            display: flex;
+        }
+
+        .permission-content {
+            background: #1e293b;
+            border: 1px solid #38bdf8;
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .permission-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .permission-steps {
+            text-align: left;
+            margin: 20px 0;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #cbd5e1;
+        }
+
+        .permission-steps li {
+            margin-bottom: 10px;
+        }
+
+        .permission-btn {
+            background: #38bdf8;
+            color: #0f172a;
+            font-weight: bold;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
         }
 
         .transcription-area:empty:before {
@@ -1729,6 +1790,26 @@
         </button>
     </div>
 
+    <!-- Permission Help Modal -->
+    <div id="permissionHelpModal" class="permission-modal">
+        <div class="permission-content">
+            <span class="permission-icon">📷</span>
+            <h3 style="margin-bottom: 10px; font-size: 20px;">Camera Access Needed</h3>
+            <p>To scan business cards, we need access to your camera.</p>
+            <ol class="permission-steps">
+                <li>Tap the <strong>AA</strong> or Lock icon in your address bar.</li>
+                <li>Tap <strong>Website Settings</strong> or Permissions.</li>
+                <li>Set <strong>Camera</strong> to "Allow".</li>
+                <li>Refresh the page.</li>
+            </ol>
+            <button class="permission-btn" onclick="location.reload()">Refresh Page</button>
+            <button class="permission-btn"
+                onclick="document.getElementById('permissionHelpModal').classList.remove('active')"
+                style="background: transparent; color: #94a3b8; margin-top: 10px; border: 1px solid #334155;">Close
+                Help</button>
+        </div>
+    </div>
+
     <!-- Leaflet JavaScript -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -2845,7 +2926,8 @@
                 document.getElementById('videoContainer').classList.add('active');
             } catch (err) {
                 console.error("Camera error:", err);
-                alert("Could not access camera. Please allow camera permissions.");
+                // alert("Could not access camera. Please allow camera permissions.");
+                document.getElementById('permissionHelpModal').classList.add('active');
             }
         };
 
@@ -3232,25 +3314,75 @@
             btn.textContent = panel.classList.contains('collapsed') ? '+' : '−';
         };
 
-        // Mobile specific toggles
+        // Centralized Menu Management
+        window.closeAllMobileMenus = function () {
+            // Panel IDs
+            const panels = ['searchPanel', 'legendPanel', 'cardScannerModal', 'businessFormModal', 'voiceModal'];
+            panels.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.remove('active');
+                    el.classList.remove('mobile-active');
+                }
+            });
+
+            // Allow video to be stopped if closing scanner (safety check)
+            if (window.videoStream) {
+                try {
+                    window.videoStream.getTracks().forEach(track => track.stop());
+                } catch (e) { console.log(e); }
+                window.videoStream = null;
+                document.getElementById('videoContainer').classList.remove('active');
+            }
+        };
+
+        // Mobile specific toggles with Exclusion Logic
         window.toggleSearchMobile = function () {
             const panel = document.getElementById('searchPanel');
-            const legend = document.getElementById('legendPanel');
+            const wasActive = panel.classList.contains('mobile-active');
 
-            // Close legend if open
-            if (legend.classList.contains('mobile-active')) legend.classList.remove('mobile-active');
+            closeAllMobileMenus(); // Close everything else (and this one)
 
-            panel.classList.toggle('mobile-active');
+            if (!wasActive) {
+                panel.classList.add('mobile-active');
+            }
         };
 
         window.toggleLegendMobile = function () {
-            const panel = document.getElementById('searchPanel');
-            const legend = document.getElementById('legendPanel');
+            const panel = document.getElementById('legendPanel');
+            const wasActive = panel.classList.contains('mobile-active');
 
-            // Close search if open
-            if (panel.classList.contains('mobile-active')) panel.classList.remove('mobile-active');
+            closeAllMobileMenus();
 
-            legend.classList.toggle('mobile-active');
+            if (!wasActive) {
+                panel.classList.add('mobile-active');
+            }
+        };
+
+        // Override Open Form to close others
+        // We capture original reference if needed, or just recall logic. 
+        // Original logic was simple UI show. We can just wrap it or re-implement UI part.
+        // Actually, easiest is to just Hook into the nav button onclicks?
+        // No, the Nav Button calls `openBusinessForm()`.
+        // I will Override `openBusinessForm` if it's GLOBAL.
+        const _originalOpenForm = window.openBusinessForm;
+        window.openBusinessForm = function (lat, lng) {
+            closeAllMobileMenus();
+            if (_originalOpenForm) _originalOpenForm(lat, lng);
+            else {
+                // Fallback if not defined yet (unlikely)
+                document.getElementById('businessFormModal').classList.add('active');
+                document.getElementById('businessFormTitle').textContent = 'Add New Business';
+                document.getElementById('businessForm').reset();
+                document.getElementById('businessId').value = '';
+            }
+        };
+
+        // Override Open Scanner
+        const _originalOpenScanner = window.openCardScannerStandalone;
+        window.openCardScannerStandalone = function () {
+            closeAllMobileMenus();
+            if (_originalOpenScanner) _originalOpenScanner();
         };
 
         // Auto-collapse logic removed in favor of Bottom Nav system
