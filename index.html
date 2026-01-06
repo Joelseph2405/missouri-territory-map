@@ -1254,13 +1254,15 @@
             /* Full Screen Search Panel */
             .search-panel {
                 position: fixed;
-                top: 0;
+                top: 60px;
+                /* Below Header */
                 left: 0;
                 width: 100%;
                 max-width: none;
-                height: calc(100% - 65px);
-                /* Leave room for nav */
+                height: calc(100% - 135px);
+                /* Total - Header - Nav */
                 max-height: none;
+                border: none;
                 border-radius: 0;
                 transform: translateY(110%);
                 transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1268,15 +1270,29 @@
                 flex-direction: column;
                 z-index: 10000;
                 box-shadow: none;
+                background: #f8fafc;
             }
 
+            /* Active State */
             .search-panel.mobile-active {
                 transform: translateY(0);
                 display: flex;
-                /* Ensure it is visible */
             }
 
-            /* Hide the desktop collapse button on mobile, show generic close */
+            /* Dark Theme Header for Search Panel */
+            .search-panel-header {
+                background: #0a0a0a !important;
+                color: white !important;
+                border-bottom: 1px solid #333;
+                padding: 15px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                min-height: 55px;
+                /* Consistent height */
+            }
+
+            /* Hide the desktop collapse button on mobile */
             .search-panel .collapse-btn {
                 display: none;
             }
@@ -1288,13 +1304,14 @@
             /* Full Screen Legend */
             .legend {
                 position: fixed;
-                top: 0;
+                top: 60px;
                 left: 0;
                 width: 100%;
                 max-width: none;
-                height: calc(100% - 65px);
+                height: calc(100% - 135px);
                 max-height: none;
                 background: white;
+                border: none;
                 border-radius: 0;
                 transform: translateY(110%);
                 transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1302,6 +1319,7 @@
                 padding: 0;
                 display: flex;
                 flex-direction: column;
+                box-shadow: none;
             }
 
             .legend.mobile-active {
@@ -1314,19 +1332,27 @@
                 flex: 1;
             }
 
+            /* Dark Theme Header for Legend */
             .legend-header-mobile {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
                 padding: 15px;
-                border-bottom: 1px solid #e5e7eb;
-                background: #f9fafb;
+                border-bottom: 1px solid #333;
+                background: #0a0a0a;
+                color: white;
+                min-height: 55px;
             }
 
             .legend-header-title {
                 font-weight: 600;
                 font-size: 16px;
-                color: #111827;
+                color: #e2e8f0;
+            }
+
+            /* Adjust Leaflet Controls */
+            .leaflet-top {
+                top: 70px;
             }
         }
     </style>
