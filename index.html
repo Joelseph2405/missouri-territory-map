@@ -9,6 +9,11 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
+    <!-- Google Fonts: Rajdhani (Tactical/Hardware) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+
     <style>
         /* Reset and base styles */
         * {
@@ -48,31 +53,35 @@
             color: #333;
         }
 
-        /* Mobile Header - Modern "Synapse K" Banner */
+        /* Mobile Header - BMG Black Box (Black Ops / Stealth) */
         .mobile-header {
             display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
-            height: 55px;
-            background: #0f172a;
-            /* Slate 900 (Black-ish) */
-            color: #38bdf8;
-            /* Sky 400 (Light Blue) */
-            border-bottom: 1px solid #1e293b;
+            height: 60px;
+            background: #050505;
+            /* Pure Stealth Black */
+            border-bottom: 1px solid #333;
+            /* Subtle edge */
             z-index: 10002;
             align-items: center;
             justify-content: center;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 21px;
-            font-weight: 800;
-            letter-spacing: 3px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            /* Wide spacing for 'Ops' feel */
             text-transform: uppercase;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-            text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+            color: #f8fafc;
+            /* Stark White */
+            /* Subtle inner glow */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.9);
             touch-action: none;
         }
+
+        /* Loading indicator */
 
 
         @media (max-width: 768px) {
@@ -1157,24 +1166,24 @@
             background: #4b5563;
         }
 
-        /* MOBILE NAVIGATION SYSTEM - Dark Theme */
+        /* MOBILE NAVIGATION SYSTEM - Tactical Hardware Theme */
         .mobile-nav {
             display: none;
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 70px;
-            background: #0f172a;
-            /* Slate 900 */
-            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.4);
+            height: 75px;
+            background: #0a0a0a;
+            /* Deep Black */
+            border-top: 2px solid #334155;
+            /* Hard Edge */
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.7);
             z-index: 10001;
             justify-content: space-around;
             align-items: center;
             padding-bottom: 15px;
-            /* iOS Home Bar adjustment */
             touch-action: none;
-            border-top: 1px solid #1e293b;
         }
 
         .nav-item {
@@ -1326,7 +1335,7 @@
 <body>
     <!-- Mobile Header -->
     <div class="mobile-header">
-        SYNAPSE K
+        BMG BLACK BOX
     </div>
 
     <!-- Map Title (Desktop Only) -->
