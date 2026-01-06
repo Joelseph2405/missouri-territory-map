@@ -21,6 +21,8 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             height: 100vh;
             overflow: hidden;
+            touch-action: pan-x pan-y;
+            /* Disable pinch-zoom globally */
         }
 
         /* Map container - full screen */
@@ -1067,6 +1069,8 @@
             justify-content: space-around;
             align-items: center;
             padding-bottom: 5px;
+            touch-action: none;
+            /* Prevent gestures on nav bar */
             /* Safe area */
             border-top: 1px solid #e5e7eb;
         }
@@ -4201,6 +4205,25 @@
                 }
             }
         };
+
+        // FORCE DISABLE ZOOMING ON MOBILE (iOS Specific Fixes)
+        document.addEventListener('gesturestart', function (e) {
+            e.preventDefault();
+        });
+
+        document.addEventListener('touchmove', function (event) {
+            if (event.scale !== 1) { event.preventDefault(); }
+        }, { passive: false });
+
+        // Prevent double-tap zoom
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
 
         // ============================================
         // HELPFUL INFORMATION
