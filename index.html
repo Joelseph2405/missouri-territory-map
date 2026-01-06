@@ -1316,6 +1316,41 @@
             transform: scale(0.95);
         }
 
+        .fab-scan-button:active {
+            transform: scale(0.95);
+        }
+
+        /* Data FAB (Desktop) */
+        .fab-data-button {
+            position: fixed;
+            bottom: 160px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: #2563eb;
+            /* Blue */
+            color: white;
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .fab-data-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .fab-data-button:active {
+            transform: scale(0.95);
+        }
+
         .nav-item.active {
             color: #38bdf8;
             /* Sky 400 (Light Blue) */
@@ -1358,7 +1393,8 @@
 
             /* Hide Floating Buttons (replaced by Nav) */
             .fab-button,
-            .fab-scan-button {
+            .fab-scan-button,
+            .fab-data-button {
                 display: none !important;
             }
 
@@ -2081,11 +2117,8 @@
     <!-- Scan Business Card Button (Floating Action Button) -->
     <button class="fab-scan-button" onclick="openCardScannerStandalone()" title="Scan Business Card">📷</button>
 
-    <!-- Data Management Panel -->
-    <div id="dataPanel" class="data-panel">
-        <button class="data-button" onclick="exportData()">📥 Export All Data</button>
-        <button class="data-button" onclick="importData()">📤 Import Data</button>
-    </div>
+    <!-- Data Management Button (Desktop Floating Action Button) -->
+    <button class="fab-data-button" onclick="toggleDataPanel()" title="Import Data">📊</button>
 
     <!-- Mobile Bottom Navigation Bar -->
     <div class="mobile-nav">
