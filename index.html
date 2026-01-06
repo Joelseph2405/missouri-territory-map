@@ -1636,8 +1636,28 @@
     <!-- DESKTOP SIDEBAR STYLES -->
     <style>
         .desktop-sidebar {
-            display: none;
-            /* Hidden on Mobile */
+            display: flex;
+            flex-direction: column;
+            width: 250px;
+            height: 100vh;
+            background: #0a0a0a;
+            /* Dark Theme */
+            border-right: 1px solid #333;
+            z-index: 20000;
+            /* Highest priority */
+            color: #f8fafc;
+            flex-shrink: 0;
+            position: fixed;
+            /* Ensure it stays put */
+            left: 0;
+            top: 0;
+        }
+
+        /* Mobile Hide Override */
+        @media (max-width: 768px) {
+            .desktop-sidebar {
+                display: none !important;
+            }
         }
 
         @media (min-width: 769px) {
@@ -1649,20 +1669,7 @@
                 /* Prevent body scroll, map handles it */
             }
 
-            /* Sidebar Container */
-            .desktop-sidebar {
-                display: flex;
-                flex-direction: column;
-                width: 250px;
-                height: 100vh;
-                background: #0a0a0a;
-                /* Dark Theme */
-                border-right: 1px solid #333;
-                z-index: 20000;
-                /* Highest priority */
-                color: #f8fafc;
-                flex-shrink: 0;
-            }
+            /* Sidebar Container (Already defined above) */
 
             /* Map Adjustment */
             #map {
