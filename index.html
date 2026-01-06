@@ -1355,13 +1355,14 @@
                 top: 70px;
             }
 
-            /* --- FULL SCREEN MODALS (ADD & SCAN) --- */
+            /* --- FULL SCREEN MODALS (ADD & SCAN & DETAILS) --- */
 
             /* Reset Modal Container */
             .business-form-modal,
             .card-scanner-modal,
             .business-lookup-modal,
-            .voice-modal {
+            .voice-modal,
+            .business-details-panel {
                 top: 60px !important;
                 height: calc(100% - 135px) !important;
                 align-items: flex-start !important;
@@ -1369,11 +1370,27 @@
                 padding: 0 !important;
             }
 
+            /* Business Details Panel Specifics */
+            .business-details-panel {
+                position: fixed;
+                left: 0;
+                width: 100%;
+                z-index: 10006;
+                /* Higher than others */
+                display: none;
+                flex-direction: column;
+            }
+
+            .business-details-panel.active {
+                display: flex;
+            }
+
             /* Reset Modal Content Box */
             .business-form-content,
             .card-scanner-content,
             .business-lookup-content,
-            .voice-modal-content {
+            .voice-modal-content,
+            .business-details-content {
                 width: 100% !important;
                 height: 100% !important;
                 max-width: none !important;
@@ -1390,7 +1407,8 @@
             .form-header,
             .scanner-header,
             .business-lookup-header,
-            .voice-modal-header {
+            .voice-modal-header,
+            .business-details-header {
                 position: sticky;
                 top: 0;
                 width: 100%;
@@ -1403,6 +1421,9 @@
                 font-size: 18px;
                 flex-shrink: 0;
                 border-bottom: 1px solid #333;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
             }
 
             /* Content Padding Adjustments */
@@ -1444,6 +1465,18 @@
             .card-scanner-content {
                 overflow-y: auto;
                 /* Note: sticky header works inside this */
+            }
+
+            /* Business Details Content Scrolling */
+            .business-details-content {
+                overflow-y: auto;
+                padding: 15px !important;
+            }
+
+            /* Improve Popup Style inside Panel */
+            .business-details-content .leaflet-popup-content {
+                width: 100% !important;
+                margin: 0 !important;
             }
         }
     </style>
@@ -1709,6 +1742,17 @@
         </div>
     </div>
 
+    <!-- Mobile Business Details Panel -->
+    <div id="businessDetailsPanel" class="business-details-panel">
+        <div class="business-details-header">
+            <span id="businessDetailsTitle">Business Name</span>
+            <button class="close-mobile-btn" onclick="closeBusinessDetailsPanel()">×</button>
+        </div>
+        <div id="businessDetailsContent" class="business-details-content">
+            <!-- Content will be injected here -->
+        </div>
+    </div>
+
     <!-- Business Lookup Suggestion Modal -->
     <div id="businessLookupModal" class="business-lookup-modal">
         <div class="business-lookup-content">
@@ -1951,10 +1995,9 @@
         document.getElementById('loading').classList.add('active');
         document.getElementById('loading').textContent = 'Loading map...';
 
-        // Initialize the map
-        // Center on St. Charles County, Missouri (average of the 4 zip codes)
-        // Coordinates: approximately 38.78°N, 90.55°W
-        const map = L.map('map').setView([38.78, -90.55], 11);
+        // Initialize the map centered on Missouri
+        // Disable Zoom Control for Pinch-Only Interaction
+        const map = L.map('map', { zoomControl: false }).setView([38.78, -90.55], 11);
 
         // Add OpenStreetMap tile layer (free, no API key needed)
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -2402,10 +2445,35 @@
                         icon: createCustomMarker(business)
                     }).addTo(businessMarkersLayer);
 
-                    marker.bindPopup(createBusinessPopup(business), {
-                        maxWidth: 400,
-                        className: 'business-popup'
+                    // --- Click Handler for Mobile vs Desktop ---
+                    marker.on('click', function (e) {
+                        // Check if mobile (width <= 768px)
+                        if (window.innerWidth <= 768) {
+                            // Close standard popup if it opens automatically (just in case)
+                            marker.closePopup();
+                            map.closePopup();
+
+                            // Open Mobile Panel
+                            openBusinessDetailsPanel(business);
+                        } else {
+                            // Desktop: Use Standard Popup
+                            // Bind it on demand if not already bound
+                            if (!marker.getPopup()) {
+                                marker.bindPopup(createBusinessPopup(business), {
+                                    maxWidth: 400,
+                                    className: 'business-popup'
+                                }).openPopup();
+                            }
+                        }
                     });
+
+                    // Desktop Pre-bind (Optional, keeps existing behavior for desktop)
+                    if (window.innerWidth > 768) {
+                        marker.bindPopup(createBusinessPopup(business), {
+                            maxWidth: 400,
+                            className: 'business-popup'
+                        });
+                    }
 
                     // Store business data with marker
                     marker.businessData = business;
@@ -3442,8 +3510,8 @@
 
         // Centralized Menu Management
         window.closeAllMobileMenus = function () {
-            // Panel IDs
-            const panels = ['searchPanel', 'legendPanel', 'cardScannerModal', 'businessFormModal', 'voiceModal'];
+            // Panel IDs (Adding businessDetailsPanel)
+            const panels = ['searchPanel', 'legendPanel', 'cardScannerModal', 'businessFormModal', 'voiceModal', 'businessDetailsPanel'];
             panels.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
@@ -3454,13 +3522,41 @@
 
             // Allow video to be stopped if closing scanner (safety check)
             if (window.videoStream) {
-                try {
-                    window.videoStream.getTracks().forEach(track => track.stop());
-                } catch (e) { console.log(e); }
+                const tracks = window.videoStream.getTracks();
+                tracks.forEach(track => track.stop());
                 window.videoStream = null;
-                document.getElementById('videoContainer').classList.remove('active');
             }
         };
+
+        // Mobile Business Details Panel Logic
+        window.openBusinessDetailsPanel = function (business) {
+            // Close other menus (including scanner, search etc)
+            closeAllMobileMenus();
+
+            const panel = document.getElementById('businessDetailsPanel');
+            const title = document.getElementById('businessDetailsTitle');
+            const content = document.getElementById('businessDetailsContent');
+
+            // Set Title
+            title.textContent = business.name || 'Business Details';
+
+            // Set Content
+            // We re-use createBusinessPopup() which returns HTML string
+            // This ensures the content matches the desktop popup exactly
+            content.innerHTML = createBusinessPopup(business);
+
+            // Strip any desktop-specific wrapper classes inside if needed, but standard HTML is fine.
+            // We might want to ensure 'popup' specifics don't break layout, handled in CSS overrides.
+
+            // Activate Panel
+            panel.classList.add('active');
+        };
+
+        window.closeBusinessDetailsPanel = function () {
+            document.getElementById('businessDetailsPanel').classList.remove('active');
+        };
+
+
 
         // Mobile specific toggles with Exclusion Logic
         window.toggleSearchMobile = function () {
