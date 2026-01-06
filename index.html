@@ -425,6 +425,59 @@
             transform: translateX(-50%) scale(1.1);
         }
 
+        /* Scanner Visual Guide */
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            /* Let clicks pass through */
+            z-index: 10;
+        }
+
+        .card-guide-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            aspect-ratio: 1.58;
+            /* Standard business card ratio */
+            border: 2px solid rgba(139, 92, 246, 0.8);
+            border-radius: 8px;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+            /* Dim outside */
+        }
+
+        .card-guide-label {
+            position: absolute;
+            top: -30px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-weight: 600;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+        }
+
+        .scan-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .scan-action-btn {
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
         /* Contact List in Business Popup */
         .contacts-section {
             margin-top: 15px;
@@ -1326,11 +1379,37 @@
 
             <div id="videoContainer" class="video-container">
                 <video id="cardVideo" autoplay playsinline></video>
-                <button class="capture-button" onclick="capturePhoto()"></button>
+
+                <!-- Visual Guide Overlay -->
+                <div class="scanner-overlay" id="scannerOverlay">
+                    <div class="card-guide-box">
+                        <div class="card-guide-label" id="scannerInstruction">Position Front of Card</div>
+                    </div>
+                </div>
+
+                <div id="scanControls" class="scan-controls"
+                    style="position: absolute; bottom: 20px; left: 0; width: 100%; z-index: 20;">
+                    <button class="capture-button" id="captureBtn" onclick="capturePhoto()"></button>
+
+                    <div id="postCaptureControls"
+                        style="display: none; gap: 10px; justify-content: center; width: 100%;">
+                        <button class="scan-action-btn" onclick="retakePhoto()"
+                            style="background: #f3f4f6; color: #374151;">Retake</button>
+                        <button class="scan-action-btn" id="scanBackBtn" onclick="prepareBackSide()"
+                            style="background: #3b82f6; color: white;">Scan Back Side</button>
+                        <button class="scan-action-btn" onclick="finishScanning()"
+                            style="background: #10b981; color: white;">Done Processing</button>
+                    </div>
+                </div>
             </div>
 
             <canvas id="cardCanvas" style="display: none;"></canvas>
-            <img id="cardImagePreview" alt="Business card preview">
+            <div id="previewContainer" style="display: flex; gap: 10px; margin-top: 10px; overflow-x: auto;">
+                <img id="cardImageFront" alt="Front preview"
+                    style="height: 60px; border-radius: 4px; border: 1px solid #ddd; display: none;">
+                <img id="cardImageBack" alt="Back preview"
+                    style="height: 60px; border-radius: 4px; border: 1px solid #ddd; display: none;">
+            </div>
 
             <div id="ocrStatus" class="ocr-status"></div>
 
@@ -2573,62 +2652,137 @@
             currentScanBusinessId = null;
         };
 
-        // Start camera for business card capture
-        window.startCamera = async function () {
-            try {
-                const video = document.getElementById('cardVideo');
-                const videoContainer = document.getElementById('videoContainer');
 
-                // Request camera access
-                videoStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment' }
-                });
-
-                video.srcObject = videoStream;
-                videoContainer.classList.add('active');
-
-                // Hide image preview if showing
-                document.getElementById('cardImagePreview').classList.remove('active');
-                document.getElementById('ocrStatus').classList.remove('active');
-                document.getElementById('extractedData').classList.remove('active');
-
-            } catch (error) {
-                console.error('Camera access error:', error);
-                alert('Unable to access camera.\n\nPlease ensure camera permissions are enabled or use the "Upload Photo" option instead.');
-            }
-        };
 
         // Capture photo from video stream
+        // Capture photo logic
+        let scannedImages = {}; // { front: dataUrl, back: dataUrl }
+        let currentScanSide = 'front';
+
+        // Reset scanner state
+        function resetScannerState() {
+            scannedImages = {};
+            currentScanSide = 'front';
+            document.getElementById('cardImageFront').style.display = 'none';
+            document.getElementById('cardImageBack').style.display = 'none';
+            document.getElementById('scannerInstruction').textContent = 'Position Front of Card';
+            // Reset UI
+            document.getElementById('captureBtn').style.display = 'block';
+            document.getElementById('postCaptureControls').style.display = 'none';
+            document.getElementById('videoContainer').classList.add('active'); // Ensure video is visible
+
+            // Note: Camera start is handled by startCamera(), not called here to avoid recursion
+        }
+
         window.capturePhoto = function () {
             const video = document.getElementById('cardVideo');
             const canvas = document.getElementById('cardCanvas');
-            const imagePreview = document.getElementById('cardImagePreview');
 
-            // Set canvas size to video size
+            // Set canvas size
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-
-            // Draw video frame to canvas
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0);
 
-            // Convert canvas to image
+            // Save image
             const imageData = canvas.toDataURL('image/jpeg');
-            imagePreview.src = imageData;
-            imagePreview.classList.add('active');
+            scannedImages[currentScanSide] = imageData;
 
-            // Hide video
-            document.getElementById('videoContainer').classList.remove('active');
+            // Update UI preview
+            const previewImg = document.getElementById(currentScanSide === 'front' ? 'cardImageFront' : 'cardImageBack');
+            previewImg.src = imageData;
+            previewImg.style.display = 'block';
 
-            // Stop video stream
+            // Pause video to show "Frozen" frame implies capture
+            video.pause();
+
+            // Show controls
+            document.getElementById('captureBtn').style.display = 'none';
+            document.getElementById('postCaptureControls').style.display = 'flex';
+
+            // If we just scanned back, hide "Scan Back" button
+            const scanBackBtn = document.getElementById('scanBackBtn');
+            if (currentScanSide === 'back') {
+                scanBackBtn.style.display = 'none';
+            } else {
+                scanBackBtn.style.display = 'block';
+            }
+        };
+
+        window.retakePhoto = function () {
+            const video = document.getElementById('cardVideo');
+            video.play();
+            document.getElementById('captureBtn').style.display = 'block';
+            document.getElementById('postCaptureControls').style.display = 'none';
+        };
+
+        window.prepareBackSide = function () {
+            currentScanSide = 'back';
+            document.getElementById('scannerInstruction').textContent = 'Position Back of Card';
+            window.retakePhoto(); // Resume camera
+        };
+
+        window.finishScanning = async function () {
+            // Stop camera
             if (videoStream) {
                 videoStream.getTracks().forEach(track => track.stop());
                 videoStream = null;
             }
+            document.getElementById('videoContainer').classList.remove('active');
 
-            // Process the image with OCR
-            processImageWithOCR(imageData);
+            // Process Images
+            const imagesToProcess = [];
+            if (scannedImages.front) imagesToProcess.push(scannedImages.front);
+            if (scannedImages.back) imagesToProcess.push(scannedImages.back);
+
+            if (imagesToProcess.length === 0) return;
+
+            document.getElementById('ocrStatus').textContent = 'Processing... (This usually takes a few seconds)';
+
+            try {
+                // Process sequentially
+                let combinedText = "";
+
+                for (let i = 0; i < imagesToProcess.length; i++) {
+                    document.getElementById('ocrStatus').textContent = `Reading image ${i + 1}/${imagesToProcess.length}...`;
+                    const result = await Tesseract.recognize(
+                        imagesToProcess[i],
+                        'eng',
+                        { logger: m => console.log(m) }
+                    );
+                    combinedText += result.data.text + "\n";
+                }
+
+                document.getElementById('ocrStatus').textContent = 'Analyzing text...';
+                parseBusinessCardText(combinedText);
+                document.getElementById('ocrStatus').textContent = 'Scanning complete!';
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById('ocrStatus').textContent = 'Error during scanning.';
+            }
         };
+
+        // Override startCamera to reset state
+        const originalStartCamera = window.startCamera;
+        window.startCamera = async function () {
+            resetScannerState();
+            // Just reuse the logic or copy it. Original logic was:
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }
+                });
+                const video = document.getElementById('cardVideo');
+                video.srcObject = videoStream;
+                document.getElementById('videoContainer').classList.add('active');
+            } catch (err) {
+                console.error("Camera error:", err);
+                alert("Could not access camera. Please allow camera permissions.");
+            }
+        };
+
+        // Old function replaced by logic above
+        // processImageWithOCR(imageData);
 
         // Handle file upload
         window.handleFileUpload = function (event) {
@@ -2638,16 +2792,19 @@
             const reader = new FileReader();
             reader.onload = function (e) {
                 const imageData = e.target.result;
-                const imagePreview = document.getElementById('cardImagePreview');
+                // Reuse the new preview elements
+                const imagePreview = document.getElementById('cardImageFront');
 
                 imagePreview.src = imageData;
-                imagePreview.classList.add('active');
+                imagePreview.style.display = 'block';
 
                 // Hide video if showing
                 document.getElementById('videoContainer').classList.remove('active');
 
-                // Process the image with OCR
-                processImageWithOCR(imageData);
+                // For file upload, we just process immediately as single side
+                // Logic reuse:
+                scannedImages = { front: imageData };
+                finishScanning();
             };
 
             reader.readAsDataURL(file);
