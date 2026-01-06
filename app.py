@@ -3,7 +3,9 @@ from flask_cors import CORS
 import sqlite3
 import json
 import os
-
+import csv
+import io
+import geocoder
 from init_db import init_db
 import database
 
@@ -166,6 +168,94 @@ def delete_business(id):
     conn.close()
     
     return jsonify({'success': True})
+
+@app.route('/api/import_csv', methods=['POST'])
+def import_csv():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+        
+    file = request.files['file']
+    import_status = request.form.get('status', 'prospective') # Default to prospective
+    
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+        
+    if not file.filename.endswith('.csv'):
+        return jsonify({'error': 'File must be a CSV'}), 400
+
+    # Read CSV
+    stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+    csv_input = csv.DictReader(stream)
+    
+    # Process rows
+    added_count = 0
+    skipped_count = 0
+    errors = []
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        for i, row in enumerate(csv_input):
+            try:
+                # Basic Validation
+                name = row.get('Name') or row.get('name')
+                address = row.get('Address') or row.get('address')
+                city = row.get('City') or row.get('city')
+                zip_code = row.get('Zip') or row.get('zip') or row.get('Zip Code') or row.get('zipCode')
+                
+                if not name or not address:
+                    errors.append(f"Row {i+1}: Missing Name or Address")
+                    skipped_count += 1
+                    continue
+                    
+                # Check for duplicates (Name + Zip combo)
+                cursor.execute("SELECT id FROM businesses WHERE name = ? AND zipCode = ?", (name, zip_code))
+                if cursor.fetchone():
+                    skipped_count += 1
+                    continue
+                
+                # Geocode
+                lat, lng = geocoder.geocode_address(address, city, zip_code)
+                if not lat:
+                    errors.append(f"Row {i+1}: Could not geocode '{address}'")
+                    # Optionally insert anyway with 0,0? No, map app needs coords.
+                    skipped_count += 1
+                    continue
+                
+                # Insert
+                business_type = row.get('Type') or row.get('type') or 'Other'
+                
+                sql = '''
+                    INSERT INTO businesses (
+                        name, address, city, zipCode, lat, lng, type, 
+                        customerStatus, interactionCount, priority, contacts, visits
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 'medium', '[]', '[]')
+                '''
+                
+                cursor.execute(sql, (name, address, city, zip_code, lat, lng, business_type, import_status))
+                added_count += 1
+                
+                # Commit every 10 rows to be safe/incremental? No, transaction is better.
+                
+            except Exception as e:
+                errors.append(f"Row {i+1} Error: {str(e)}")
+                skipped_count += 1
+        
+        conn.commit()
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': f"Processing failed: {str(e)}"}), 500
+    finally:
+        conn.close()
+
+    return jsonify({
+        'success': True,
+        'added': added_count,
+        'skipped': skipped_count,
+        'errors': errors
+    })
 
 if __name__ == '__main__':
 

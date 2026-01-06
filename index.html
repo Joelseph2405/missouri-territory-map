@@ -1186,6 +1186,117 @@
             touch-action: none;
         }
 
+
+        /* Data Management Styles */
+        .data-management-panel {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 135px);
+            background: #f8fafc;
+            transform: translateY(110%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 10010;
+            /* Stack over everything */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .data-management-panel.mobile-active {
+            transform: translateY(0);
+        }
+
+        .data-management-header {
+            background: #0a0a0a;
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+
+        .data-management-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: 1px;
+        }
+
+        .data-management-content {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .upload-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            background: white;
+            transition: all 0.2s;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .upload-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .upload-status {
+            margin-top: 15px;
+            font-size: 14px;
+            white-space: pre-line;
+        }
+
+        .upload-status.success {
+            color: #16a34a;
+        }
+
+        .upload-status.error {
+            color: #dc2626;
+        }
+
+        .csv-template-hint {
+            margin-top: 20px;
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #475569;
+        }
+
+        @media (min-width: 769px) {
+
+            /* Desktop Override for Panel */
+            .data-management-panel {
+                width: 400px;
+                height: auto;
+                max-height: 80vh;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                border-radius: 12px;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                display: none;
+            }
+
+            .data-management-panel.mobile-active {
+                display: flex;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+
         .nav-item {
             display: flex;
             flex-direction: column;
@@ -1362,7 +1473,8 @@
             .card-scanner-modal,
             .business-lookup-modal,
             .voice-modal,
-            .business-details-panel {
+            .business-details-panel,
+            .data-management-panel {
                 top: 60px !important;
                 height: calc(100% - 135px) !important;
                 align-items: flex-start !important;
@@ -1390,7 +1502,8 @@
             .card-scanner-content,
             .business-lookup-content,
             .voice-modal-content,
-            .business-details-content {
+            .business-details-content,
+            .data-management-content {
                 width: 100% !important;
                 height: 100% !important;
                 max-width: none !important;
@@ -1488,6 +1601,40 @@
         BMG BLACK BOX
     </div>
 
+    <!-- DATA MANAGEMENT PANEL -->
+    <div id="dataManagementPanel" class="data-management-panel">
+        <div class="data-management-header">
+            <span class="data-management-title">DATA UPLOAD</span>
+            <button class="close-mobile-btn" onclick="closeDataPanel()">×</button>
+        </div>
+        <div class="data-management-content">
+            <div class="upload-section">
+                <div class="upload-zone" id="dropZone">
+                    <div class="upload-icon">📂</div>
+                    <p>Drag & Drop CSV here</p>
+                    <p class="upload-hint">or click to browse</p>
+                    <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+                </div>
+
+                <div class="upload-options">
+                    <label class="form-label">Import As:</label>
+                    <select id="importStatus" class="form-select">
+                        <option value="prospective">Prospective (Blue)</option>
+                        <option value="existing">Existing Customer (Green)</option>
+                    </select>
+                </div>
+
+                <div id="uploadStatus" class="upload-status"></div>
+
+                <div class="csv-template-hint">
+                    <p><strong>Required Columns:</strong> Name, Address, Zip</p>
+                    <p><strong>Optional:</strong> City, Type</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BUSINESS DETAILS PANEL Mobile Only -->
     <!-- Map Title (Desktop Only) -->
     <div class="map-title">
         Missouri Sales Territory Map
@@ -1942,13 +2089,17 @@
 
     <!-- Mobile Bottom Navigation Bar -->
     <div class="mobile-nav">
+        <button class="nav-item" onclick="toggleDataPanel()">
+            <div class="nav-icon">📊</div>
+            <div class="nav-label">Data</div>
+        </button>
         <button class="nav-item" onclick="toggleLegendMobile()">
-            <span class="nav-icon">🗺️</span>
-            <span class="nav-label">Legend</span>
+            <div class="nav-icon">i</div>
+            <div class="nav-label">Legend</div>
         </button>
         <button class="nav-item" onclick="toggleSearchMobile()">
-            <span class="nav-icon">🔍</span>
-            <span class="nav-label">Search</span>
+            <div class="nav-icon">🔍</div>
+            <div class="nav-label">Search</div>
         </button>
         <button class="nav-item" onclick="openBusinessForm()">
             <span class="nav-icon">➕</span>
@@ -3500,18 +3651,94 @@
         // Store all markers for filtering
         let allMarkers = [];
 
-        // Toggle search panel collapse
-        window.toggleSearchPanel = function () {
-            const panel = document.getElementById('searchPanel');
-            const btn = panel.querySelector('.collapse-btn');
-            panel.classList.toggle('collapsed');
-            btn.textContent = panel.classList.contains('collapsed') ? '+' : '−';
+        // Data Management Logic
+        window.toggleDataPanel = function () {
+            closeAllMobileMenus();
+            document.getElementById('dataManagementPanel').classList.add('mobile-active');
         };
+
+        window.closeDataPanel = function () {
+            document.getElementById('dataManagementPanel').classList.remove('mobile-active');
+        };
+
+        // CSV Upload Logic
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('csvFileInput');
+        const statusDiv = document.getElementById('uploadStatus');
+
+        // Handle Click
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // Handle File Select
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        // Handle Drag & Drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleFileUpload(e.dataTransfer.files[0]);
+            }
+        });
+
+        async function handleFileUpload(file) {
+            statusDiv.textContent = 'Uploading and processing... This may take a moment.';
+            statusDiv.className = 'upload-status';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const importType = document.getElementById('importStatus').value;
+            formData.append('status', importType);
+
+            try {
+                const response = await fetch('/api/import_csv', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    let msg = `✅ Import Complete!\nAdded: ${result.added}\nSkipped: ${result.skipped}`;
+                    if (result.errors.length > 0) {
+                        msg += `\n\n⚠️ Errors:\n${result.errors.slice(0, 5).join('\n')}`;
+                        if (result.errors.length > 5) msg += `\n...and ${result.errors.length - 5} more.`;
+                    }
+                    statusDiv.textContent = msg;
+                    statusDiv.className = 'upload-status success';
+
+                    // Reload map
+                    loadBusinesses();
+                } else {
+                    statusDiv.textContent = `❌ Error: ${result.error}`;
+                    statusDiv.className = 'upload-status error';
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                statusDiv.textContent = '❌ Network or Server Error.';
+                statusDiv.className = 'upload-status error';
+            }
+        }
 
         // Centralized Menu Management
         window.closeAllMobileMenus = function () {
             // Panel IDs (Adding businessDetailsPanel)
-            const panels = ['searchPanel', 'legendPanel', 'cardScannerModal', 'businessFormModal', 'voiceModal', 'businessDetailsPanel'];
+            const panels = ['searchPanel', 'legendPanel', 'cardScannerModal', 'businessFormModal', 'voiceModal', 'businessDetailsPanel', 'dataManagementPanel'];
             panels.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
