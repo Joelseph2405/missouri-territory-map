@@ -1309,6 +1309,8 @@
             /* Gray 400 */
             padding: 5px;
             flex: 1;
+            min-width: 0;
+            /* Allow shrinking */
             transition: all 0.2s ease;
         }
 
@@ -2122,17 +2124,13 @@
 
     <!-- Mobile Bottom Navigation Bar -->
     <div class="mobile-nav">
-        <button class="nav-item" onclick="toggleDataPanel()">
-            <div class="nav-icon">📊</div>
-            <div class="nav-label">Data</div>
-        </button>
         <button class="nav-item" onclick="toggleLegendMobile()">
-            <div class="nav-icon">i</div>
-            <div class="nav-label">Legend</div>
+            <span class="nav-icon">i</span>
+            <span class="nav-label">Legend</span>
         </button>
-        <button class="nav-item" onclick="toggleSearchMobile()">
-            <div class="nav-icon">🔍</div>
-            <div class="nav-label">Search</div>
+        <button class="nav-item" onclick="toggleDataPanel()">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Upload</span>
         </button>
         <button class="nav-item" onclick="openBusinessForm()">
             <span class="nav-icon">➕</span>
@@ -2141,6 +2139,10 @@
         <button class="nav-item" onclick="openCardScannerStandalone()">
             <span class="nav-icon">📷</span>
             <span class="nav-label">Scan</span>
+        </button>
+        <button class="nav-item" onclick="toggleSearchMobile()">
+            <span class="nav-icon">🔍</span>
+            <span class="nav-label">Search</span>
         </button>
     </div>
 
