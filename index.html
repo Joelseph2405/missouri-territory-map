@@ -138,6 +138,12 @@
             max-height: 400px;
             overflow-y: auto;
             width: 250px;
+            display: none;
+            /* Hidden by default */
+        }
+
+        .legend.active {
+            display: block;
         }
 
         .legend-title {
@@ -816,6 +822,12 @@
             width: 300px;
             max-height: calc(100vh - 100px);
             overflow-y: auto;
+            display: none;
+            /* Hidden by default */
+        }
+
+        .search-panel.active {
+            display: block;
         }
 
         .search-panel-header {
@@ -1631,6 +1643,122 @@
                 margin: 0 !important;
             }
         }
+
+        /* Route Setup Modal */
+        .route-setup-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 30020;
+            /* Above everything */
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .route-setup-modal.active {
+            display: flex;
+        }
+
+        .route-setup-content {
+            background: #1e293b;
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .route-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .route-header h2 {
+            margin: 0;
+            font-size: 20px;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+        }
+
+        .route-form-group {
+            margin-bottom: 20px;
+        }
+
+        .route-form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .form-select,
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .status-toggles {
+            display: flex;
+            gap: 10px;
+        }
+
+        .status-chip {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .status-chip.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+            font-weight: 600;
+        }
+
+        .primary-action-btn {
+            width: 100%;
+            padding: 15px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .primary-action-btn:hover {
+            background: #059669;
+        }
+
+        .hint-text {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 5px;
+        }
     </style>
 
     <!-- DESKTOP SIDEBAR STYLES -->
@@ -1793,6 +1921,9 @@
             <button class="sidebar-btn" onclick="openBusinessForm()">
                 <span class="sidebar-icon">➕</span> Add Business
             </button>
+            <button class="sidebar-btn" onclick="toggleRoutePanel()">
+                <span class="sidebar-icon">🚀</span> Smart Route
+            </button>
             <button class="sidebar-btn" style="margin-top: auto;" onclick="openCardScannerStandalone()">
                 <span class="sidebar-icon">📷</span> Card Scanner
             </button>
@@ -1852,6 +1983,41 @@
 
     <!-- Map Container -->
     <div id="map"></div>
+
+    <!-- SMART ROUTE SETUP MODAL -->
+    <div id="routeSetupModal" class="route-setup-modal">
+        <div class="route-setup-content">
+            <div class="route-header">
+                <h2>🚀 Plan Your Day</h2>
+                <button class="close-btn" onclick="closeRoutePanel()">×</button>
+            </div>
+
+            <div class="route-form-group">
+                <label>Start Location</label>
+                <select id="routeStartPoint" class="form-select">
+                    <option value="current">📍 Current Location</option>
+                    <option value="home">🏠 Home Base</option>
+                </select>
+            </div>
+
+            <div class="route-form-group">
+                <label>Filter by Zip Code(s)</label>
+                <input type="text" id="routeZips" class="form-input" placeholder="e.g. 63017, 63141 (Optional)">
+                <div class="hint-text">Leave empty to include all visible businesses</div>
+            </div>
+
+            <div class="route-form-group">
+                <label>Target Status</label>
+                <div class="status-toggles">
+                    <label class="status-chip active" onclick="toggleStatusFilter(this, 'all')">All</label>
+                    <label class="status-chip" onclick="toggleStatusFilter(this, 'prospective')">Prospects</label>
+                    <label class="status-chip" onclick="toggleStatusFilter(this, 'existing')">Customers</label>
+                </div>
+            </div>
+
+            <button class="primary-action-btn" onclick="generateRoute()">Generate Route</button>
+        </div>
+    </div>
 
     <!-- Search and Filter Panel -->
     <div id="searchPanel" class="search-panel">
@@ -2298,6 +2464,10 @@
         <button class="nav-item" onclick="toggleDataPanel()">
             <span class="nav-icon">📊</span>
             <span class="nav-label">Upload</span>
+        </button>
+        <button class="nav-item" onclick="toggleRoutePanel()">
+            <span class="nav-icon">🚀</span>
+            <span class="nav-label">Route</span>
         </button>
         <button class="nav-item" onclick="openBusinessForm()">
             <span class="nav-icon">➕</span>
@@ -3987,6 +4157,19 @@
 
 
 
+        // Toggle search panel visibility (Desktop & Mobile)
+        window.toggleSearchPanel = function () {
+            const panel = document.getElementById('searchPanel');
+
+            if (window.innerWidth <= 768) {
+                toggleSearchMobile(); // Use mobile logic
+            } else {
+                panel.classList.toggle('active');
+                const btn = panel.querySelector('.collapse-btn');
+                if (btn) btn.textContent = panel.classList.contains('active') ? '−' : '+';
+            }
+        };
+
         // Mobile specific toggles with Exclusion Logic
         window.toggleSearchMobile = function () {
             const panel = document.getElementById('searchPanel');
@@ -3999,16 +4182,24 @@
             }
         };
 
+        // Toggle Legend (Desktop & Mobile)
         window.toggleLegendMobile = function () {
+            // Mobile Implementation
             const panel = document.getElementById('legendPanel');
             const wasActive = panel.classList.contains('mobile-active');
-
             closeAllMobileMenus();
+            if (!wasActive) panel.classList.add('mobile-active');
+        };
 
-            if (!wasActive) {
-                panel.classList.add('mobile-active');
+        window.toggleLegend = function () {
+            if (window.innerWidth <= 768) {
+                toggleLegendMobile();
+            } else {
+                const panel = document.getElementById('legendPanel');
+                if (panel) panel.classList.toggle('active');
             }
         };
+
 
         // Override Open Form to close others
         // We capture original reference if needed, or just recall logic. 
@@ -4017,6 +4208,41 @@
         // No, the Nav Button calls `openBusinessForm()`.
         // I will Override `openBusinessForm` if it's GLOBAL.
         const _originalOpenForm = window.openBusinessForm;
+
+        // --- SMART ROUTE UI LOGIC ---
+
+        window.toggleRoutePanel = function () {
+            // Close other mobile menus if likely
+            if (window.innerWidth <= 768) closeAllMobileMenus();
+            document.getElementById('routeSetupModal').classList.add('active');
+        };
+
+        window.closeRoutePanel = function () {
+            document.getElementById('routeSetupModal').classList.remove('active');
+        };
+
+        window.toggleStatusFilter = function (chip, status) {
+            // Remove active class from siblings
+            const chips = chip.parentElement.getElementsByClassName('status-chip');
+            for (let c of chips) c.classList.remove('active');
+
+            // Activate this one
+            chip.classList.add('active');
+            chip.dataset.value = status;
+        };
+
+        window.generateRoute = function () {
+            // Placeholder
+            const zipInput = document.getElementById('routeZips').value;
+            const startPoint = document.getElementById('routeStartPoint').value;
+            // Find active status
+            const activeChip = document.querySelector('.status-chip.active');
+            const statusFilter = activeChip ? activeChip.textContent.toLowerCase() : 'all';
+
+            console.log('Generating Route:', { zipInput, startPoint, statusFilter });
+            alert(`Planning route for ${statusFilter} businesses... (Logic coming next step)`);
+            closeRoutePanel();
+        };
         window.openBusinessForm = function (lat, lng) {
             closeAllMobileMenus();
             if (_originalOpenForm) _originalOpenForm(lat, lng);
