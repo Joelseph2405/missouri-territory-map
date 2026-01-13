@@ -1200,8 +1200,8 @@
         }
 
 
-        /* Data Management Styles */
-        .data-management-panel {
+        /* Contacts Panel Styles */
+        .contacts-panel {
             position: fixed;
             top: 60px;
             left: 0;
@@ -1216,7 +1216,8 @@
             flex-direction: column;
         }
 
-        .data-management-panel.mobile-active {
+
+        .contacts-panel.mobile-active {
             transform: translateY(0);
         }
 
@@ -1291,7 +1292,7 @@
         @media (min-width: 769px) {
 
             /* Desktop Override for Panel */
-            .data-management-panel {
+            .contacts-panel {
                 width: 400px;
                 height: auto;
                 max-height: 80vh;
@@ -1303,7 +1304,7 @@
                 display: none;
             }
 
-            .data-management-panel.mobile-active {
+            .contacts-panel.mobile-active {
                 display: flex;
                 transform: translate(-50%, -50%);
             }
@@ -1526,6 +1527,7 @@
             .voice-modal,
             .business-details-panel,
             .data-management-panel,
+            .contacts-panel,
             .route-setup-modal {
                 top: 60px !important;
                 height: calc(100% - 135px) !important;
@@ -1556,6 +1558,7 @@
             .voice-modal-content,
             .business-details-content,
             .data-management-content,
+            .contacts-content,
             .route-setup-content {
                 width: 100% !important;
                 height: 100% !important;
@@ -1921,8 +1924,8 @@
             <div class="sidebar-tagline">CRM Intelligence</div>
         </div>
         <div class="sidebar-nav">
-            <button class="sidebar-btn" onclick="toggleDataPanel()">
-                <span class="sidebar-icon">📊</span> Upload Data
+            <button class="sidebar-btn" onclick="toggleContactsPanel()">
+                <span class="sidebar-icon">👥</span> Contacts
             </button>
             <button class="sidebar-btn" onclick="toggleSearchPanel()">
                 <span class="sidebar-icon">🔍</span> Search
@@ -1949,35 +1952,23 @@
         BMG BLACK BOX
     </div>
 
-    <!-- DATA MANAGEMENT PANEL -->
-    <div id="dataManagementPanel" class="data-management-panel">
-        <div class="data-management-header">
-            <span class="data-management-title">DATA UPLOAD</span>
-            <button class="close-mobile-btn" onclick="closeDataPanel()">×</button>
+    <!-- CONTACTS PANEL -->
+    <div id="contactsPanel" class="contacts-panel">
+        <div class="data-management-header"
+            style="background: #0a0a0a; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333;">
+            <span class="data-management-title"
+                style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 18px;">CONTACTS</span>
+            <button class="close-mobile-btn" onclick="closeContactsPanel()">×</button>
         </div>
-        <div class="data-management-content">
-            <div class="upload-section">
-                <div class="upload-zone" id="dropZone">
-                    <div class="upload-icon">📂</div>
-                    <p>Drag & Drop CSV here</p>
-                    <p class="upload-hint">or click to browse</p>
-                    <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
-                </div>
-
-                <div class="upload-options">
-                    <label class="form-label">Import As:</label>
-                    <select id="importStatus" class="form-select">
-                        <option value="prospective">Prospective (Blue)</option>
-                        <option value="existing">Existing Customer (Green)</option>
-                    </select>
-                </div>
-
-                <div id="uploadStatus" class="upload-status"></div>
-
-                <div class="csv-template-hint">
-                    <p><strong>Required Columns:</strong> Name, Address, Zip</p>
-                    <p><strong>Optional:</strong> City, Type</p>
-                </div>
+        <div class="contacts-content" style="padding: 0; overflow-y: auto; flex: 1;">
+            <div class="search-bar-container"
+                style="padding: 15px; background: #fff; border-bottom: 1px solid #e2e8f0;">
+                <input type="text" id="contactSearchInput" placeholder="Search contacts..."
+                    style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px;"
+                    oninput="renderContactsList()">
+            </div>
+            <div id="contactsList" class="contacts-list">
+                <!-- Javascript will populate this -->
             </div>
         </div>
     </div>
@@ -2476,9 +2467,9 @@
             <span class="nav-icon">i</span>
             <span class="nav-label">Legend</span>
         </button>
-        <button class="nav-item" onclick="toggleDataPanel()">
-            <span class="nav-icon">📊</span>
-            <span class="nav-label">Upload</span>
+        <button class="nav-item" onclick="toggleContactsPanel()">
+            <span class="nav-icon">👥</span>
+            <span class="nav-label">Contacts</span>
         </button>
         <button class="nav-item" onclick="toggleRoutePanel()">
             <span class="nav-icon">🚀</span>
@@ -4039,20 +4030,69 @@
         let allMarkers = [];
 
         // Data Management Logic
-        // Data Management Logic (Toggle Fixed)
-        window.toggleDataPanel = function () {
-            const panel = document.getElementById('dataManagementPanel');
+        // Contacts Panel Logic
+        window.toggleContactsPanel = function () {
+            const panel = document.getElementById('contactsPanel');
             const wasActive = panel.classList.contains('mobile-active');
 
             closeAllMobileMenus();
 
             if (!wasActive) {
                 panel.classList.add('mobile-active');
+                renderContactsList();
             }
         };
 
-        window.closeDataPanel = function () {
-            document.getElementById('dataManagementPanel').classList.remove('mobile-active');
+        window.closeContactsPanel = function () {
+            document.getElementById('contactsPanel').classList.remove('mobile-active');
+        };
+
+        window.getAllContacts = function () {
+            let contacts = [];
+            window.businessesData.forEach(biz => {
+                if (biz.contacts && biz.contacts.length > 0) {
+                    biz.contacts.forEach(c => {
+                        contacts.push({
+                            ...c,
+                            businessName: biz.name,
+                            businessId: biz.id
+                        });
+                    });
+                }
+            });
+            // Sort A-Z
+            return contacts.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        };
+
+        window.renderContactsList = function () {
+            const listDiv = document.getElementById('contactsList');
+            const searchTerm = document.getElementById('contactSearchInput').value.toLowerCase();
+            const all = getAllContacts();
+
+            const filtered = all.filter(c =>
+                (c.name && c.name.toLowerCase().includes(searchTerm)) ||
+                (c.businessName && c.businessName.toLowerCase().includes(searchTerm))
+            );
+
+            if (filtered.length === 0) {
+                listDiv.innerHTML = '<div style="padding:20px; text-align:center; color:#64748b;">No contacts found.<br><small>Scan cards to add people.</small></div>';
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(c => {
+                html += `
+                    <div class="contact-card-item" style="padding: 15px; border-bottom: 1px solid #e2e8f0; background: white;">
+                        <div style="font-weight: 600; font-size: 16px; color: #1e293b;">${c.name}</div>
+                        <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">${c.title ? c.title + ' at ' : ''}${c.businessName}</div>
+                        <div style="display: flex; gap: 10px; margin-top: 8px;">
+                            ${c.phone ? `<a href="tel:${c.phone}" class="action-chip" style="background:#e0f2fe; color:#0284c7; padding:5px 10px; border-radius:15px; text-decoration:none; font-size:12px;">📞 Call</a>` : ''}
+                            ${c.email ? `<a href="mailto:${c.email}" class="action-chip" style="background:#f0fdf4; color:#16a34a; padding:5px 10px; border-radius:15px; text-decoration:none; font-size:12px;">✉️ Email</a>` : ''}
+                        </div>
+                    </div>
+                 `;
+            });
+            listDiv.innerHTML = html;
         };
 
         // CSV Upload Logic
@@ -4131,8 +4171,8 @@
 
         // Centralized Menu Management
         window.closeAllMobileMenus = function () {
-            // Panel IDs (Adding businessDetailsPanel, routeSetupModal)
-            const panels = ['searchPanel', 'legendPanel', 'cardScannerModal', 'businessFormModal', 'voiceModal', 'businessDetailsPanel', 'dataManagementPanel', 'routeSetupModal'];
+            // Panel IDs (Replacing dataManagementPanel with contactsPanel)
+            const panels = ['searchPanel', 'legendPanel', 'cardScannerModal', 'businessFormModal', 'voiceModal', 'businessDetailsPanel', 'contactsPanel', 'routeSetupModal'];
             panels.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
