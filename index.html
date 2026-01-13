@@ -1917,6 +1917,13 @@
 </head>
 
 <body>
+    <!-- Global Error Handler for Mobile Debugging -->
+    <script>
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            alert('JavaSript Error: ' + msg + '\nLine: ' + lineNo);
+            return false;
+        };
+    </script>
     <!-- DESKTOP SIDEBAR -->
     <div class="desktop-sidebar">
         <div class="sidebar-header">
@@ -1995,27 +2002,93 @@
                 <button class="close-btn" onclick="closeRoutePanel()">×</button>
             </div>
 
+            <!-- 1. TIME BUDGET -->
             <div class="route-form-group">
-                <label>Start Location</label>
-                <select id="routeStartPoint" class="form-select">
-                    <option value="current">📍 Current Location</option>
-                    <option value="home">🏠 Home Base</option>
-                </select>
-            </div>
-
-            <div class="route-form-group">
-                <label>Filter by Zip Code(s)</label>
-                <input type="text" id="routeZips" class="form-input" placeholder="e.g. 63017, 63141 (Optional)">
-                <div class="hint-text">Leave empty to include all visible businesses</div>
-            </div>
-
-            <div class="route-form-group">
-                <label>Target Status</label>
-                <div class="status-toggles">
-                    <label class="status-chip active" onclick="toggleStatusFilter(this, 'all')">All</label>
-                    <label class="status-chip" onclick="toggleStatusFilter(this, 'prospective')">Prospects</label>
-                    <label class="status-chip" onclick="toggleStatusFilter(this, 'existing')">Customers</label>
+                <label>Time Available</label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="number" id="routeTime" class="form-input" placeholder="Hours (e.g. 4)"
+                        style="width: 100px;">
+                    <span class="hint-text">Leave blank for unlimited</span>
                 </div>
+            </div>
+
+            <!-- 2. START & END POINTS -->
+            <div class="route-form-group">
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex:1;">
+                        <label>Start Location</label>
+                        <select id="routeStartPoint" class="form-select">
+                            <option value="current">📍 Current Location</option>
+                            <option value="home">🏠 Home Base</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <label>End Location</label>
+                        <select id="routeEndPoint" class="form-select">
+                            <option value="none">🔄 Optimized Loop</option>
+                            <option value="home">🏠 Back to Home</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. GEOGRAPHY (City/Zip) -->
+            <div class="route-form-group">
+                <label>Target Area</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+                    <label class="filter-radio"><input type="radio" name="geoMode" value="zip" checked
+                            onclick="toggleGeoInput()"> By Zip</label>
+                    <label class="filter-radio"><input type="radio" name="geoMode" value="city"
+                            onclick="toggleGeoInput()"> By City</label>
+                </div>
+                <input type="text" id="routeGeoInput" class="form-input" placeholder="e.g. 63376, 63017">
+            </div>
+
+            <!-- 4. INDUSTRY & STATUS -->
+            <div class="route-form-group">
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex:1;">
+                        <label>Industry</label>
+                        <select id="routeIndustry" class="form-select">
+                            <option value="all">All Industries</option>
+                            <option value="Construction">Construction</option>
+                            <option value="Medical">Medical</option>
+                            <option value="Automotive">Automotive</option>
+                            <option value="Manufacturing">Manufacturing</option>
+                            <option value="Retail">Retail</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <label>Status</label>
+                        <select id="routeStatus" class="form-select">
+                            <option value="all">Everyone</option>
+                            <option value="prospective">Prospects Only</option>
+                            <option value="existing">Customers Only</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. FILTERS (Recency & New) -->
+            <div class="route-form-group"
+                style="background: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid #334155;">
+                <label style="color:#cbd5e1; font-size:12px; margin-bottom: 8px; display:block;">EXCLUSION RULES</label>
+
+                <!-- Recency -->
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="font-size: 13px; color: #94a3b8;">Hide recent visits:</span>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="number" id="routeRecency" value="30"
+                            style="width: 50px; background: #0f172a; border: 1px solid #475569; color: white; padding: 4px; border-radius: 4px; text-align: center;">
+                        <span style="font-size: 12px; color: #64748b;">days</span>
+                    </div>
+                </div>
+
+                <!-- Never Visited -->
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="routeNeverVisited" style="accent-color: #3b82f6;">
+                    <span style="font-size: 13px; color: #fff;">Show <b>Never Visited</b> Only</span>
+                </label>
             </div>
 
             <button class="primary-action-btn" onclick="generateRoute()">Generate Route</button>
@@ -2030,7 +2103,9 @@
             <button class="close-mobile-btn header-mobile-only" onclick="toggleSearchMobile()">×</button>
         </div>
         <div class="search-panel-content">
-            <!-- Search Input -->
+
+
+            <!-- Start Point (Future) -->
             <input type="text" id="searchInput" class="search-input"
                 placeholder="Search businesses, addresses, zip codes...">
 
@@ -3007,6 +3082,16 @@
                     // Store business data with marker
                     marker.businessData = business;
                 });
+
+                // Auto-zoom to fit all businesses if we have any
+                if (businessesData.length > 0) {
+                    const group = new L.featureGroup(businessMarkersLayer.getLayers());
+                    map.fitBounds(group.getBounds(), { padding: [50, 50] });
+                }
+
+                if (typeof updateStats === 'function') {
+                    updateStats();
+                }
 
             } catch (error) {
                 console.error('Could not load businesses from API:', error);
@@ -4221,6 +4306,17 @@
 
         // --- SMART ROUTE UI LOGIC ---
 
+        // Toggle City vs Zip Input
+        window.toggleGeoInput = function () {
+            const mode = document.querySelector('input[name="geoMode"]:checked').value;
+            const input = document.getElementById('routeGeoInput');
+            if (mode === 'zip') {
+                input.placeholder = "e.g. 63376, 63017";
+            } else {
+                input.placeholder = "e.g. Wentzville, O'Fallon";
+            }
+        };
+
         window.toggleRoutePanel = function () {
             if (window.innerWidth <= 768) {
                 toggleMobilePanel('routeSetupModal');
@@ -4300,48 +4396,153 @@
         }
 
         // 3. UI Controller
-        window.generateRoute = function () {
+        const HOME_BASE = { lat: 38.792252, lng: -90.8640723 }; // User's Home
+
+        function getCurrentPositionPromise() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) reject("Geolocation not supported");
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                    (err) => reject(err)
+                );
+            });
+        }
+
+        window.generateRoute = async function () {
             const statusDiv = document.querySelector('.route-header h2');
             statusDiv.textContent = '🤔 Thinking...';
 
-            // Get Inputs
-            const zipInput = document.getElementById('routeZips').value.trim();
+            // --- 1. GET INPUTS ---
+            const timeLimitHours = parseFloat(document.getElementById('routeTime').value) || 0;
             const startPointMode = document.getElementById('routeStartPoint').value;
-            const activeChip = document.querySelector('.status-chip.active');
-            const targetStatus = activeChip ? activeChip.dataset.value : 'all';
+            const endPointMode = document.getElementById('routeEndPoint').value;
 
-            // Parse Zips
-            const targetZips = zipInput ? zipInput.split(',').map(z => z.trim()) : [];
+            const geoMode = document.querySelector('input[name="geoMode"]:checked').value;
+            const geoInput = document.getElementById('routeGeoInput').value.trim();
+            const targetAreas = geoInput ? geoInput.split(',').map(s => s.trim().toLowerCase()) : [];
 
-            // Filter Businesses
-            const candidates = window.allBusinesses.filter(b => {
-                // Zip Filter
-                if (targetZips.length > 0 && !targetZips.includes(b.zip)) return false;
+            // Legacy Zips (fallback if user typed in Zip box, but better to use new geoInput)
+            // We ignore old 'routeZips' since we have 'routeGeoInput' now.
 
-                // Status Filter
-                if (targetStatus === 'prospective' && b.status !== 'prospective') return false;
-                if (targetStatus === 'existing' && b.status === 'prospective') return false; // Assuming 'customer' or null is existing
+            const industry = document.getElementById('routeIndustry').value;
+            const status = document.getElementById('routeStatus').value;
 
+            const recencyDays = parseInt(document.getElementById('routeRecency').value) || 0;
+            const onlyNeverVisited = document.getElementById('routeNeverVisited').checked;
+
+            // --- 2. FILTERING ---
+
+            // Verify Data
+            console.log("DEBUG: Total Businesses Available:", (businessesData || []).length);
+            console.log("DEBUG: Filter Params:", { targetAreas, geoMode, industry, status, recencyDays });
+
+            const candidates = (businessesData || []).filter(b => {
                 // Must have location
                 if (!b.lat || !b.lng) return false;
 
+                // Geo Filter (Zip or City)
+                if (targetAreas.length > 0) {
+                    if (geoMode === 'zip') {
+                        const bZip = (b.zipCode || "").toString().trim();
+                        // Check if ANY target zip matches (using relaxed equality)
+                        const match = targetAreas.some(t => t == bZip);
+                        if (!match) {
+                            // console.log(`Reject ${b.name}: Zip ${bZip} not in`, targetAreas);
+                            return false;
+                        }
+                    } else {
+                        // Relaxed city matching
+                        if (!b.city || !targetAreas.some(area => b.city.toLowerCase().includes(area))) return false;
+                    }
+                }
+
+                // Industry Filter
+                if (industry !== 'all') {
+                    const bizIndustry = (b.industry || b.type || "").toLowerCase();
+                    if (!bizIndustry.includes(industry.toLowerCase())) return false;
+                }
+
+                // Status Filter
+                if (status === 'prospective' && b.status !== 'prospective') return false;
+                if (status === 'existing' && b.status === 'prospective') return false;
+
+                // Recency Filter
+                if (recencyDays > 0 && b.lastVisit) {
+                    const visitDate = new Date(b.lastVisit);
+                    if (visitDate > cutoffDate) return false; // Visited too recently
+                }
+
+                // Never Visited Filter
+                if (onlyNeverVisited && b.lastVisit) return false;
+
                 return true;
             });
-
             if (candidates.length === 0) {
                 alert("No businesses found matching your criteria.");
                 statusDiv.textContent = '🚀 Plan Your Day';
                 return;
             }
 
-            // Define Start Node
-            // Default to map center if current location not available, or first biz
-            let startNode = { lat: map.getCenter().lat, lng: map.getCenter().lng };
+            // Define Start Node (With Timeout Protection)
+            let startNode;
+            if (startPointMode === 'home') {
+                startNode = HOME_BASE;
+            } else {
+                statusDiv.textContent = '📍 Locating you (4s timeout)...';
+                try {
+                    // Race GPS against a 4-second timeout to prevent hanging
+                    const locationPromise = getCurrentPositionPromise();
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("GPS Timeout")), 4000)
+                    );
 
-            // Execute Optimization
-            const optimizedRoute = optimizeRoute(startNode, candidates);
+                    startNode = await Promise.race([locationPromise, timeoutPromise]);
+                } catch (e) {
+                    console.log("GPS Failed or Timed Out, using Map Center", e);
+                    // Fallback to Map Center for smooth UX
+                    const center = map.getCenter();
+                    startNode = { lat: center.lat, lng: center.lng };
+                }
+            }
 
-            // Render Results
+            // --- 4. MAX STOPS (Time Budget) ---
+            // Heuristic: 20 mins per stop (15 min visit + 5 min drive)
+            let maxStops = candidates.length;
+            if (timeLimitHours > 0) {
+                const minsAvailable = timeLimitHours * 60;
+                maxStops = Math.floor(minsAvailable / 20); // e.g. 4 hours = 240m / 20 = 12 stops
+                if (maxStops < 1) maxStops = 1;
+            }
+
+            // --- 5. EXECUTE OPTIMIZATION ---
+            statusDiv.textContent = '🔄 Optimizing...';
+            // Yield to UI thread
+            await new Promise(r => setTimeout(r, 100));
+
+            let optimizedRoute = optimizeRoute(startNode, candidates);
+
+            // Apply Max Stops Cap
+            if (optimizedRoute.length > maxStops) {
+                optimizedRoute = optimizedRoute.slice(0, maxStops);
+            }
+
+            // --- 6. END POINT LOGIC ---
+            if (endPointMode === 'home') {
+                const lastStop = optimizedRoute.length > 0 ? optimizedRoute[optimizedRoute.length - 1] : startNode;
+                const distStr = getDistanceFromLatLonInKm(lastStop.lat, lastStop.lng, HOME_BASE.lat, HOME_BASE.lng).toFixed(1);
+
+                optimizedRoute.push({
+                    name: "Return to Home Base",
+                    lat: HOME_BASE.lat,
+                    lng: HOME_BASE.lng,
+                    address: "301 Wilmer Valley Drive",
+                    status: 'system',
+                    distanceFromLast: distStr
+                });
+            }
+
+            // --- 7. RENDER ---
+            statusDiv.textContent = '🚀 Ready!';
             renderRouteManifest(optimizedRoute);
         };
 
@@ -4358,6 +4559,7 @@
 
             route.forEach((stop, index) => {
                 const mapLink = `https://www.google.com/maps/dir/?api=1&destination=${stop.lat},${stop.lng}`;
+                const appleMapLink = `http://maps.apple.com/?daddr=${stop.lat},${stop.lng}`;
                 const icon = stop.status === 'prospective' ? '🔵' : '🟢';
 
                 html += `
@@ -4368,8 +4570,12 @@
                         </div>
                         <div style="font-size:13px; color:#cbd5e1; margin: 5px 0;">${stop.address}</div>
                         <div style="display:flex; gap:10px; margin-top:10px;">
-                            <a href="${mapLink}" target="_blank" class="scanner-button" style="text-align:center; text-decoration:none;">🚗 Navigate</a>
-                            <button class="scanner-button" onclick="openBusinessDetails(${JSON.stringify(stop).replace(/"/g, '&quot;')})">📝 Check In</button>
+                            <!-- Google Maps -->
+                            <a href="${mapLink}" target="_blank" class="scanner-button" style="flex:1; text-align:center; text-decoration:none; background:#3b82f6;">Google Maps</a>
+                            <!-- Apple Maps -->
+                            <a href="${appleMapLink}" target="_blank" class="scanner-button" style="flex:1; text-align:center; text-decoration:none; background:#334155;"> Maps</a>
+                            
+                            <button class="scanner-button" style="flex:1;" onclick="openBusinessDetails(${JSON.stringify(stop).replace(/"/g, '&quot;')})">📝 Check In</button>
                         </div>
                     </div>
                 `;

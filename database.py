@@ -99,7 +99,8 @@ def init_tables(conn):
                 priority TEXT,
                 phone TEXT,
                 contacts TEXT,
-                visits TEXT
+                visits TEXT,
+                employees INTEGER
             )
         ''')
     
