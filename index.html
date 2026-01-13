@@ -4231,17 +4231,179 @@
             chip.dataset.value = status;
         };
 
-        window.generateRoute = function () {
-            // Placeholder
-            const zipInput = document.getElementById('routeZips').value;
-            const startPoint = document.getElementById('routeStartPoint').value;
-            // Find active status
-            const activeChip = document.querySelector('.status-chip.active');
-            const statusFilter = activeChip ? activeChip.textContent.toLowerCase() : 'all';
+        // --- SMART ROUTING LOGIC ---
 
-            console.log('Generating Route:', { zipInput, startPoint, statusFilter });
-            alert(`Planning route for ${statusFilter} businesses... (Logic coming next step)`);
-            closeRoutePanel();
+        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+            var R = 6371; // Radius of the earth in km
+            var dLat = deg2rad(lat2 - lat1);
+            var dLon = deg2rad(lon2 - lon1);
+            var a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat1)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            var d = R * c; // Distance
+            return d;
+        }
+
+        function deg2rad(deg) {
+            return deg * (Math.PI / 180)
+        }
+
+        function optimizeRoute(startNode, locations) {
+            let unvisited = [...locations];
+            let route = [];
+            let currentLocation = startNode;
+
+            while (unvisited.length > 0) {
+                let nearest = null;
+                let minDist = Infinity;
+                let nearestIndex = -1;
+
+                // Find closest unvisited node
+                for (let i = 0; i < unvisited.length; i++) {
+                    const loc = unvisited[i];
+                    if (!loc.lat || !loc.lng) continue;
+
+                    const dist = getDistanceFromLatLonInKm(currentLocation.lat, currentLocation.lng, loc.lat, loc.lng);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        nearest = loc;
+                        nearestIndex = i;
+                    }
+                }
+
+                if (nearest) {
+                    // Move to it
+                    nearest.distanceFromLast = minDist.toFixed(1);
+                    route.push(nearest);
+                    currentLocation = nearest;
+                    unvisited.splice(nearestIndex, 1);
+                } else {
+                    break;
+                }
+            }
+            return route;
+        }
+
+        // 3. UI Controller
+        window.generateRoute = function () {
+            const statusDiv = document.querySelector('.route-header h2');
+            statusDiv.textContent = '🤔 Thinking...';
+
+            // Get Inputs
+            const zipInput = document.getElementById('routeZips').value.trim();
+            const startPointMode = document.getElementById('routeStartPoint').value;
+            const activeChip = document.querySelector('.status-chip.active');
+            const targetStatus = activeChip ? activeChip.dataset.value : 'all';
+
+            // Parse Zips
+            const targetZips = zipInput ? zipInput.split(',').map(z => z.trim()) : [];
+
+            // Filter Businesses
+            const candidates = window.allBusinesses.filter(b => {
+                // Zip Filter
+                if (targetZips.length > 0 && !targetZips.includes(b.zip)) return false;
+
+                // Status Filter
+                if (targetStatus === 'prospective' && b.status !== 'prospective') return false;
+                if (targetStatus === 'existing' && b.status === 'prospective') return false; // Assuming 'customer' or null is existing
+
+                // Must have location
+                if (!b.lat || !b.lng) return false;
+
+                return true;
+            });
+
+            if (candidates.length === 0) {
+                alert("No businesses found matching your criteria.");
+                statusDiv.textContent = '🚀 Plan Your Day';
+                return;
+            }
+
+            // Define Start Node
+            // Default to map center if current location not available, or first biz
+            let startNode = { lat: map.getCenter().lat, lng: map.getCenter().lng };
+
+            // Execute Optimization
+            const optimizedRoute = optimizeRoute(startNode, candidates);
+
+            // Render Results
+            renderRouteManifest(optimizedRoute);
+        };
+
+        function renderRouteManifest(route) {
+            const container = document.querySelector('.route-setup-content');
+
+            let html = `
+                <div class="route-header">
+                    <h2>🗺️ Optimal Route (${route.length} Stops)</h2>
+                    <button class="close-btn" onclick="closeRoutePanel()">×</button>
+                </div>
+                <div class="route-list" style="max-height: 60vh; overflow-y: auto; margin-bottom: 20px;">
+            `;
+
+            route.forEach((stop, index) => {
+                const mapLink = `https://www.google.com/maps/dir/?api=1&destination=${stop.lat},${stop.lng}`;
+                const icon = stop.status === 'prospective' ? '🔵' : '🟢';
+
+                html += `
+                    <div class="route-stop" style="background: #0f172a; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #334155;">
+                        <div style="display:flex; justify-content:space-between;">
+                            <span style="font-weight:bold; color:#f8fafc;">#${index + 1} ${icon} ${stop.name}</span>
+                            <span style="font-size:12px; color:#94a3b8;">+${stop.distanceFromLast}km</span>
+                        </div>
+                        <div style="font-size:13px; color:#cbd5e1; margin: 5px 0;">${stop.address}</div>
+                        <div style="display:flex; gap:10px; margin-top:10px;">
+                            <a href="${mapLink}" target="_blank" class="scanner-button" style="text-align:center; text-decoration:none;">🚗 Navigate</a>
+                            <button class="scanner-button" onclick="openBusinessDetails(${JSON.stringify(stop).replace(/"/g, '&quot;')})">📝 Check In</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div>
+                <button class="primary-action-btn" onclick="resetRouteUI()">Start New Route</button>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        window.resetRouteUI = function () {
+            // Reload page or re-inject original HTML. 
+            // For MVP simplicty, simple reload or we reconstruct the DOM.
+            // Let's just reconstruct the DOM for a smoother feel.
+            document.querySelector('.route-setup-content').innerHTML = `
+                <div class="route-header">
+                    <h2>🚀 Plan Your Day</h2>
+                    <button class="close-btn" onclick="closeRoutePanel()">×</button>
+                </div>
+                
+                <div class="route-form-group">
+                    <label>Start Location</label>
+                    <select id="routeStartPoint" class="form-select">
+                        <option value="current">📍 Current Location</option>
+                        <option value="home">🏠 Home Base</option>
+                    </select>
+                </div>
+
+                <div class="route-form-group">
+                    <label>Filter by Zip Code(s)</label>
+                    <input type="text" id="routeZips" class="form-input" placeholder="e.g. 63017, 63141 (Optional)">
+                    <div class="hint-text">Leave empty to include all visible businesses</div>
+                </div>
+
+                <div class="route-form-group">
+                    <label>Target Status</label>
+                    <div class="status-toggles">
+                        <label class="status-chip active" onclick="toggleStatusFilter(this, 'all')" data-value="all">All</label>
+                        <label class="status-chip" onclick="toggleStatusFilter(this, 'prospective')" data-value="prospective">Prospects</label>
+                        <label class="status-chip" onclick="toggleStatusFilter(this, 'existing')" data-value="existing">Customers</label>
+                    </div>
+                </div>
+
+                <button class="primary-action-btn" onclick="generateRoute()">Generate Route</button>
+            `;
         };
         window.openBusinessForm = function (lat, lng) {
             closeAllMobileMenus();
