@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Black Box Prospecting</title>
+    <title>Territory Map - Missouri Sales Territory</title>
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -138,12 +138,6 @@
             max-height: 400px;
             overflow-y: auto;
             width: 250px;
-            display: none;
-            /* Hidden by default */
-        }
-
-        .legend.active {
-            display: block;
         }
 
         .legend-title {
@@ -822,12 +816,6 @@
             width: 300px;
             max-height: calc(100vh - 100px);
             overflow-y: auto;
-            display: none;
-            /* Hidden by default */
-        }
-
-        .search-panel.active {
-            display: block;
         }
 
         .search-panel-header {
@@ -1200,8 +1188,8 @@
         }
 
 
-        /* Contacts Panel Styles */
-        .contacts-panel {
+        /* Data Management Styles */
+        .data-management-panel {
             position: fixed;
             top: 60px;
             left: 0;
@@ -1216,8 +1204,7 @@
             flex-direction: column;
         }
 
-
-        .contacts-panel.mobile-active {
+        .data-management-panel.mobile-active {
             transform: translateY(0);
         }
 
@@ -1292,7 +1279,7 @@
         @media (min-width: 769px) {
 
             /* Desktop Override for Panel */
-            .contacts-panel {
+            .data-management-panel {
                 width: 400px;
                 height: auto;
                 max-height: 80vh;
@@ -1304,7 +1291,7 @@
                 display: none;
             }
 
-            .contacts-panel.mobile-active {
+            .data-management-panel.mobile-active {
                 display: flex;
                 transform: translate(-50%, -50%);
             }
@@ -1526,9 +1513,7 @@
             .business-lookup-modal,
             .voice-modal,
             .business-details-panel,
-            .data-management-panel,
-            .contacts-panel,
-            .route-setup-modal {
+            .data-management-panel {
                 top: 60px !important;
                 height: calc(100% - 135px) !important;
                 align-items: flex-start !important;
@@ -1557,9 +1542,7 @@
             .business-lookup-content,
             .voice-modal-content,
             .business-details-content,
-            .data-management-content,
-            .contacts-content,
-            .route-setup-content {
+            .data-management-content {
                 width: 100% !important;
                 height: 100% !important;
                 max-width: none !important;
@@ -1570,14 +1553,6 @@
                 background: #f8fafc;
                 display: flex;
                 flex-direction: column;
-                margin: 0 !important;
-                border: none !important;
-            }
-
-            /* Route Setup Content Specific: needs Dark Background */
-            .route-setup-content {
-                background: #1e293b !important;
-                /* Keep dark theme */
             }
 
             /* Sticky Headers */
@@ -1585,8 +1560,7 @@
             .scanner-header,
             .business-lookup-header,
             .voice-modal-header,
-            .business-details-header,
-            .route-header {
+            .business-details-header {
                 position: sticky;
                 top: 0;
                 width: 100%;
@@ -1656,123 +1630,6 @@
                 width: 100% !important;
                 margin: 0 !important;
             }
-        }
-
-        /* Route Setup Modal */
-        .route-setup-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 30020;
-            /* Above everything */
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(4px);
-        }
-
-        .route-setup-modal.active {
-            display: flex;
-        }
-
-        .route-setup-content {
-            background: #1e293b;
-            color: white;
-            padding: 25px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 400px;
-            border: 1px solid #334155;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-        }
-
-        .route-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            /* Default Desktop Style */
-        }
-
-        .route-header h2 {
-            margin: 0;
-            font-size: 20px;
-            font-family: 'Rajdhani', sans-serif;
-            font-weight: 700;
-        }
-
-        .route-form-group {
-            margin-bottom: 20px;
-        }
-
-        .route-form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-            color: #94a3b8;
-        }
-
-        .form-select,
-        .form-input {
-            width: 100%;
-            padding: 12px;
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: white;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-
-        .status-toggles {
-            display: flex;
-            gap: 10px;
-        }
-
-        .status-chip {
-            flex: 1;
-            text-align: center;
-            padding: 10px;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .status-chip.active {
-            background: #3b82f6;
-            border-color: #3b82f6;
-            color: white;
-            font-weight: 600;
-        }
-
-        .primary-action-btn {
-            width: 100%;
-            padding: 15px;
-            background: #10b981;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .primary-action-btn:hover {
-            background: #059669;
-        }
-
-        .hint-text {
-            font-size: 12px;
-            color: #64748b;
-            margin-top: 5px;
         }
     </style>
 
@@ -1917,22 +1774,15 @@
 </head>
 
 <body>
-    <!-- Global Error Handler for Mobile Debugging -->
-    <script>
-        window.onerror = function (msg, url, lineNo, columnNo, error) {
-            alert('JavaSript Error: ' + msg + '\nLine: ' + lineNo);
-            return false;
-        };
-    </script>
     <!-- DESKTOP SIDEBAR -->
     <div class="desktop-sidebar">
         <div class="sidebar-header">
-            <h1 class="sidebar-brand">Black Box<br>Prospecting</h1>
+            <h1 class="sidebar-brand">BMG<br>Black Box</h1>
             <div class="sidebar-tagline">CRM Intelligence</div>
         </div>
         <div class="sidebar-nav">
-            <button class="sidebar-btn" onclick="toggleContactsPanel()">
-                <span class="sidebar-icon">👥</span> Contacts
+            <button class="sidebar-btn" onclick="toggleDataPanel()">
+                <span class="sidebar-icon">📊</span> Upload Data
             </button>
             <button class="sidebar-btn" onclick="toggleSearchPanel()">
                 <span class="sidebar-icon">🔍</span> Search
@@ -1942,9 +1792,6 @@
             </button>
             <button class="sidebar-btn" onclick="openBusinessForm()">
                 <span class="sidebar-icon">➕</span> Add Business
-            </button>
-            <button class="sidebar-btn" onclick="toggleRoutePanel()">
-                <span class="sidebar-icon">🚀</span> Smart Route
             </button>
             <button class="sidebar-btn" style="margin-top: auto;" onclick="openCardScannerStandalone()">
                 <span class="sidebar-icon">📷</span> Card Scanner
@@ -1956,26 +1803,38 @@
     </div>
     <!-- Mobile Header -->
     <div class="mobile-header">
-        BLACK BOX PROSPECTING
+        BMG BLACK BOX
     </div>
 
-    <!-- CONTACTS PANEL -->
-    <div id="contactsPanel" class="contacts-panel">
-        <div class="data-management-header"
-            style="background: #0a0a0a; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333;">
-            <span class="data-management-title"
-                style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 18px;">CONTACTS</span>
-            <button class="close-mobile-btn" onclick="closeContactsPanel()">×</button>
+    <!-- DATA MANAGEMENT PANEL -->
+    <div id="dataManagementPanel" class="data-management-panel">
+        <div class="data-management-header">
+            <span class="data-management-title">DATA UPLOAD</span>
+            <button class="close-mobile-btn" onclick="closeDataPanel()">×</button>
         </div>
-        <div class="contacts-content" style="padding: 0; overflow-y: auto; flex: 1;">
-            <div class="search-bar-container"
-                style="padding: 15px; background: #fff; border-bottom: 1px solid #e2e8f0;">
-                <input type="text" id="contactSearchInput" placeholder="Search contacts..."
-                    style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px;"
-                    oninput="renderContactsList()">
-            </div>
-            <div id="contactsList" class="contacts-list">
-                <!-- Javascript will populate this -->
+        <div class="data-management-content">
+            <div class="upload-section">
+                <div class="upload-zone" id="dropZone">
+                    <div class="upload-icon">📂</div>
+                    <p>Drag & Drop CSV here</p>
+                    <p class="upload-hint">or click to browse</p>
+                    <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+                </div>
+
+                <div class="upload-options">
+                    <label class="form-label">Import As:</label>
+                    <select id="importStatus" class="form-select">
+                        <option value="prospective">Prospective (Blue)</option>
+                        <option value="existing">Existing Customer (Green)</option>
+                    </select>
+                </div>
+
+                <div id="uploadStatus" class="upload-status"></div>
+
+                <div class="csv-template-hint">
+                    <p><strong>Required Columns:</strong> Name, Address, Zip</p>
+                    <p><strong>Optional:</strong> City, Type</p>
+                </div>
             </div>
         </div>
     </div>
@@ -1994,107 +1853,6 @@
     <!-- Map Container -->
     <div id="map"></div>
 
-    <!-- SMART ROUTE SETUP MODAL -->
-    <div id="routeSetupModal" class="route-setup-modal">
-        <div class="route-setup-content">
-            <div class="route-header">
-                <h2>🚀 Plan Your Day</h2>
-                <button class="close-btn" onclick="closeRoutePanel()">×</button>
-            </div>
-
-            <!-- 1. TIME BUDGET -->
-            <div class="route-form-group">
-                <label>Time Available</label>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <input type="number" id="routeTime" class="form-input" placeholder="Hours (e.g. 4)"
-                        style="width: 100px;">
-                    <span class="hint-text">Leave blank for unlimited</span>
-                </div>
-            </div>
-
-            <!-- 2. START & END POINTS -->
-            <div class="route-form-group">
-                <div style="display: flex; gap: 10px;">
-                    <div style="flex:1;">
-                        <label>Start Location</label>
-                        <select id="routeStartPoint" class="form-select">
-                            <option value="current">📍 Current Location</option>
-                            <option value="home">🏠 Home Base</option>
-                        </select>
-                    </div>
-                    <div style="flex:1;">
-                        <label>End Location</label>
-                        <select id="routeEndPoint" class="form-select">
-                            <option value="none">🔄 Optimized Loop</option>
-                            <option value="home">🏠 Back to Home</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3. GEOGRAPHY (City/Zip) -->
-            <div class="route-form-group">
-                <label>Target Area</label>
-                <div style="display: flex; gap: 10px; margin-bottom: 5px;">
-                    <label class="filter-radio"><input type="radio" name="geoMode" value="zip" checked
-                            onclick="toggleGeoInput()"> By Zip</label>
-                    <label class="filter-radio"><input type="radio" name="geoMode" value="city"
-                            onclick="toggleGeoInput()"> By City</label>
-                </div>
-                <input type="text" id="routeGeoInput" class="form-input" placeholder="e.g. 63376, 63017">
-            </div>
-
-            <!-- 4. INDUSTRY & STATUS -->
-            <div class="route-form-group">
-                <div style="display: flex; gap: 10px;">
-                    <div style="flex:1;">
-                        <label>Industry</label>
-                        <select id="routeIndustry" class="form-select">
-                            <option value="all">All Industries</option>
-                            <option value="Construction">Construction</option>
-                            <option value="Medical">Medical</option>
-                            <option value="Automotive">Automotive</option>
-                            <option value="Manufacturing">Manufacturing</option>
-                            <option value="Retail">Retail</option>
-                        </select>
-                    </div>
-                    <div style="flex:1;">
-                        <label>Status</label>
-                        <select id="routeStatus" class="form-select">
-                            <option value="all">Everyone</option>
-                            <option value="prospective">Prospects Only</option>
-                            <option value="existing">Customers Only</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 5. FILTERS (Recency & New) -->
-            <div class="route-form-group"
-                style="background: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid #334155;">
-                <label style="color:#cbd5e1; font-size:12px; margin-bottom: 8px; display:block;">EXCLUSION RULES</label>
-
-                <!-- Recency -->
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                    <span style="font-size: 13px; color: #94a3b8;">Hide recent visits:</span>
-                    <div style="display: flex; align-items: center; gap: 5px;">
-                        <input type="number" id="routeRecency" value="30"
-                            style="width: 50px; background: #0f172a; border: 1px solid #475569; color: white; padding: 4px; border-radius: 4px; text-align: center;">
-                        <span style="font-size: 12px; color: #64748b;">days</span>
-                    </div>
-                </div>
-
-                <!-- Never Visited -->
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                    <input type="checkbox" id="routeNeverVisited" style="accent-color: #3b82f6;">
-                    <span style="font-size: 13px; color: #fff;">Show <b>Never Visited</b> Only</span>
-                </label>
-            </div>
-
-            <button class="primary-action-btn" onclick="generateRoute()">Generate Route</button>
-        </div>
-    </div>
-
     <!-- Search and Filter Panel -->
     <div id="searchPanel" class="search-panel">
         <div class="search-panel-header">
@@ -2103,9 +1861,7 @@
             <button class="close-mobile-btn header-mobile-only" onclick="toggleSearchMobile()">×</button>
         </div>
         <div class="search-panel-content">
-
-
-            <!-- Start Point (Future) -->
+            <!-- Search Input -->
             <input type="text" id="searchInput" class="search-input"
                 placeholder="Search businesses, addresses, zip codes...">
 
@@ -2371,10 +2127,7 @@
     <!-- Add Business Form Modal -->
     <div id="businessFormModal" class="business-form-modal">
         <div class="business-form-content">
-            <div class="form-header">
-                <span>Add New Business</span>
-                <button class="close-mobile-btn" onclick="closeBusinessForm()">×</button>
-            </div>
+            <div class="form-header">Add New Business</div>
             <div class="form-subtitle">Fill out the form below or use voice guidance</div>
 
             <div id="voicePromptArea" class="voice-prompt" style="display: none;">
@@ -2542,13 +2295,9 @@
             <span class="nav-icon">i</span>
             <span class="nav-label">Legend</span>
         </button>
-        <button class="nav-item" onclick="toggleContactsPanel()">
-            <span class="nav-icon">👥</span>
-            <span class="nav-label">Contacts</span>
-        </button>
-        <button class="nav-item" onclick="toggleRoutePanel()">
-            <span class="nav-icon">🚀</span>
-            <span class="nav-label">Route</span>
+        <button class="nav-item" onclick="toggleDataPanel()">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Upload</span>
         </button>
         <button class="nav-item" onclick="openBusinessForm()">
             <span class="nav-icon">➕</span>
@@ -2827,8 +2576,8 @@
             const isExisting = business.customerStatus === 'existing';
             const interactions = business.interactionCount || 0;
 
-            // Color: Green for existing, Yellow for prospective
-            const color = isExisting ? '#22c55e' : '#eab308';
+            // Color: Green for existing, Blue for prospective
+            const color = isExisting ? '#22c55e' : '#3b82f6';
 
             // Size based on interactions
             let size = 'small';
@@ -3082,16 +2831,6 @@
                     // Store business data with marker
                     marker.businessData = business;
                 });
-
-                // Auto-zoom to fit all businesses if we have any
-                if (businessesData.length > 0) {
-                    const group = new L.featureGroup(businessMarkersLayer.getLayers());
-                    map.fitBounds(group.getBounds(), { padding: [50, 50] });
-                }
-
-                if (typeof updateStats === 'function') {
-                    updateStats();
-                }
 
             } catch (error) {
                 console.error('Could not load businesses from API:', error);
@@ -4115,79 +3854,93 @@
         let allMarkers = [];
 
         // Data Management Logic
-        // Contacts Panel Logic
-        window.toggleContactsPanel = function () {
-            const isOpen = toggleMobilePanel('contactsPanel');
-            if (isOpen) renderContactsList();
+        window.toggleDataPanel = function () {
+            closeAllMobileMenus();
+            document.getElementById('dataManagementPanel').classList.add('mobile-active');
         };
 
-        window.closeContactsPanel = function () {
-            document.getElementById('contactsPanel').classList.remove('mobile-active');
+        window.closeDataPanel = function () {
+            document.getElementById('dataManagementPanel').classList.remove('mobile-active');
         };
 
-        window.getAllContacts = function () {
-            let contacts = [];
-            window.businessesData.forEach(biz => {
-                if (biz.contacts && biz.contacts.length > 0) {
-                    biz.contacts.forEach(c => {
-                        contacts.push({
-                            ...c,
-                            businessName: biz.name,
-                            businessId: biz.id
-                        });
-                    });
-                }
-            });
-            // Sort A-Z
-            return contacts.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-        };
+        // CSV Upload Logic
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('csvFileInput');
+        const statusDiv = document.getElementById('uploadStatus');
 
-        window.renderContactsList = function () {
-            const listDiv = document.getElementById('contactsList');
-            const searchTerm = document.getElementById('contactSearchInput').value.toLowerCase();
-            const all = getAllContacts();
+        // Handle Click
+        dropZone.addEventListener('click', () => fileInput.click());
 
-            const filtered = all.filter(c =>
-                (c.name && c.name.toLowerCase().includes(searchTerm)) ||
-                (c.businessName && c.businessName.toLowerCase().includes(searchTerm))
-            );
-
-            if (filtered.length === 0) {
-                listDiv.innerHTML = '<div style="padding:20px; text-align:center; color:#64748b;">No contacts found.<br><small>Scan cards to add people.</small></div>';
-                return;
+        // Handle File Select
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
             }
+        });
 
-            let html = '';
-            filtered.forEach(c => {
-                html += `
-                    <div class="contact-card-item" style="padding: 15px; border-bottom: 1px solid #e2e8f0; background: white;">
-                        <div style="font-weight: 600; font-size: 16px; color: #1e293b;">${c.name}</div>
-                        <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">${c.title ? c.title + ' at ' : ''}${c.businessName}</div>
-                        <div style="display: flex; gap: 10px; margin-top: 8px;">
-                            ${c.phone ? `<a href="tel:${c.phone}" class="action-chip" style="background:#e0f2fe; color:#0284c7; padding:5px 10px; border-radius:15px; text-decoration:none; font-size:12px;">📞 Call</a>` : ''}
-                            ${c.email ? `<a href="mailto:${c.email}" class="action-chip" style="background:#f0fdf4; color:#16a34a; padding:5px 10px; border-radius:15px; text-decoration:none; font-size:12px;">✉️ Email</a>` : ''}
-                        </div>
-                    </div>
-                 `;
-            });
-            listDiv.innerHTML = html;
-        };
+        // Handle Drag & Drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
 
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+        });
 
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleFileUpload(e.dataTransfer.files[0]);
+            }
+        });
+
+        async function handleFileUpload(file) {
+            statusDiv.textContent = 'Uploading and processing... This may take a moment.';
+            statusDiv.className = 'upload-status';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const importType = document.getElementById('importStatus').value;
+            formData.append('status', importType);
+
+            try {
+                const response = await fetch('/api/import_csv', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    let msg = `✅ Import Complete!\nAdded: ${result.added}\nSkipped: ${result.skipped}`;
+                    if (result.errors.length > 0) {
+                        msg += `\n\n⚠️ Errors:\n${result.errors.slice(0, 5).join('\n')}`;
+                        if (result.errors.length > 5) msg += `\n...and ${result.errors.length - 5} more.`;
+                    }
+                    statusDiv.textContent = msg;
+                    statusDiv.className = 'upload-status success';
+
+                    // Reload map
+                    loadBusinesses();
+                } else {
+                    statusDiv.textContent = `❌ Error: ${result.error}`;
+                    statusDiv.className = 'upload-status error';
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                statusDiv.textContent = '❌ Network or Server Error.';
+                statusDiv.className = 'upload-status error';
+            }
+        }
 
         // Centralized Menu Management
         window.closeAllMobileMenus = function () {
-            const panels = [
-                'searchPanel',
-                'legendPanel',
-                'cardScannerModal',
-                'businessFormModal',
-                'voiceModal',
-                'businessDetailsPanel',
-                'contactsPanel',
-                'routeSetupModal'
-            ];
-
+            // Panel IDs (Adding businessDetailsPanel)
+            const panels = ['searchPanel', 'legendPanel', 'cardScannerModal', 'businessFormModal', 'voiceModal', 'businessDetailsPanel', 'dataManagementPanel'];
             panels.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
@@ -4196,40 +3949,13 @@
                 }
             });
 
-            // Allow video to be stopped if closing scanner
+            // Allow video to be stopped if closing scanner (safety check)
             if (window.videoStream) {
                 const tracks = window.videoStream.getTracks();
                 tracks.forEach(track => track.stop());
                 window.videoStream = null;
             }
         };
-
-        // Helper for consistent Toggle logic
-        window.toggleMobilePanel = function (panelId) {
-            const panel = document.getElementById(panelId);
-            if (!panel) return;
-
-            // Check if it is currently visible
-            const wasActive = panel.classList.contains('active') || panel.classList.contains('mobile-active');
-
-            // Close everything (clears the deck)
-            closeAllMobileMenus();
-
-            // If it wasn't valid, open it back up
-            if (!wasActive) {
-                // We add BOTH classes to be safe, as some CSS uses one or the other
-                // But specifically:
-                // Search/Legend/Contacts use .mobile-active in CSS overrides
-                // Route/Form use .active
-                // Adding both doesn't hurt if CSS only targets one.
-                panel.classList.add('mobile-active');
-                panel.classList.add('active');
-            }
-
-            return !wasActive; // Return true if we just opened it
-        };
-
-
 
         // Mobile Business Details Panel Logic
         window.openBusinessDetailsPanel = function (business) {
@@ -4261,38 +3987,28 @@
 
 
 
-        // Toggle search panel visibility (Desktop & Mobile)
-        window.toggleSearchPanel = function () {
-            const panel = document.getElementById('searchPanel');
-
-            if (window.innerWidth <= 768) {
-                toggleSearchMobile(); // Use mobile logic
-            } else {
-                panel.classList.toggle('active');
-                const btn = panel.querySelector('.collapse-btn');
-                if (btn) btn.textContent = panel.classList.contains('active') ? '−' : '+';
-            }
-        };
-
         // Mobile specific toggles with Exclusion Logic
         window.toggleSearchMobile = function () {
-            toggleMobilePanel('searchPanel');
-        };
+            const panel = document.getElementById('searchPanel');
+            const wasActive = panel.classList.contains('mobile-active');
 
-        // Toggle Legend (Desktop & Mobile)
-        window.toggleLegendMobile = function () {
-            toggleMobilePanel('legendPanel');
-        };
+            closeAllMobileMenus(); // Close everything else (and this one)
 
-        window.toggleLegend = function () {
-            if (window.innerWidth <= 768) {
-                toggleLegendMobile();
-            } else {
-                const panel = document.getElementById('legendPanel');
-                if (panel) panel.classList.toggle('active');
+            if (!wasActive) {
+                panel.classList.add('mobile-active');
             }
         };
 
+        window.toggleLegendMobile = function () {
+            const panel = document.getElementById('legendPanel');
+            const wasActive = panel.classList.contains('mobile-active');
+
+            closeAllMobileMenus();
+
+            if (!wasActive) {
+                panel.classList.add('mobile-active');
+            }
+        };
 
         // Override Open Form to close others
         // We capture original reference if needed, or just recall logic. 
@@ -4301,357 +4017,15 @@
         // No, the Nav Button calls `openBusinessForm()`.
         // I will Override `openBusinessForm` if it's GLOBAL.
         const _originalOpenForm = window.openBusinessForm;
-
-        // --- SMART ROUTE UI LOGIC ---
-
-        // --- SMART ROUTE UI LOGIC ---
-
-        // Toggle City vs Zip Input
-        window.toggleGeoInput = function () {
-            const mode = document.querySelector('input[name="geoMode"]:checked').value;
-            const input = document.getElementById('routeGeoInput');
-            if (mode === 'zip') {
-                input.placeholder = "e.g. 63376, 63017";
-            } else {
-                input.placeholder = "e.g. Wentzville, O'Fallon";
-            }
-        };
-
-        window.toggleRoutePanel = function () {
-            if (window.innerWidth <= 768) {
-                toggleMobilePanel('routeSetupModal');
-            } else {
-                const panel = document.getElementById('routeSetupModal');
-                panel.classList.toggle('active');
-            }
-        };
-
-        window.closeRoutePanel = function () {
-            document.getElementById('routeSetupModal').classList.remove('active');
-        };
-
-        window.toggleStatusFilter = function (chip, status) {
-            // Remove active class from siblings
-            const chips = chip.parentElement.getElementsByClassName('status-chip');
-            for (let c of chips) c.classList.remove('active');
-
-            // Activate this one
-            chip.classList.add('active');
-            chip.dataset.value = status;
-        };
-
-        // --- SMART ROUTING LOGIC ---
-
-        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-            var R = 6371; // Radius of the earth in km
-            var dLat = deg2rad(lat2 - lat1);
-            var dLon = deg2rad(lon2 - lon1);
-            var a =
-                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat1)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            var d = R * c; // Distance
-            return d;
-        }
-
-        function deg2rad(deg) {
-            return deg * (Math.PI / 180)
-        }
-
-        function optimizeRoute(startNode, locations) {
-            let unvisited = [...locations];
-            let route = [];
-            let currentLocation = startNode;
-
-            while (unvisited.length > 0) {
-                let nearest = null;
-                let minDist = Infinity;
-                let nearestIndex = -1;
-
-                // Find closest unvisited node
-                for (let i = 0; i < unvisited.length; i++) {
-                    const loc = unvisited[i];
-                    if (!loc.lat || !loc.lng) continue;
-
-                    const dist = getDistanceFromLatLonInKm(currentLocation.lat, currentLocation.lng, loc.lat, loc.lng);
-                    if (dist < minDist) {
-                        minDist = dist;
-                        nearest = loc;
-                        nearestIndex = i;
-                    }
-                }
-
-                if (nearest) {
-                    // Move to it
-                    nearest.distanceFromLast = minDist.toFixed(1);
-                    route.push(nearest);
-                    currentLocation = nearest;
-                    unvisited.splice(nearestIndex, 1);
-                } else {
-                    break;
-                }
-            }
-            return route;
-        }
-
-        // 3. UI Controller
-        const HOME_BASE = { lat: 38.792252, lng: -90.8640723 }; // User's Home
-
-        function getCurrentPositionPromise() {
-            return new Promise((resolve, reject) => {
-                if (!navigator.geolocation) reject("Geolocation not supported");
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-                    (err) => reject(err)
-                );
-            });
-        }
-
-        window.generateRoute = async function () {
-            const statusDiv = document.querySelector('.route-header h2');
-            statusDiv.textContent = '🤔 Thinking...';
-
-            // --- 1. GET INPUTS ---
-            const timeLimitHours = parseFloat(document.getElementById('routeTime').value) || 0;
-            const startPointMode = document.getElementById('routeStartPoint').value;
-            const endPointMode = document.getElementById('routeEndPoint').value;
-
-            const geoMode = document.querySelector('input[name="geoMode"]:checked').value;
-            const geoInput = document.getElementById('routeGeoInput').value.trim();
-            const targetAreas = geoInput ? geoInput.split(',').map(s => s.trim().toLowerCase()) : [];
-
-            // Legacy Zips (fallback if user typed in Zip box, but better to use new geoInput)
-            // We ignore old 'routeZips' since we have 'routeGeoInput' now.
-
-            const industry = document.getElementById('routeIndustry').value;
-            const status = document.getElementById('routeStatus').value;
-
-            const recencyDays = parseInt(document.getElementById('routeRecency').value) || 0;
-            const onlyNeverVisited = document.getElementById('routeNeverVisited').checked;
-
-            // --- 2. FILTERING ---
-
-            // Verify Data
-            console.log("DEBUG: Total Businesses Available:", (businessesData || []).length);
-            console.log("DEBUG: Filter Params:", { targetAreas, geoMode, industry, status, recencyDays });
-
-            const candidates = (businessesData || []).filter(b => {
-                // Must have location
-                if (!b.lat || !b.lng) return false;
-
-                // Geo Filter (Zip or City)
-                if (targetAreas.length > 0) {
-                    if (geoMode === 'zip') {
-                        const bZip = (b.zipCode || "").toString().trim();
-                        // Check if ANY target zip matches (using relaxed equality)
-                        const match = targetAreas.some(t => t == bZip);
-                        if (!match) {
-                            // console.log(`Reject ${b.name}: Zip ${bZip} not in`, targetAreas);
-                            return false;
-                        }
-                    } else {
-                        // Relaxed city matching
-                        if (!b.city || !targetAreas.some(area => b.city.toLowerCase().includes(area))) return false;
-                    }
-                }
-
-                // Industry Filter
-                if (industry !== 'all') {
-                    const bizIndustry = (b.industry || b.type || "").toLowerCase();
-                    if (!bizIndustry.includes(industry.toLowerCase())) return false;
-                }
-
-                // Status Filter
-                if (status === 'prospective' && b.status !== 'prospective') return false;
-                if (status === 'existing' && b.status === 'prospective') return false;
-
-                // Recency Filter
-                if (recencyDays > 0 && b.lastVisit) {
-                    const visitDate = new Date(b.lastVisit);
-                    if (visitDate > cutoffDate) return false; // Visited too recently
-                }
-
-                // Never Visited Filter
-                if (onlyNeverVisited && b.lastVisit) return false;
-
-                return true;
-            });
-            if (candidates.length === 0) {
-                alert("No businesses found matching your criteria.");
-                statusDiv.textContent = '🚀 Plan Your Day';
-                return;
-            }
-
-            // Define Start Node (With Timeout Protection)
-            let startNode;
-            if (startPointMode === 'home') {
-                startNode = HOME_BASE;
-            } else {
-                statusDiv.textContent = '📍 Locating you (4s timeout)...';
-                try {
-                    // Race GPS against a 4-second timeout to prevent hanging
-                    const locationPromise = getCurrentPositionPromise();
-                    const timeoutPromise = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("GPS Timeout")), 4000)
-                    );
-
-                    startNode = await Promise.race([locationPromise, timeoutPromise]);
-                } catch (e) {
-                    console.log("GPS Failed or Timed Out, using Map Center", e);
-                    // Fallback to Map Center for smooth UX
-                    const center = map.getCenter();
-                    startNode = { lat: center.lat, lng: center.lng };
-                }
-            }
-
-            // --- 4. MAX STOPS (Time Budget) ---
-            // Heuristic: 20 mins per stop (15 min visit + 5 min drive)
-            let maxStops = candidates.length;
-            if (timeLimitHours > 0) {
-                const minsAvailable = timeLimitHours * 60;
-                maxStops = Math.floor(minsAvailable / 20); // e.g. 4 hours = 240m / 20 = 12 stops
-                if (maxStops < 1) maxStops = 1;
-            }
-
-            // --- 5. EXECUTE OPTIMIZATION ---
-            statusDiv.textContent = '🔄 Optimizing...';
-            // Yield to UI thread
-            await new Promise(r => setTimeout(r, 100));
-
-            let optimizedRoute = optimizeRoute(startNode, candidates);
-
-            // Apply Max Stops Cap
-            if (optimizedRoute.length > maxStops) {
-                optimizedRoute = optimizedRoute.slice(0, maxStops);
-            }
-
-            // --- 6. END POINT LOGIC ---
-            if (endPointMode === 'home') {
-                const lastStop = optimizedRoute.length > 0 ? optimizedRoute[optimizedRoute.length - 1] : startNode;
-                const distStr = getDistanceFromLatLonInKm(lastStop.lat, lastStop.lng, HOME_BASE.lat, HOME_BASE.lng).toFixed(1);
-
-                optimizedRoute.push({
-                    name: "Return to Home Base",
-                    lat: HOME_BASE.lat,
-                    lng: HOME_BASE.lng,
-                    address: "301 Wilmer Valley Drive",
-                    status: 'system',
-                    distanceFromLast: distStr
-                });
-            }
-
-            // --- 7. RENDER ---
-            statusDiv.textContent = '🚀 Ready!';
-            renderRouteManifest(optimizedRoute);
-        };
-
-        function renderRouteManifest(route) {
-            const container = document.querySelector('.route-setup-content');
-
-            let html = `
-                <div class="route-header">
-                    <h2>🗺️ Optimal Route (${route.length} Stops)</h2>
-                    <button class="close-btn" onclick="closeRoutePanel()">×</button>
-                </div>
-                <div class="route-list" style="max-height: 60vh; overflow-y: auto; margin-bottom: 20px;">
-            `;
-
-            route.forEach((stop, index) => {
-                const mapLink = `https://www.google.com/maps/dir/?api=1&destination=${stop.lat},${stop.lng}`;
-                const appleMapLink = `http://maps.apple.com/?daddr=${stop.lat},${stop.lng}`;
-                const icon = stop.status === 'prospective' ? '🔵' : '🟢';
-
-                html += `
-                    <div class="route-stop" style="background: #0f172a; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #334155;">
-                        <div style="display:flex; justify-content:space-between;">
-                            <span style="font-weight:bold; color:#f8fafc;">#${index + 1} ${icon} ${stop.name}</span>
-                            <span style="font-size:12px; color:#94a3b8;">+${stop.distanceFromLast}km</span>
-                        </div>
-                        <div style="font-size:13px; color:#cbd5e1; margin: 5px 0;">${stop.address}</div>
-                        <div style="display:flex; gap:10px; margin-top:10px;">
-                            <!-- Google Maps -->
-                            <a href="${mapLink}" target="_blank" class="scanner-button" style="flex:1; text-align:center; text-decoration:none; background:#3b82f6;">Google Maps</a>
-                            <!-- Apple Maps -->
-                            <a href="${appleMapLink}" target="_blank" class="scanner-button" style="flex:1; text-align:center; text-decoration:none; background:#334155;"> Maps</a>
-                            
-                            <button class="scanner-button" style="flex:1;" onclick="openBusinessDetails(${JSON.stringify(stop).replace(/"/g, '&quot;')})">📝 Check In</button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            html += `</div>
-                <button class="primary-action-btn" onclick="resetRouteUI()">Start New Route</button>
-            `;
-
-            container.innerHTML = html;
-        }
-
-        window.resetRouteUI = function () {
-            // Reload page or re-inject original HTML. 
-            // For MVP simplicty, simple reload or we reconstruct the DOM.
-            // Let's just reconstruct the DOM for a smoother feel.
-            document.querySelector('.route-setup-content').innerHTML = `
-                <div class="route-header">
-                    <h2>🚀 Plan Your Day</h2>
-                    <button class="close-btn" onclick="closeRoutePanel()">×</button>
-                </div>
-                
-                <div class="route-form-group">
-                    <label>Start Location</label>
-                    <select id="routeStartPoint" class="form-select">
-                        <option value="current">📍 Current Location</option>
-                        <option value="home">🏠 Home Base</option>
-                    </select>
-                </div>
-
-                <div class="route-form-group">
-                    <label>Filter by Zip Code(s)</label>
-                    <input type="text" id="routeZips" class="form-input" placeholder="e.g. 63017, 63141 (Optional)">
-                    <div class="hint-text">Leave empty to include all visible businesses</div>
-                </div>
-
-                <div class="route-form-group">
-                    <label>Target Status</label>
-                    <div class="status-toggles">
-                        <label class="status-chip active" onclick="toggleStatusFilter(this, 'all')" data-value="all">All</label>
-                        <label class="status-chip" onclick="toggleStatusFilter(this, 'prospective')" data-value="prospective">Prospects</label>
-                        <label class="status-chip" onclick="toggleStatusFilter(this, 'existing')" data-value="existing">Customers</label>
-                    </div>
-                </div>
-
-                <button class="primary-action-btn" onclick="generateRoute()">Generate Route</button>
-            `;
-        };
         window.openBusinessForm = function (lat, lng) {
-            const panel = document.getElementById('businessFormModal');
-            const wasActive = panel.classList.contains('active');
-
-            if (window.innerWidth <= 768) {
-                closeAllMobileMenus();
-                // If it was already open and we clicked the toggle, we just closed it via closeAllMobileMenus.
-                // So if !wasActive, we open it.
-                if (!wasActive) {
-                    // Need to actually trigger the display logic for the form if hidden
-                    if (_originalOpenForm) {
-                        _originalOpenForm(lat, lng);
-                    } else {
-                        // Fallback Logic
-                        panel.classList.add('active');
-                        document.getElementById('businessFormTitle').textContent = 'Add New Business';
-                        // Reset if no coordinates passed (new clean click)
-                        if (lat === undefined) document.getElementById('businessForm').reset();
-                    }
-                }
-            } else {
-                if (_originalOpenForm) _originalOpenForm(lat, lng);
-                else {
-                    // Fallback
-                    panel.classList.add('active');
-                    document.getElementById('businessFormTitle').textContent = 'Add New Business';
-                    if (lat === undefined) document.getElementById('businessForm').reset();
-                }
+            closeAllMobileMenus();
+            if (_originalOpenForm) _originalOpenForm(lat, lng);
+            else {
+                // Fallback if not defined yet (unlikely)
+                document.getElementById('businessFormModal').classList.add('active');
+                document.getElementById('businessFormTitle').textContent = 'Add New Business';
+                document.getElementById('businessForm').reset();
+                document.getElementById('businessId').value = '';
             }
         };
 
@@ -4808,8 +4182,14 @@
             formRecognition.lang = 'en-US';
         }
 
-        // Open business form (Deleted Duplicate)
-
+        // Open business form
+        window.openBusinessForm = function () {
+            document.getElementById('businessFormModal').classList.add('active');
+            document.getElementById('businessForm').reset();
+            document.getElementById('geocodeStatus').textContent = '';
+            voiceGuideActive = false;
+            voiceGuideStep = 0;
+        };
 
         // Close business form
         window.closeBusinessForm = function () {

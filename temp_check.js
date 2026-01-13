@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Black Box Prospecting</title>
+    <title>Territory Map - Missouri Sales Territory</title>
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -1917,17 +1917,10 @@
 </head>
 
 <body>
-    <!-- Global Error Handler for Mobile Debugging -->
-    <script>
-        window.onerror = function (msg, url, lineNo, columnNo, error) {
-            alert('JavaSript Error: ' + msg + '\nLine: ' + lineNo);
-            return false;
-        };
-    </script>
     <!-- DESKTOP SIDEBAR -->
     <div class="desktop-sidebar">
         <div class="sidebar-header">
-            <h1 class="sidebar-brand">Black Box<br>Prospecting</h1>
+            <h1 class="sidebar-brand">BMG<br>Black Box</h1>
             <div class="sidebar-tagline">CRM Intelligence</div>
         </div>
         <div class="sidebar-nav">
@@ -1956,7 +1949,7 @@
     </div>
     <!-- Mobile Header -->
     <div class="mobile-header">
-        BLACK BOX PROSPECTING
+        BMG BLACK BOX
     </div>
 
     <!-- CONTACTS PANEL -->
@@ -4483,25 +4476,17 @@
                 return;
             }
 
-            // Define Start Node (With Timeout Protection)
+            // Define Start Node
             let startNode;
             if (startPointMode === 'home') {
                 startNode = HOME_BASE;
             } else {
-                statusDiv.textContent = '📍 Locating you (4s timeout)...';
                 try {
-                    // Race GPS against a 4-second timeout to prevent hanging
-                    const locationPromise = getCurrentPositionPromise();
-                    const timeoutPromise = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("GPS Timeout")), 4000)
-                    );
-
-                    startNode = await Promise.race([locationPromise, timeoutPromise]);
+                    statusDiv.textContent = '📍 Locating you...';
+                    startNode = await getCurrentPositionPromise();
                 } catch (e) {
-                    console.log("GPS Failed or Timed Out, using Map Center", e);
-                    // Fallback to Map Center for smooth UX
-                    const center = map.getCenter();
-                    startNode = { lat: center.lat, lng: center.lng };
+                    console.log("GPS Failed, using Map Center", e);
+                    startNode = { lat: map.getCenter().lat, lng: map.getCenter().lng };
                 }
             }
 
@@ -4559,7 +4544,6 @@
 
             route.forEach((stop, index) => {
                 const mapLink = `https://www.google.com/maps/dir/?api=1&destination=${stop.lat},${stop.lng}`;
-                const appleMapLink = `http://maps.apple.com/?daddr=${stop.lat},${stop.lng}`;
                 const icon = stop.status === 'prospective' ? '🔵' : '🟢';
 
                 html += `
@@ -4570,12 +4554,8 @@
                         </div>
                         <div style="font-size:13px; color:#cbd5e1; margin: 5px 0;">${stop.address}</div>
                         <div style="display:flex; gap:10px; margin-top:10px;">
-                            <!-- Google Maps -->
-                            <a href="${mapLink}" target="_blank" class="scanner-button" style="flex:1; text-align:center; text-decoration:none; background:#3b82f6;">Google Maps</a>
-                            <!-- Apple Maps -->
-                            <a href="${appleMapLink}" target="_blank" class="scanner-button" style="flex:1; text-align:center; text-decoration:none; background:#334155;"> Maps</a>
-                            
-                            <button class="scanner-button" style="flex:1;" onclick="openBusinessDetails(${JSON.stringify(stop).replace(/"/g, '&quot;')})">📝 Check In</button>
+                            <a href="${mapLink}" target="_blank" class="scanner-button" style="text-align:center; text-decoration:none;">🚗 Navigate</a>
+                            <button class="scanner-button" onclick="openBusinessDetails(${JSON.stringify(stop).replace(/"/g, '&quot;')})">📝 Check In</button>
                         </div>
                     </div>
                 `;
