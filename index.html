@@ -4088,79 +4088,7 @@
             listDiv.innerHTML = html;
         };
 
-        // CSV Upload Logic
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('csvFileInput');
-        const statusDiv = document.getElementById('uploadStatus');
 
-        // Handle Click
-        dropZone.addEventListener('click', () => fileInput.click());
-
-        // Handle File Select
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleFileUpload(e.target.files[0]);
-            }
-        });
-
-        // Handle Drag & Drop
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
-
-        dropZone.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            if (e.dataTransfer.files.length > 0) {
-                handleFileUpload(e.dataTransfer.files[0]);
-            }
-        });
-
-        async function handleFileUpload(file) {
-            statusDiv.textContent = 'Uploading and processing... This may take a moment.';
-            statusDiv.className = 'upload-status';
-
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const importType = document.getElementById('importStatus').value;
-            formData.append('status', importType);
-
-            try {
-                const response = await fetch('/api/import_csv', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    let msg = `✅ Import Complete!\nAdded: ${result.added}\nSkipped: ${result.skipped}`;
-                    if (result.errors.length > 0) {
-                        msg += `\n\n⚠️ Errors:\n${result.errors.slice(0, 5).join('\n')}`;
-                        if (result.errors.length > 5) msg += `\n...and ${result.errors.length - 5} more.`;
-                    }
-                    statusDiv.textContent = msg;
-                    statusDiv.className = 'upload-status success';
-
-                    // Reload map
-                    loadBusinesses();
-                } else {
-                    statusDiv.textContent = `❌ Error: ${result.error}`;
-                    statusDiv.className = 'upload-status error';
-                }
-            } catch (error) {
-                console.error('Upload error:', error);
-                statusDiv.textContent = '❌ Network or Server Error.';
-                statusDiv.className = 'upload-status error';
-            }
-        }
 
         // Centralized Menu Management
         window.closeAllMobileMenus = function () {
