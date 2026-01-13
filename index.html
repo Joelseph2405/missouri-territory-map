@@ -1554,7 +1554,8 @@
             .business-lookup-content,
             .voice-modal-content,
             .business-details-content,
-            .data-management-content {
+            .data-management-content,
+            .route-setup-content {
                 width: 100% !important;
                 height: 100% !important;
                 max-width: none !important;
@@ -1565,6 +1566,14 @@
                 background: #f8fafc;
                 display: flex;
                 flex-direction: column;
+                margin: 0 !important;
+                border: none !important;
+            }
+
+            /* Route Setup Content Specific: needs Dark Background */
+            .route-setup-content {
+                background: #1e293b !important;
+                /* Keep dark theme */
             }
 
             /* Sticky Headers */
@@ -1572,7 +1581,8 @@
             .scanner-header,
             .business-lookup-header,
             .voice-modal-header,
-            .business-details-header {
+            .business-details-header,
+            .route-header {
                 position: sticky;
                 top: 0;
                 width: 100%;
@@ -1680,6 +1690,7 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+            /* Default Desktop Style */
         }
 
         .route-header h2 {
@@ -2293,7 +2304,10 @@
     <!-- Add Business Form Modal -->
     <div id="businessFormModal" class="business-form-modal">
         <div class="business-form-content">
-            <div class="form-header">Add New Business</div>
+            <div class="form-header">
+                <span>Add New Business</span>
+                <button class="close-mobile-btn" onclick="closeBusinessForm()">×</button>
+            </div>
             <div class="form-subtitle">Fill out the form below or use voice guidance</div>
 
             <div id="voicePromptArea" class="voice-prompt" style="display: none;">
@@ -4024,9 +4038,16 @@
         let allMarkers = [];
 
         // Data Management Logic
+        // Data Management Logic (Toggle Fixed)
         window.toggleDataPanel = function () {
+            const panel = document.getElementById('dataManagementPanel');
+            const wasActive = panel.classList.contains('mobile-active');
+
             closeAllMobileMenus();
-            document.getElementById('dataManagementPanel').classList.add('mobile-active');
+
+            if (!wasActive) {
+                panel.classList.add('mobile-active');
+            }
         };
 
         window.closeDataPanel = function () {
@@ -4212,9 +4233,15 @@
         // --- SMART ROUTE UI LOGIC ---
 
         window.toggleRoutePanel = function () {
+            const panel = document.getElementById('routeSetupModal');
+            const wasActive = panel.classList.contains('active'); // It uses 'active' not 'mobile-active' based on CSS
+
             // Close other mobile menus if likely
             if (window.innerWidth <= 768) closeAllMobileMenus();
-            document.getElementById('routeSetupModal').classList.add('active');
+
+            if (!wasActive) {
+                panel.classList.add('active');
+            }
         };
 
         window.closeRoutePanel = function () {
@@ -4406,14 +4433,33 @@
             `;
         };
         window.openBusinessForm = function (lat, lng) {
-            closeAllMobileMenus();
-            if (_originalOpenForm) _originalOpenForm(lat, lng);
-            else {
-                // Fallback if not defined yet (unlikely)
-                document.getElementById('businessFormModal').classList.add('active');
-                document.getElementById('businessFormTitle').textContent = 'Add New Business';
-                document.getElementById('businessForm').reset();
-                document.getElementById('businessId').value = '';
+            const panel = document.getElementById('businessFormModal');
+            const wasActive = panel.classList.contains('active');
+
+            if (window.innerWidth <= 768) {
+                closeAllMobileMenus();
+                // If it was already open and we clicked the toggle, we just closed it via closeAllMobileMenus.
+                // So if !wasActive, we open it.
+                if (!wasActive) {
+                    // Need to actually trigger the display logic for the form if hidden
+                    if (_originalOpenForm) {
+                        _originalOpenForm(lat, lng);
+                    } else {
+                        // Fallback Logic
+                        panel.classList.add('active');
+                        document.getElementById('businessFormTitle').textContent = 'Add New Business';
+                        // Reset if no coordinates passed (new clean click)
+                        if (lat === undefined) document.getElementById('businessForm').reset();
+                    }
+                }
+            } else {
+                if (_originalOpenForm) _originalOpenForm(lat, lng);
+                else {
+                    // Fallback
+                    panel.classList.add('active');
+                    document.getElementById('businessFormTitle').textContent = 'Add New Business';
+                    if (lat === undefined) document.getElementById('businessForm').reset();
+                }
             }
         };
 
@@ -4570,14 +4616,8 @@
             formRecognition.lang = 'en-US';
         }
 
-        // Open business form
-        window.openBusinessForm = function () {
-            document.getElementById('businessFormModal').classList.add('active');
-            document.getElementById('businessForm').reset();
-            document.getElementById('geocodeStatus').textContent = '';
-            voiceGuideActive = false;
-            voiceGuideStep = 0;
-        };
+        // Open business form (Deleted Duplicate)
+
 
         // Close business form
         window.closeBusinessForm = function () {
