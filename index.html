@@ -4032,15 +4032,8 @@
         // Data Management Logic
         // Contacts Panel Logic
         window.toggleContactsPanel = function () {
-            const panel = document.getElementById('contactsPanel');
-            const wasActive = panel.classList.contains('mobile-active');
-
-            closeAllMobileMenus();
-
-            if (!wasActive) {
-                panel.classList.add('mobile-active');
-                renderContactsList();
-            }
+            const isOpen = toggleMobilePanel('contactsPanel');
+            if (isOpen) renderContactsList();
         };
 
         window.closeContactsPanel = function () {
@@ -4171,8 +4164,17 @@
 
         // Centralized Menu Management
         window.closeAllMobileMenus = function () {
-            // Panel IDs (Replacing dataManagementPanel with contactsPanel)
-            const panels = ['searchPanel', 'legendPanel', 'cardScannerModal', 'businessFormModal', 'voiceModal', 'businessDetailsPanel', 'contactsPanel', 'routeSetupModal'];
+            const panels = [
+                'searchPanel',
+                'legendPanel',
+                'cardScannerModal',
+                'businessFormModal',
+                'voiceModal',
+                'businessDetailsPanel',
+                'contactsPanel',
+                'routeSetupModal'
+            ];
+
             panels.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
@@ -4181,13 +4183,40 @@
                 }
             });
 
-            // Allow video to be stopped if closing scanner (safety check)
+            // Allow video to be stopped if closing scanner
             if (window.videoStream) {
                 const tracks = window.videoStream.getTracks();
                 tracks.forEach(track => track.stop());
                 window.videoStream = null;
             }
         };
+
+        // Helper for consistent Toggle logic
+        window.toggleMobilePanel = function (panelId) {
+            const panel = document.getElementById(panelId);
+            if (!panel) return;
+
+            // Check if it is currently visible
+            const wasActive = panel.classList.contains('active') || panel.classList.contains('mobile-active');
+
+            // Close everything (clears the deck)
+            closeAllMobileMenus();
+
+            // If it wasn't valid, open it back up
+            if (!wasActive) {
+                // We add BOTH classes to be safe, as some CSS uses one or the other
+                // But specifically:
+                // Search/Legend/Contacts use .mobile-active in CSS overrides
+                // Route/Form use .active
+                // Adding both doesn't hurt if CSS only targets one.
+                panel.classList.add('mobile-active');
+                panel.classList.add('active');
+            }
+
+            return !wasActive; // Return true if we just opened it
+        };
+
+
 
         // Mobile Business Details Panel Logic
         window.openBusinessDetailsPanel = function (business) {
@@ -4234,23 +4263,12 @@
 
         // Mobile specific toggles with Exclusion Logic
         window.toggleSearchMobile = function () {
-            const panel = document.getElementById('searchPanel');
-            const wasActive = panel.classList.contains('mobile-active');
-
-            closeAllMobileMenus(); // Close everything else (and this one)
-
-            if (!wasActive) {
-                panel.classList.add('mobile-active');
-            }
+            toggleMobilePanel('searchPanel');
         };
 
         // Toggle Legend (Desktop & Mobile)
         window.toggleLegendMobile = function () {
-            // Mobile Implementation
-            const panel = document.getElementById('legendPanel');
-            const wasActive = panel.classList.contains('mobile-active');
-            closeAllMobileMenus();
-            if (!wasActive) panel.classList.add('mobile-active');
+            toggleMobilePanel('legendPanel');
         };
 
         window.toggleLegend = function () {
@@ -4273,15 +4291,14 @@
 
         // --- SMART ROUTE UI LOGIC ---
 
+        // --- SMART ROUTE UI LOGIC ---
+
         window.toggleRoutePanel = function () {
-            const panel = document.getElementById('routeSetupModal');
-            const wasActive = panel.classList.contains('active'); // It uses 'active' not 'mobile-active' based on CSS
-
-            // Close other mobile menus if likely
-            if (window.innerWidth <= 768) closeAllMobileMenus();
-
-            if (!wasActive) {
-                panel.classList.add('active');
+            if (window.innerWidth <= 768) {
+                toggleMobilePanel('routeSetupModal');
+            } else {
+                const panel = document.getElementById('routeSetupModal');
+                panel.classList.toggle('active');
             }
         };
 
