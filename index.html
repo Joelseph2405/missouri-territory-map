@@ -1572,6 +1572,8 @@
                 flex-direction: column;
                 margin: 0 !important;
                 border: none !important;
+                overflow-y: auto !important;
+                /* Ensure scrolling works on mobile */
             }
 
             /* Route Setup Content Specific: needs Dark Background */
@@ -2051,11 +2053,7 @@
                         <label>Industry</label>
                         <select id="routeIndustry" class="form-select">
                             <option value="all">All Industries</option>
-                            <option value="Construction">Construction</option>
-                            <option value="Medical">Medical</option>
-                            <option value="Automotive">Automotive</option>
-                            <option value="Manufacturing">Manufacturing</option>
-                            <option value="Retail">Retail</option>
+                            <!-- Dynamic Content -->
                         </select>
                     </div>
                     <div style="flex:1;">
@@ -3036,6 +3034,7 @@
                 if (response.businesses) {
                     businessesData = response.businesses;
                     console.log(`Loaded ${businessesData.length} businesses from API`);
+                    populateIndustryDropdown(); // Update dropdowns with real data
                 } else {
                     businessesData = [];
                 }
@@ -4398,6 +4397,30 @@
         // 3. UI Controller
         const HOME_BASE = { lat: 38.792252, lng: -90.8640723 }; // User's Home
 
+        // Helper to Populate Industries
+        function populateIndustryDropdown() {
+            const industrySelect = document.getElementById('routeIndustry');
+            if (!industrySelect) return;
+
+            // Keep "All Industries"
+            industrySelect.innerHTML = '<option value="all">All Industries</option>';
+
+            // Extract unique industries/types
+            const industries = new Set();
+            (businessesData || []).forEach(b => {
+                const ind = b.industry || b.type;
+                if (ind) industries.add(ind.trim());
+            });
+
+            // Sort and Add
+            Array.from(industries).sort().forEach(ind => {
+                const opt = document.createElement('option');
+                opt.value = ind;
+                opt.textContent = ind;
+                industrySelect.appendChild(opt);
+            });
+        }
+
         function getCurrentPositionPromise() {
             return new Promise((resolve, reject) => {
                 if (!navigator.geolocation) reject("Geolocation not supported");
@@ -4436,6 +4459,10 @@
             console.log("DEBUG: Total Businesses Available:", (businessesData || []).length);
             console.log("DEBUG: Filter Params:", { targetAreas, geoMode, industry, status, recencyDays });
 
+            // Calculate cutoff date ONCE
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - recencyDays);
+
             const candidates = (businessesData || []).filter(b => {
                 // Must have location
                 if (!b.lat || !b.lng) return false;
@@ -4463,8 +4490,8 @@
                 }
 
                 // Status Filter
-                if (status === 'prospective' && b.status !== 'prospective') return false;
-                if (status === 'existing' && b.status === 'prospective') return false;
+                if (status === 'prospective' && b.customerStatus !== 'prospective') return false;
+                if (status === 'existing' && b.customerStatus === 'prospective') return false;
 
                 // Recency Filter
                 if (recencyDays > 0 && b.lastVisit) {
