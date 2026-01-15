@@ -3044,6 +3044,11 @@
 
                 // Add marker for each business
                 businessesData.forEach(business => {
+                    // Skip invalid coordinates
+                    if (!business.lat || !business.lng || (parseFloat(business.lat) === 0 && parseFloat(business.lng) === 0)) {
+                        return;
+                    }
+
                     const marker = L.marker([business.lat, business.lng], {
                         icon: createCustomMarker(business)
                     }).addTo(businessMarkersLayer);
@@ -3082,10 +3087,14 @@
                     marker.businessData = business;
                 });
 
-                // Auto-zoom to fit all businesses if we have any
-                if (businessesData.length > 0) {
-                    const group = new L.featureGroup(businessMarkersLayer.getLayers());
+                // Auto-zoom to fit all businesses if we have any valid markers
+                const markers = businessMarkersLayer.getLayers();
+                if (markers.length > 0) {
+                    const group = new L.featureGroup(markers);
                     map.fitBounds(group.getBounds(), { padding: [50, 50] });
+                } else {
+                    // Fallback to default territory view
+                    map.setView([38.78, -90.55], 11);
                 }
 
                 if (typeof updateStats === 'function') {
