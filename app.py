@@ -169,6 +169,44 @@ def delete_business(id):
     
     return jsonify({'success': True})
 
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    status = {
+        'status': 'ok',
+        'engine': database.get_engine(),
+        'db_path': database.DB_FILE if database.get_engine() == 'sqlite' else 'postgres',
+    }
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check table existence
+        if database.get_engine() == 'postgres':
+             cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'businesses')")
+             table_exists = cursor.fetchone()['exists']
+        else:
+             cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='businesses'")
+             table_exists = cursor.fetchone() is not None
+             
+        status['table_exists'] = table_exists
+        
+        if table_exists:
+            cursor.execute('SELECT COUNT(*) as count FROM businesses')
+            row = cursor.fetchone()
+            # Handle RealDictCursor vs tuple
+            if isinstance(row, dict):
+                status['row_count'] = row['count']
+            else:
+                status['row_count'] = row[0]
+                
+        conn.close()
+    except Exception as e:
+        status['error'] = str(e)
+        status['status'] = 'error'
+        
+    return jsonify(status)
+
 @app.route('/api/import_csv', methods=['POST'])
 def import_csv():
     if 'file' not in request.files:
