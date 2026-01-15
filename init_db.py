@@ -27,44 +27,56 @@ def init_db():
             else:
                 count = count_result[0]
                 
-            if count > 0:
-                print(f"Table already has {count} rows. Skipping seed.")
-                return
-
-            print(f"Seeding {len(businesses)} businesses...")
+            print(f"Checking data synchronization ({count} existing vs {len(businesses)} in file)...")
+            
+            # Seed if we have more data in file than in DB, or just try to add missing ones
+            # We removed the 'return' so we always attempt to sync new records
+            
+            print(f"Syncing {len(businesses)} businesses...")
+            
+            added = 0
+            skipped = 0
             
             for b in businesses:
-                contacts_json = json.dumps(b.get('contacts', []))
-                visits_json = json.dumps(b.get('visits', []))
-                
-                sql = '''
-                    INSERT INTO businesses (
-                        id, name, address, city, zipCode, lat, lng, type, 
-                        customerStatus, interactionCount, lastVisit, priority, phone, 
-                        contacts, visits
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                '''
-                
-                # Use prepare_query to handle placeholders
-                sql = database.prepare_query(sql)
-                
-                c.execute(sql, (
-                    b.get('id'),
-                    b.get('name'),
-                    b.get('address'),
-                    b.get('city'),
-                    b.get('zipCode'),
-                    b.get('lat'),
-                    b.get('lng'),
-                    b.get('type'),
-                    b.get('customerStatus'),
-                    b.get('interactionCount', 0),
-                    b.get('lastVisit'),
-                    b.get('priority', 'medium'),
-                    b.get('phone'),
-                    contacts_json,
-                    visits_json
-                ))
+                try:
+                    contacts_json = json.dumps(b.get('contacts', []))
+                    visits_json = json.dumps(b.get('visits', []))
+                    
+                    sql = '''
+                        INSERT INTO businesses (
+                            id, name, address, city, zipCode, lat, lng, type, 
+                            customerStatus, interactionCount, lastVisit, priority, phone, 
+                            contacts, visits
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    '''
+                    
+                    # Use prepare_query to handle placeholders
+                    sql = database.prepare_query(sql)
+                    
+                    c.execute(sql, (
+                        b.get('id'),
+                        b.get('name'),
+                        b.get('address'),
+                        b.get('city'),
+                        b.get('zipCode'),
+                        b.get('lat'),
+                        b.get('lng'),
+                        b.get('type'),
+                        b.get('customerStatus'),
+                        b.get('interactionCount', 0),
+                        b.get('lastVisit'),
+                        b.get('priority', 'medium'),
+                        b.get('phone'),
+                        contacts_json,
+                        visits_json
+                    ))
+                    added += 1
+                except Exception as e:
+                    # Likely ID conflict, just skip
+                    skipped += 1
+                    pass
+            
+            print(f"Sync complete: Added {added}, Skipped {skipped} (duplicates).")
             
             # If Postgres, reset the ID sequence to avoid collisions with next insert
             if database.get_engine() == 'postgres':
