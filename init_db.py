@@ -29,6 +29,15 @@ def init_db():
                 
             print(f"Checking data synchronization ({count} existing vs {len(businesses)} in file)...")
             
+            # AGGRESSIVE RESET: If we have very few records (like the 3 seed ones) but a big file,
+            # assume we are recovering from a bad state and wipe it.
+            if count < 100 and len(businesses) > 1000:
+                 print("⚠️ Detected potential stale seed data. PERFORMING HARD RESET (DROP TABLE).")
+                 c.execute("DROP TABLE businesses")
+                 database.init_tables(conn) # Recreate empty
+                 print("✅ Table recreated.")
+                 count = 0 # Now it's empty
+            
             # Seed if we have more data in file than in DB, or just try to add missing ones
             # We removed the 'return' so we always attempt to sync new records
             
