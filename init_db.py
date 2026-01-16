@@ -81,8 +81,39 @@ def init_db():
                     ))
                     added += 1
                 except Exception as e:
-                    # Likely ID conflict, just skip
-                    skipped += 1
+                    # ID conflict? Let's UPDATE the record to ensure fresh data
+                    # This is important for location fixes etc.
+                    try:
+                        sql_update = '''
+                            UPDATE businesses SET
+                                name=?, address=?, city=?, zipCode=?, lat=?, lng=?, type=?, 
+                                customerStatus=?, interactionCount=?, lastVisit=?, priority=?, phone=?, 
+                                contacts=?, visits=?
+                            WHERE id=?
+                        '''
+                        sql_update = database.prepare_query(sql_update)
+                        
+                        c.execute(sql_update, (
+                            b.get('name'),
+                            b.get('address'),
+                            b.get('city'),
+                            b.get('zipCode'),
+                            b.get('lat'),
+                            b.get('lng'),
+                            b.get('type'),
+                            b.get('customerStatus'),
+                            b.get('interactionCount', 0),
+                            b.get('lastVisit'),
+                            b.get('priority', 'medium'),
+                            b.get('phone'),
+                            contacts_json,
+                            visits_json,
+                            b.get('id')
+                        ))
+                        # print(f"Updated id {b.get('id')}")
+                    except Exception as update_e:
+                        print(f"Failed to update {b.get('id')}: {update_e}")
+                        skipped += 1
                     pass
             
             print(f"Sync complete: Added {added}, Skipped {skipped} (duplicates).")

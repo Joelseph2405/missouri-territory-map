@@ -1573,13 +1573,31 @@
                 margin: 0 !important;
                 border: none !important;
                 overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch;
+                /* ESSENTIAL for iOS */
                 /* Ensure scrolling works on mobile */
             }
 
-            /* Route Setup Content Specific: needs Dark Background */
+            /* Route Setup Content Specific: needs Dark Background & NO SCROLL on parent */
             .route-setup-content {
                 background: #1e293b !important;
-                /* Keep dark theme */
+                overflow: hidden !important;
+                /* Lock parent, let list scroll */
+            }
+
+            /* Fix Scrolling on Mobile: Flex Column Scroll */
+            .route-list {
+                flex: 1;
+                /* Take all available space */
+                max-height: none !important;
+                /* Remove constraints */
+                overflow-y: auto !important;
+                /* Enable internal scrolling */
+                -webkit-overflow-scrolling: touch;
+                margin-bottom: 10px !important;
+                padding-bottom: 20px !important;
+                min-height: 0;
+                /* Important for flex scrolling */
             }
 
             /* Sticky Headers */
@@ -1775,6 +1793,16 @@
             font-size: 12px;
             color: #64748b;
             margin-top: 5px;
+        }
+
+        /* New Route List Container for smoother scrolling */
+        .route-list {
+            max-height: 50vh;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            /* Scrollbar styling for desktop */
+            scrollbar-width: thin;
+            scrollbar-color: #475569 #1e293b;
         }
     </style>
 
@@ -2946,13 +2974,18 @@
                         <h3 style="margin: 0 0 8px 0; color: #111827; font-size: 18px;">
                             ${business.name}
                         </h3>
-                        <span style="background: ${statusBadgeColor}; color: white; padding: 3px 10px;
-                                     border-radius: 12px; font-size: 11px; font-weight: 600;">
-                            ${statusText}
-                        </span>
-                        ${business.priority === 'high' ?
-                    '<span style="background: #fbbf24; color: #92400e; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 5px;">HIGH PRIORITY</span>'
-                    : ''}
+                        <div style="display:flex; gap: 5px; margin-bottom: 10px;">
+                             <span style="background: ${statusBadgeColor}; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">
+                                ${statusText}
+                             </span>
+                             ${business.priority === 'high' ? '<span style="background: #fbbf24; color: #92400e; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">HIGH PRIORITY</span>' : ''}
+                        </div>
+                        
+                        <!-- Touchpoints Badge -->
+                        <div style="display:flex; justify-content:space-between; background:#eff6ff; padding:8px; border-radius:6px; border:1px solid #bfdbfe; margin-bottom:10px;">
+                             <div style="font-size:12px; color:#1e40af; font-weight:bold;">📊 Touchpoints</div>
+                             <div style="font-size:14px; color:#1e3a8a; font-weight:800;">${business.interactionCount || 0} Visits</div>
+                        </div>
                     </div>
 
                     <div style="color: #4b5563; font-size: 14px; line-height: 1.6;">
@@ -3043,13 +3076,23 @@
                 businessMarkersLayer.clearLayers();
 
                 // Add marker for each business
+                // Add marker for each business
                 businessesData.forEach(business => {
-                    // Skip invalid coordinates
-                    if (!business.lat || !business.lng || (parseFloat(business.lat) === 0 && parseFloat(business.lng) === 0)) {
-                        return;
-                    }
+                    // Skip invalid coordinates or coordinates clearly outside Missouri/USA region
+                    // Missouri/US approximate bounds: Lat 24-50, Lng -125 to -66
+                    // We see junk data like Lat -80 (Antarctica) or swapped coordinates.
+                    const lat = parseFloat(business.lat);
+                    const lng = parseFloat(business.lng);
 
-                    const marker = L.marker([business.lat, business.lng], {
+                    if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return;
+
+                    // Strict Filter: Valid US Latitude is positive (roughly 20 to 55)
+                    if (lat < 20 || lat > 55) return;
+
+                    // Strict Filter: US Longitude is negative (roughly -60 to -130)
+                    if (lng > -60 || lng < -130) return;
+
+                    const marker = L.marker([lat, lng], {
                         icon: createCustomMarker(business)
                     }).addTo(businessMarkersLayer);
 
@@ -3303,6 +3346,9 @@
             }
             business.visits.unshift(newVisit);  // Add to beginning
 
+            // Limit visits to last 50 to prevent bloat
+            if (business.visits.length > 50) business.visits.pop();
+
             // Update interaction count
             business.interactionCount = (business.interactionCount || 0) + 1;
 
@@ -3316,8 +3362,33 @@
                 // Reload businesses to update markers
                 loadBusinesses();
 
+                // --- SMART ROUTE AUTO-ADVANCE ---
+                const savedRouteJson = localStorage.getItem('activeRoute');
+                if (savedRouteJson) {
+                    let route = JSON.parse(savedRouteJson);
+                    // Find this business in the route and mark done
+                    const stopIndex = route.findIndex(r => r.id === currentBusinessId);
+
+                    if (stopIndex !== -1) {
+                        route[stopIndex].completed = true;
+                        route[stopIndex].completionTime = new Date().toISOString();
+
+                        // Save back
+                        localStorage.setItem('activeRoute', JSON.stringify(route));
+
+                        // If Route Panel is Open, Refresh it
+                        const routePanel = document.querySelector('.route-setup-content');
+                        // We can check if the route header is present to know if we are in "Manifest Mode"
+                        const isManifestMode = document.querySelector('.route-header h2') && document.querySelector('.route-header h2').textContent.includes('Optimal Route');
+
+                        if (isManifestMode) {
+                            renderRouteManifest(route);
+                        }
+                    }
+                }
+
                 // Show success message
-                const successMessage = `✅ Visit note saved successfully!\n\nBusiness: ${business.name}\nMet with: ${metWith || 'Not specified'}\nActivity: ${activityType}\nInteraction count: ${business.interactionCount}`;
+                const successMessage = `✅ Visit recorded!\n\nStop marked as completed. Ready for next location.`;
                 alert(successMessage);
             } catch (e) {
                 console.error('Error saving visit:', e);
@@ -4265,6 +4336,18 @@
 
         window.closeBusinessDetailsPanel = function () {
             document.getElementById('businessDetailsPanel').classList.remove('active');
+
+            // Smart Navigation: Jump back to Route IF active
+            if (localStorage.getItem('activeRoute')) {
+                const routeModal = document.getElementById('routeSetupModal');
+                if (routeModal) {
+                    routeModal.classList.add('active');
+                    // For mobile specific handling
+                    if (window.innerWidth <= 768) {
+                        routeModal.classList.add('mobile-active');
+                    }
+                }
+            }
         };
 
 
@@ -4579,86 +4662,231 @@
 
             // --- 7. RENDER ---
             statusDiv.textContent = '🚀 Ready!';
+
+            // Persist Route
+            localStorage.setItem('activeRoute', JSON.stringify(optimizedRoute));
+            localStorage.setItem('activeRouteTimestamp', Date.now());
+
             renderRouteManifest(optimizedRoute);
         };
 
         function renderRouteManifest(route) {
             const container = document.querySelector('.route-setup-content');
 
+            // Construct Full Route URL (Google Maps)
+            // Origin: "Current+Location"
+            // Destination: Last Stop
+            // Waypoints: All intermediate stops
+            let fullRouteUrl = "#";
+            if (route.length > 0) {
+                const origin = "Current+Location";
+                const dest = `${route[route.length - 1].lat},${route[route.length - 1].lng}`;
+
+                // Waypoints are all stops EXCEPT the last one
+                if (route.length > 1) {
+                    const waypoints = route.slice(0, route.length - 1)
+                        .map(s => `${s.lat},${s.lng}`)
+                        .join('|');
+                    fullRouteUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&waypoints=${waypoints}`;
+                } else {
+                    fullRouteUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}`;
+                }
+            }
+
             let html = `
                 <div class="route-header">
                     <h2>🗺️ Optimal Route (${route.length} Stops)</h2>
                     <button class="close-btn" onclick="closeRoutePanel()">×</button>
                 </div>
-                <div class="route-list" style="max-height: 60vh; overflow-y: auto; margin-bottom: 20px;">
+                
+                <!-- Full Route Action (Brain Icon) -->
+                <div style="padding: 10px; margin-bottom: 10px;">
+                    <a href="${fullRouteUrl}" target="_blank" class="primary-action-btn" style="text-decoration:none; display:block; text-align:center; background: #8b5cf6;">
+                        🧠 Open Smart Route in Google Maps
+                    </a>
+                </div>
+
+                <div class="route-list">
             `;
 
             route.forEach((stop, index) => {
                 const mapLink = `https://www.google.com/maps/dir/?api=1&destination=${stop.lat},${stop.lng}`;
-                const appleMapLink = `http://maps.apple.com/?daddr=${stop.lat},${stop.lng}`;
                 const icon = stop.status === 'prospective' ? '🔵' : '🟢';
 
+                // Check for "Done" status (persisted)
+                const isDone = stop.completed === true;
+                const opacity = isDone ? '0.5' : '1';
+                const checkInBtnText = isDone ? '✅ Done (Undo)' : '📝 Check In';
+                const checkInBtnStyle = isDone ? 'background:#10b981; cursor:pointer;' : '';
+
                 html += `
-                    <div class="route-stop" style="background: #0f172a; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #334155;">
+                    <div class="route-stop" id="stop-${index}" style="background: #0f172a; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #334155; opacity: ${opacity}; transition: opacity 0.3s;">
                         <div style="display:flex; justify-content:space-between;">
                             <span style="font-weight:bold; color:#f8fafc;">#${index + 1} ${icon} ${stop.name}</span>
                             <span style="font-size:12px; color:#94a3b8;">+${stop.distanceFromLast}km</span>
                         </div>
                         <div style="font-size:13px; color:#cbd5e1; margin: 5px 0;">${stop.address}</div>
                         <div style="display:flex; gap:10px; margin-top:10px;">
-                            <!-- Google Maps -->
-                            <a href="${mapLink}" target="_blank" class="scanner-button" style="flex:1; text-align:center; text-decoration:none; background:#3b82f6;">Google Maps</a>
-                            <!-- Apple Maps -->
-                            <a href="${appleMapLink}" target="_blank" class="scanner-button" style="flex:1; text-align:center; text-decoration:none; background:#334155;"> Maps</a>
+                            <!-- Google Maps (Map Icon) -->
+                            <a href="${mapLink}" target="_blank" class="scanner-button" style="flex:0 0 50px; display:flex; align-items:center; justify-content:center; text-decoration:none; background:#3b82f6; font-size: 20px;" title="Navigate">🗺️</a>
                             
-                            <button class="scanner-button" style="flex:1;" onclick="openBusinessDetails(${JSON.stringify(stop).replace(/"/g, '&quot;')})">📝 Check In</button>
+                            <!-- Check In (Direct to Note) -->
+                            <button class="scanner-button" style="flex:1; ${checkInBtnStyle}" onclick="${isDone ? `undoStopCompletion(${index})` : `addVisitNote(${stop.id})`}">${checkInBtnText}</button>
+                            
+                            <!-- View Details (Info Icon) -->
+                            <button class="scanner-button" style="flex:0 0 50px; background:#475569;" onclick="openBusinessDetailsPanel(${JSON.stringify(stop).replace(/"/g, '&quot;')})" title="Details">ℹ️</button>
                         </div>
                     </div>
                 `;
             });
 
             html += `</div>
-                <button class="primary-action-btn" onclick="resetRouteUI()">Start New Route</button>
+                <button class="primary-action-btn" onclick="resetRouteUI()" style="background:#ef4444;">End Route & Clear</button>
             `;
 
             container.innerHTML = html;
+
+            // Auto-scroll to first uncompleted stop
+            setTimeout(() => {
+                const firstUndone = route.findIndex(s => !s.completed);
+                if (firstUndone > 0) {
+                    const el = document.getElementById(`stop-${firstUndone}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 500);
         }
 
+        window.undoStopCompletion = function (index) {
+            if (!confirm('Uncheck this stop? This will re-open it on your route list.')) return;
+
+            const saved = localStorage.getItem('activeRoute');
+            if (saved) {
+                const route = JSON.parse(saved);
+                if (route[index]) {
+                    route[index].completed = false;
+                    delete route[index].completionTime;
+                    localStorage.setItem('activeRoute', JSON.stringify(route));
+
+                    // Force a fresh render with the updated route
+                    const container = document.querySelector('.route-setup-content');
+                    container.innerHTML = ''; // Clear first to be sure
+                    renderRouteManifest(route);
+                }
+            }
+        };
+
         window.resetRouteUI = function () {
-            // Reload page or re-inject original HTML. 
-            // For MVP simplicty, simple reload or we reconstruct the DOM.
-            // Let's just reconstruct the DOM for a smoother feel.
+            // Clear persistence
+            localStorage.removeItem('activeRoute');
+            localStorage.removeItem('activeRouteTimestamp');
+
+            // Reconstruct the DOM with ORIGINAL STATIC HTML structure
+            // Plus the Resume Button injection
             document.querySelector('.route-setup-content').innerHTML = `
-                <div class="route-header">
-                    <h2>🚀 Plan Your Day</h2>
-                    <button class="close-btn" onclick="closeRoutePanel()">×</button>
-                </div>
-                
-                <div class="route-form-group">
-                    <label>Start Location</label>
-                    <select id="routeStartPoint" class="form-select">
-                        <option value="current">📍 Current Location</option>
-                        <option value="home">🏠 Home Base</option>
-                    </select>
-                </div>
+            <div class="route-header">
+                <h2>🚀 Plan Your Day</h2>
+                <button class="close-btn" onclick="closeRoutePanel()">×</button>
+            </div>
 
-                <div class="route-form-group">
-                    <label>Filter by Zip Code(s)</label>
-                    <input type="text" id="routeZips" class="form-input" placeholder="e.g. 63017, 63141 (Optional)">
-                    <div class="hint-text">Leave empty to include all visible businesses</div>
-                </div>
+            <!-- Resume Button Placeholder -->
+            <div id="resumeRouteContainer" style="display:none; margin-bottom: 20px;">
+                    <button class="primary-action-btn" style="background:#10b981;" onclick="resumeSavedRoute()">🔄 Resume Last Route</button>
+                    <div style="text-align:center; margin-top:5px; font-size:12px; color:#64748b;">Or start a new one below</div>
+                    <hr style="border-color:#334155; margin: 15px 0;">
+            </div>
 
-                <div class="route-form-group">
-                    <label>Target Status</label>
-                    <div class="status-toggles">
-                        <label class="status-chip active" onclick="toggleStatusFilter(this, 'all')" data-value="all">All</label>
-                        <label class="status-chip" onclick="toggleStatusFilter(this, 'prospective')" data-value="prospective">Prospects</label>
-                        <label class="status-chip" onclick="toggleStatusFilter(this, 'existing')" data-value="existing">Customers</label>
+            <!-- 1. TIME BUDGET -->
+            <div class="route-form-group">
+                <label>Time Available</label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="number" id="routeTime" class="form-input" placeholder="Hours (e.g. 4)"
+                        style="width: 100px;">
+                    <span class="hint-text">Leave blank for unlimited</span>
+                </div>
+            </div>
+
+            <!-- 2. START & END POINTS -->
+            <div class="route-form-group">
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex:1;">
+                        <label>Start Location</label>
+                        <select id="routeStartPoint" class="form-select">
+                            <option value="current">📍 Current Location</option>
+                            <option value="home">🏠 Home Base</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <label>End Location</label>
+                        <select id="routeEndPoint" class="form-select">
+                            <option value="none">🔄 Optimized Loop</option>
+                            <option value="home">🏠 Back to Home</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. GEOGRAPHY (City/Zip) -->
+            <div class="route-form-group">
+                <label>Target Area</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+                    <label class="filter-radio"><input type="radio" name="geoMode" value="zip" checked
+                            onclick="toggleGeoInput()"> By Zip</label>
+                    <label class="filter-radio"><input type="radio" name="geoMode" value="city"
+                            onclick="toggleGeoInput()"> By City</label>
+                </div>
+                <input type="text" id="routeGeoInput" class="form-input" placeholder="e.g. 63376, 63017">
+            </div>
+
+            <!-- 4. INDUSTRY & STATUS -->
+            <div class="route-form-group">
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex:1;">
+                        <label>Industry</label>
+                        <select id="routeIndustry" class="form-select">
+                            <option value="all">All Industries</option>
+                            <!-- Dynamic Content -->
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <label>Status</label>
+                        <select id="routeStatus" class="form-select">
+                            <option value="all">Everyone</option>
+                            <option value="prospective">Prospects Only</option>
+                            <option value="existing">Customers Only</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. FILTERS (Recency & New) -->
+            <div class="route-form-group"
+                style="background: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid #334155;">
+                <label style="color:#cbd5e1; font-size:12px; margin-bottom: 8px; display:block;">EXCLUSION RULES</label>
+
+                <!-- Recency -->
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="font-size: 13px; color: #94a3b8;">Hide recent visits:</span>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="number" id="routeRecency" value="30"
+                            style="width: 50px; background: #0f172a; border: 1px solid #475569; color: white; padding: 4px; border-radius: 4px; text-align: center;">
+                        <span style="font-size: 12px; color: #64748b;">days</span>
                     </div>
                 </div>
 
-                <button class="primary-action-btn" onclick="generateRoute()">Generate Route</button>
+                <!-- Never Visited -->
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="routeNeverVisited" style="accent-color: #3b82f6;">
+                    <span style="font-size: 13px; color: #fff;">Show <b>Never Visited</b> Only</span>
+                </label>
+            </div>
+
+            <button class="primary-action-btn" onclick="generateRoute()">Generate Route</button>
             `;
+
+            // Re-populate
+            populateIndustryDropdown();
+            // Check for saved route (should be null since we just cleared it, but consistent logic)
+            checkForSavedRoute();
         };
         window.openBusinessForm = function (lat, lng) {
             const panel = document.getElementById('businessFormModal');
