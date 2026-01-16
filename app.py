@@ -59,6 +59,25 @@ def get_businesses():
         'businesses': [business_from_row(b) for b in businesses]
     })
 
+@app.route('/api/force_reset_db', methods=['GET'])
+def force_reset_db():
+    """Emergency endpoint to wipe and re-seed database"""
+    # Security: In a real app, this needs Auth. 
+    # For this prototype/debugging phase, it's open but obscure.
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DROP TABLE IF EXISTS businesses")
+        conn.commit()
+        conn.close()
+        
+        # Re-run init
+        init_db()
+        
+        return jsonify({"status": "success", "message": "Database wiped and re-seeded from JSON."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @app.route('/api/businesses', methods=['POST'])
 def add_business():
     new_business = request.json

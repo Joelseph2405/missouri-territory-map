@@ -32,16 +32,18 @@ def init_db():
             # --- DATA HEALTH CHECK ---
             # Check for missing Zip Codes (stale schema/data issue)
             try:
+                # Test if column exists and check for nulls
                 c.execute("SELECT COUNT(*) FROM businesses WHERE zipCode IS NULL OR zipCode = ''")
                 bad_zips_res = c.fetchone()
                 bad_zips = bad_zips_res['count'] if isinstance(bad_zips_res, dict) else bad_zips_res[0]
-            except:
-                bad_zips = 0 # Column might not exist logic handling
+            except Exception as e:
+                print(f"Schema Validation Failed (likely missing column): {e}")
+                bad_zips = 999999 # FORCE RESET
 
             # AGGRESSIVE RESET: If we have very few records OR many verified bad records
             if (count < 100 and len(businesses) > 1000) or (bad_zips > 500):
                  print(f"⚠️ Detected potential data issue (Count: {count}, Bad Zips: {bad_zips}). PERFORMING HARD RESET.")
-                 c.execute("DROP TABLE businesses")
+                 c.execute("DROP TABLE IF EXISTS businesses")
                  database.init_tables(conn) # Recreate empty
                  print("✅ Table recreated.")
                  count = 0 # Now it's empty
