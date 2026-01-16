@@ -4555,9 +4555,11 @@
             const cutoffDate = new Date();
             cutoffDate.setDate(cutoffDate.getDate() - recencyDays);
 
+            let stats = { loc: 0, geo: 0, ind: 0, status: 0, recent: 0, never: 0 };
+
             const candidates = (businessesData || []).filter(b => {
                 // Must have location
-                if (!b.lat || !b.lng) return false;
+                if (!b.lat || !b.lng) { stats.loc++; return false; }
 
                 // Geo Filter (Zip or City)
                 if (targetAreas.length > 0) {
@@ -4565,46 +4567,44 @@
                         const bZip = (b.zipCode || "").toString().trim();
                         // Check if ANY target zip matches (using relaxed equality)
                         const match = targetAreas.some(t => t == bZip);
-                        if (!match) {
-                            // console.log(`Reject ${b.name}: Zip ${bZip} not in`, targetAreas);
-                            return false;
-                        }
+                        if (!match) { stats.geo++; return false; }
                     } else {
                         // Relaxed city matching
-                        if (!b.city || !targetAreas.some(area => b.city.toLowerCase().includes(area))) return false;
+                        if (!b.city || !targetAreas.some(area => b.city.toLowerCase().includes(area))) { stats.geo++; return false; }
                     }
                 }
 
                 // Industry Filter
                 if (industry !== 'all') {
                     const bizIndustry = (b.industry || b.type || "").toLowerCase();
-                    if (!bizIndustry.includes(industry.toLowerCase())) return false;
+                    if (!bizIndustry.includes(industry.toLowerCase())) { stats.ind++; return false; }
                 }
 
                 // Status Filter (Case-insensitive)
                 if (status === 'prospective') {
                     const s = (b.customerStatus || "").toLowerCase().trim();
-                    if (s !== 'prospective') return false;
+                    if (s !== 'prospective') { stats.status++; return false; }
                 }
                 if (status === 'existing') {
                     const s = (b.customerStatus || "").toLowerCase().trim();
-                    if (s === 'prospective') return false;
+                    if (s === 'prospective') { stats.status++; return false; }
                 }
 
                 // Recency Filter
                 if (recencyDays > 0 && b.lastVisit) {
                     const visitDate = new Date(b.lastVisit);
-                    if (!isNaN(visitDate) && visitDate > cutoffDate) return false; // Visited too recently
+                    if (!isNaN(visitDate) && visitDate > cutoffDate) { stats.recent++; return false; } // Visited too recently
                 }
 
                 // Never Visited Filter
-                if (onlyNeverVisited && b.lastVisit) return false;
+                if (onlyNeverVisited && b.lastVisit) { stats.never++; return false; }
 
                 return true;
             });
             if (candidates.length === 0) {
-                // Improved Debug Feedback
-                alert(`No businesses found matching your criteria.\n\nChecked ${(businessesData || []).length} total businesses.\n\nAdjust your filters (e.g. radius, status, or date) and try again.`);
+                // Detailed Debug Feedback
+                const total = (businessesData || []).length;
+                alert(`No businesses matching criteria.\nChecked: ${total}\n\nRejections:\n📍 Missing Coords: ${stats.loc}\n🌍 Zip/City Mismatch: ${stats.geo}\n🏭 Industry: ${stats.ind}\n👥 Status: ${stats.status}\n📅 Too Recent: ${stats.recent}\n`);
                 statusDiv.textContent = '🚀 Plan Your Day';
                 return;
             }
