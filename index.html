@@ -4767,8 +4767,7 @@
         }
 
         window.undoStopCompletion = function (index) {
-            if (!confirm('Uncheck this stop? This will re-open it on your route list.')) return;
-
+            // Instant toggle (no confirm dialog)
             const saved = localStorage.getItem('activeRoute');
             if (saved) {
                 const route = JSON.parse(saved);
