@@ -4558,20 +4558,28 @@
             let stats = { loc: 0, geo: 0, ind: 0, status: 0, recent: 0, never: 0 };
 
             const candidates = (businessesData || []).filter(b => {
+                // Property Normalizers (Postgres flattens case)
+                const bLat = b.lat || b.latitude;
+                const bLng = b.lng || b.longitude;
+                // Check Zip: CamelCase vs lowercase
+                const bZipRaw = b.zipCode || b.zipcode || b.zip_code || b.ZipCode;
+                const bZip = (bZipRaw || "").toString().trim();
+
+                const bCity = (b.city || b.City || "").toLowerCase();
+                const bStatus = (b.customerStatus || b.customerstatus || "").toLowerCase().trim();
+                const bRecency = b.lastVisit || b.lastvisit;
+
                 // Must have location
-                if (!b.lat || !b.lng) { stats.loc++; return false; }
+                if (!bLat || !bLng) { stats.loc++; return false; }
 
                 // Geo Filter (Zip or City)
                 if (targetAreas.length > 0) {
                     if (geoMode === 'zip') {
-                        // Robust Zip Access (Check multiple casings)
-                        const bZip = (b.zipCode || b.zip_code || b.ZipCode || "").toString().trim();
                         // Check if ANY target zip matches (using relaxed equality)
                         const match = targetAreas.some(t => t == bZip);
                         if (!match) { stats.geo++; return false; }
                     } else {
                         // Relaxed city matching
-                        const bCity = (b.city || b.City || "").toLowerCase();
                         if (!bCity || !targetAreas.some(area => bCity.includes(area))) { stats.geo++; return false; }
                     }
                 }
@@ -4582,24 +4590,18 @@
                     if (!bizIndustry.includes(industry.toLowerCase())) { stats.ind++; return false; }
                 }
 
-                // Status Filter (Case-insensitive)
-                if (status === 'prospective') {
-                    const s = (b.customerStatus || "").toLowerCase().trim();
-                    if (s !== 'prospective') { stats.status++; return false; }
-                }
-                if (status === 'existing') {
-                    const s = (b.customerStatus || "").toLowerCase().trim();
-                    if (s === 'prospective') { stats.status++; return false; }
-                }
+                // Status Filter
+                if (status === 'prospective' && bStatus !== 'prospective') { stats.status++; return false; }
+                if (status === 'existing' && bStatus === 'prospective') { stats.status++; return false; }
 
                 // Recency Filter
-                if (recencyDays > 0 && b.lastVisit) {
-                    const visitDate = new Date(b.lastVisit);
-                    if (!isNaN(visitDate) && visitDate > cutoffDate) { stats.recent++; return false; } // Visited too recently
+                if (recencyDays > 0 && bRecency) {
+                    const visitDate = new Date(bRecency);
+                    if (!isNaN(visitDate) && visitDate > cutoffDate) { stats.recent++; return false; }
                 }
 
                 // Never Visited Filter
-                if (onlyNeverVisited && b.lastVisit) { stats.never++; return false; }
+                if (onlyNeverVisited && bRecency) { stats.never++; return false; }
 
                 return true;
             });
@@ -4609,10 +4611,10 @@
 
                 // Get sample data to verify keys
                 const sample = total > 0 ? businessesData[0] : {};
-                const sampleZip = sample.zipCode || sample.zip_code || "N/A";
-                const sampleCity = sample.city || "N/A";
+                const keys = Object.keys(sample).join(', '); // VITAL: Show us the keys!
+                const sampleZip = sample.zipCode || sample.zipcode || "N/A";
 
-                alert(`No businesses matching criteria.\nChecked: ${total}\n\nInputs:\n🔍 Mode: ${geoMode}\n🎯 Target: "${targetAreas.join(', ')}"\n\nRejections:\n📍 Missing Coords: ${stats.loc}\n🌍 Zip/City Mismatch: ${stats.geo}\n🏭 Industry: ${stats.ind}\n👥 Status: ${stats.status}\n\nData Sample:\nOne business has Zip: "${sampleZip}", City: "${sampleCity}"`);
+                alert(`No businesses matching criteria.\nChecked: ${total}\n\nInputs:\n🔍 Mode: ${geoMode}\n🎯 Target: "${targetAreas.join(', ')}"\n\nRejections:\n📍 Missing Coords: ${stats.loc}\n🌍 Zip/City Mismatch: ${stats.geo}\n\nData Debug:\nKeys: [${keys}]\nSample Zip: "${sampleZip}"`);
 
                 statusDiv.textContent = '🚀 Plan Your Day';
                 return;
