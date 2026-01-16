@@ -4606,16 +4606,8 @@
                 return true;
             });
             if (candidates.length === 0) {
-                // Detailed Debug Feedback
                 const total = (businessesData || []).length;
-
-                // Get sample data to verify keys
-                const sample = total > 0 ? businessesData[0] : {};
-                const keys = Object.keys(sample).join(', '); // VITAL: Show us the keys!
-                const sampleZip = sample.zipCode || sample.zipcode || "N/A";
-
-                alert(`No businesses matching criteria.\nChecked: ${total}\n\nInputs:\n🔍 Mode: ${geoMode}\n🎯 Target: "${targetAreas.join(', ')}"\n\nRejections:\n📍 Missing Coords: ${stats.loc}\n🌍 Zip/City Mismatch: ${stats.geo}\n\nData Debug:\nKeys: [${keys}]\nSample Zip: "${sampleZip}"`);
-
+                alert(`No businesses matching your criteria.\nChecked ${total} locations.\n\nTry adjusting your filters (e.g. increase Recency days, or check 'All Status').`);
                 statusDiv.textContent = '🚀 Plan Your Day';
                 return;
             }
