@@ -4685,10 +4685,10 @@
             localStorage.setItem('activeRoute', JSON.stringify(optimizedRoute));
             localStorage.setItem('activeRouteTimestamp', Date.now());
 
-            renderRouteManifest(optimizedRoute);
+            window.renderRouteManifest(optimizedRoute);
         };
 
-        function renderRouteManifest(route) {
+        window.renderRouteManifest = function (route) {
             const container = document.querySelector('.route-setup-content');
 
             // Construct Full Route URL (Google Maps)
@@ -4735,7 +4735,10 @@
                 const isDone = stop.completed === true;
                 const opacity = isDone ? '0.5' : '1';
                 const checkInBtnText = isDone ? '✅ Done (Undo)' : '📝 Check In';
-                const checkInBtnStyle = isDone ? 'background:#10b981; cursor:pointer;' : '';
+                // EXPLICIT COLORS: Green for Done, Orange for Check In
+                const checkInBtnStyle = isDone
+                    ? 'background:#10b981; color:white;'
+                    : 'background:#f59e0b; color:white;';
 
                 html += `
                     <div class="route-stop" id="stop-${index}" style="background: #0f172a; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #334155; opacity: ${opacity}; transition: opacity 0.3s;">
@@ -4746,13 +4749,13 @@
                         <div style="font-size:13px; color:#cbd5e1; margin: 5px 0;">${stop.address}</div>
                         <div style="display:flex; gap:10px; margin-top:10px;">
                             <!-- Google Maps (Map Icon) -->
-                            <a href="${mapLink}" target="_blank" class="scanner-button" style="flex:0 0 50px; display:flex; align-items:center; justify-content:center; text-decoration:none; background:#3b82f6; font-size: 20px;" title="Navigate">🗺️</a>
+                            <a href="${mapLink}" target="_blank" class="scanner-button" style="flex:0 0 50px; display:flex; align-items:center; justify-content:center; text-decoration:none; background:#3b82f6; color:white; font-size: 20px;" title="Navigate">🗺️</a>
                             
                             <!-- Check In (Direct to Note) -->
                             <button class="scanner-button" style="flex:1; ${checkInBtnStyle}" onclick="${isDone ? `undoStopCompletion(${index})` : `addVisitNote(${stop.id})`}">${checkInBtnText}</button>
                             
                             <!-- View Details (Info Icon) -->
-                            <button class="scanner-button" style="flex:0 0 50px; background:#475569;" onclick="openBusinessDetailsPanel(${JSON.stringify(stop).replace(/"/g, '&quot;')})" title="Details">ℹ️</button>
+                            <button class="scanner-button" style="flex:0 0 50px; background:#475569; color:white;" onclick="openBusinessDetailsPanel(${JSON.stringify(stop).replace(/"/g, '&quot;')})" title="Details">ℹ️</button>
                         </div>
                     </div>
                 `;
@@ -4775,20 +4778,28 @@
         }
 
         window.undoStopCompletion = function (index) {
-            // Instant toggle (no confirm dialog)
-            const saved = localStorage.getItem('activeRoute');
-            if (saved) {
-                const route = JSON.parse(saved);
-                if (route[index]) {
-                    route[index].completed = false;
-                    delete route[index].completionTime;
-                    localStorage.setItem('activeRoute', JSON.stringify(route));
+            try {
+                // Instant toggle (no confirm dialog)
+                const saved = localStorage.getItem('activeRoute');
+                if (saved) {
+                    const route = JSON.parse(saved);
+                    if (route[index]) {
+                        route[index].completed = false;
+                        delete route[index].completionTime;
+                        localStorage.setItem('activeRoute', JSON.stringify(route));
 
-                    // Force a fresh render with the updated route
-                    const container = document.querySelector('.route-setup-content');
-                    container.innerHTML = ''; // Clear first to be sure
-                    renderRouteManifest(route);
+                        // Force a fresh render with the updated route
+                        if (window.renderRouteManifest) {
+                            window.renderRouteManifest(route);
+                        } else {
+                            console.error("renderRouteManifest not found on window");
+                            location.reload(); // Fallback
+                        }
+                    }
                 }
+            } catch (error) {
+                console.error("Error in undoStopCompletion:", error);
+                alert("Error undoing check-in. Please reload page.");
             }
         };
 
