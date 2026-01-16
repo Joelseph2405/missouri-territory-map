@@ -4564,13 +4564,15 @@
                 // Geo Filter (Zip or City)
                 if (targetAreas.length > 0) {
                     if (geoMode === 'zip') {
-                        const bZip = (b.zipCode || "").toString().trim();
+                        // Robust Zip Access (Check multiple casings)
+                        const bZip = (b.zipCode || b.zip_code || b.ZipCode || "").toString().trim();
                         // Check if ANY target zip matches (using relaxed equality)
                         const match = targetAreas.some(t => t == bZip);
                         if (!match) { stats.geo++; return false; }
                     } else {
                         // Relaxed city matching
-                        if (!b.city || !targetAreas.some(area => b.city.toLowerCase().includes(area))) { stats.geo++; return false; }
+                        const bCity = (b.city || b.City || "").toLowerCase();
+                        if (!bCity || !targetAreas.some(area => bCity.includes(area))) { stats.geo++; return false; }
                     }
                 }
 
@@ -4604,7 +4606,14 @@
             if (candidates.length === 0) {
                 // Detailed Debug Feedback
                 const total = (businessesData || []).length;
-                alert(`No businesses matching criteria.\nChecked: ${total}\n\nRejections:\n📍 Missing Coords: ${stats.loc}\n🌍 Zip/City Mismatch: ${stats.geo}\n🏭 Industry: ${stats.ind}\n👥 Status: ${stats.status}\n📅 Too Recent: ${stats.recent}\n`);
+
+                // Get sample data to verify keys
+                const sample = total > 0 ? businessesData[0] : {};
+                const sampleZip = sample.zipCode || sample.zip_code || "N/A";
+                const sampleCity = sample.city || "N/A";
+
+                alert(`No businesses matching criteria.\nChecked: ${total}\n\nInputs:\n🔍 Mode: ${geoMode}\n🎯 Target: "${targetAreas.join(', ')}"\n\nRejections:\n📍 Missing Coords: ${stats.loc}\n🌍 Zip/City Mismatch: ${stats.geo}\n🏭 Industry: ${stats.ind}\n👥 Status: ${stats.status}\n\nData Sample:\nOne business has Zip: "${sampleZip}", City: "${sampleCity}"`);
+
                 statusDiv.textContent = '🚀 Plan Your Day';
                 return;
             }
