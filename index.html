@@ -3360,7 +3360,15 @@
                 await apiCall(`${API_URL}/${currentBusinessId}`, 'PUT', business);
 
                 // Reload businesses to update markers
-                loadBusinesses();
+                await loadBusinesses();
+
+                // Refresh the Business Details Panel to show new stats/notes immediately
+                const detailsPanel = document.getElementById('businessDetailsPanel');
+                if (detailsPanel && (detailsPanel.classList.contains('active') || detailsPanel.classList.contains('mobile-active'))) {
+                    // We must find the FRESH object from the reloaded data to ensure sync
+                    const freshBusiness = businessesData.find(b => b.id === currentBusinessId) || business;
+                    openBusinessDetailsPanel(freshBusiness);
+                }
 
                 // --- SMART ROUTE AUTO-ADVANCE ---
                 const savedRouteJson = localStorage.getItem('activeRoute');
