@@ -4581,14 +4581,20 @@
                     if (!bizIndustry.includes(industry.toLowerCase())) return false;
                 }
 
-                // Status Filter
-                if (status === 'prospective' && b.customerStatus !== 'prospective') return false;
-                if (status === 'existing' && b.customerStatus === 'prospective') return false;
+                // Status Filter (Case-insensitive)
+                if (status === 'prospective') {
+                    const s = (b.customerStatus || "").toLowerCase().trim();
+                    if (s !== 'prospective') return false;
+                }
+                if (status === 'existing') {
+                    const s = (b.customerStatus || "").toLowerCase().trim();
+                    if (s === 'prospective') return false;
+                }
 
                 // Recency Filter
                 if (recencyDays > 0 && b.lastVisit) {
                     const visitDate = new Date(b.lastVisit);
-                    if (visitDate > cutoffDate) return false; // Visited too recently
+                    if (!isNaN(visitDate) && visitDate > cutoffDate) return false; // Visited too recently
                 }
 
                 // Never Visited Filter
@@ -4597,7 +4603,8 @@
                 return true;
             });
             if (candidates.length === 0) {
-                alert("No businesses found matching your criteria.");
+                // Improved Debug Feedback
+                alert(`No businesses found matching your criteria.\n\nChecked ${(businessesData || []).length} total businesses.\n\nAdjust your filters (e.g. radius, status, or date) and try again.`);
                 statusDiv.textContent = '🚀 Plan Your Day';
                 return;
             }
