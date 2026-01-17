@@ -2213,55 +2213,74 @@
         <div class="voice-modal-content">
             <div class="voice-modal-header" id="modalBusinessName">Add Visit Note</div>
 
-            <!-- Contact and Activity Fields -->
-            <div style="margin-bottom: 15px;">
-                <label
-                    style="display: block; font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 5px;">Met
-                    With</label>
-                <select id="visitContact"
-                    style="width: 100%; padding: 8px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px;">
-                    <option value="">Select contact...</option>
-                </select>
-            </div>
-
-            <div style="margin-bottom: 15px;">
-                <label
-                    style="display: block; font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 5px;">Activity
-                    Type</label>
-                <select id="activityType"
-                    style="width: 100%; padding: 8px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px;">
-                    <option value="Sales Call">Sales Call</option>
-                    <option value="Discovery Call">Discovery Call</option>
-                    <option value="Product Demo">Product Demo</option>
-                    <option value="Account Review">Account Review</option>
-                    <option value="Follow-up">Follow-up</option>
-                    <option value="Delivery">Delivery</option>
-                    <option value="Service Call">Service Call</option>
-                    <option value="Other">Other</option>
-                </select>
-            </div>
-
+            <!-- 1. PRIMARY ACTION: Voice Note -->
             <div class="voice-status" id="voiceStatus">Click the microphone to start</div>
 
             <button id="micButton" class="mic-button">🎤</button>
 
             <label
                 style="display: block; font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 5px; margin-top: 15px;">Visit
-                Notes</label>
-            <div id="transcription" class="transcription-area" contenteditable="true"></div>
+                Note (Required)</label>
+            <div id="transcription" class="transcription-area" contenteditable="true"
+                placeholder="Speak or type your note here..."></div>
 
-            <div style="margin-top: 15px;">
-                <label
-                    style="display: block; font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 5px;">Opportunity
-                    Notes (Deals/Follow-ups)</label>
-                <textarea id="opportunityNotes"
-                    style="width: 100%; min-height: 80px; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical;"
-                    placeholder="Enter any opportunities, deals, or required follow-ups..."></textarea>
+            <!-- 2. OPTIONAL DETAILS TOGGLE -->
+            <div style="text-align: center; margin-top: 15px; margin-bottom: 5px;">
+                <button type="button" onclick="toggleVisitDetails()" id="toggleDetailsBtn"
+                    style="background: none; border: none; color: #3b82f6; font-size: 14px; font-weight: 600; cursor: pointer; padding: 5px;">
+                    + Add Details (Contact / Opportunity)
+                </button>
             </div>
 
-            <div class="modal-buttons">
-                <button class="modal-button modal-button-secondary" onclick="closeVoiceModal()">Cancel</button>
-                <button class="modal-button modal-button-primary" onclick="saveVisitNote()">Save Note</button>
+            <!-- 3. HIDDEN DETAILS SECTION -->
+            <div id="visitOptionalFields"
+                style="display: none; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 10px;">
+
+                <!-- Contact -->
+                <div style="margin-bottom: 12px;">
+                    <label
+                        style="display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 4px;">Met
+                        With</label>
+                    <select id="visitContact"
+                        style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+                        <option value="">Select contact...</option>
+                    </select>
+                </div>
+
+                <!-- Activity Type -->
+                <div style="margin-bottom: 12px;">
+                    <label
+                        style="display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 4px;">Activity
+                        Type</label>
+                    <select id="activityType"
+                        style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+                        <option value="Sales Call">Sales Call</option>
+                        <option value="Discovery Call">Discovery Call</option>
+                        <option value="Product Demo">Product Demo</option>
+                        <option value="Account Review">Account Review</option>
+                        <option value="Follow-up">Follow-up</option>
+                        <option value="Delivery">Delivery</option>
+                        <option value="Service Call">Service Call</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <!-- Opportunity -->
+                <div>
+                    <label
+                        style="display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 4px;">Opportunity
+                        Notes</label>
+                    <textarea id="opportunityNotes"
+                        style="width: 100%; min-height: 60px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-family: inherit; resize: vertical;"
+                        placeholder="Deals or follow-ups..."></textarea>
+                </div>
+            </div>
+
+            <!-- ACTIONS -->
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="secondary-btn" onclick="closeVoiceModal()" style="flex:1;">Cancel</button>
+                <button class="primary-btn" onclick="saveVisitNote()" style="flex:1; background: #10b981;">✅ Save
+                    Note</button>
             </div>
         </div>
     </div>
@@ -3252,48 +3271,73 @@
 
         // Open voice input modal
         window.addVisitNote = function (businessId) {
-            console.log('📝 addVisitNote called for Business ID:', businessId); // DEBUG LOG
+            console.log('📝 addVisitNote called for Business ID:', businessId);
 
-            const business = businessesData.find(b => b.id === businessId);
-            if (!business) {
-                console.error('❌ addVisitNote: Business not found for ID:', businessId);
-                return;
+            try {
+                const business = businessesData.find(b => b.id == businessId);
+                if (!business) {
+                    const msg = `❌ Error: Business not found for ID: ${businessId}`;
+                    console.error(msg);
+                    alert(msg);
+                    return;
+                }
+
+
+                // Check if browser supports speech recognition
+                if (!recognition) {
+                    alert('Voice input is not supported in this browser.\n\nPlease use Chrome, Edge, or Safari for voice input.\n\nYou can still type your notes manually in the text area.');
+                }
+
+                currentBusinessId = businessId;
+                document.getElementById('modalBusinessName').textContent = `Add Visit Note - ${business.name}`;
+                document.getElementById('transcription').textContent = '';
+                document.getElementById('opportunityNotes').value = '';
+                document.getElementById('voiceStatus').textContent = 'Click the microphone to start';
+
+                // Populate contacts dropdown
+                const contactSelect = document.getElementById('visitContact');
+                contactSelect.innerHTML = '<option value="">Select contact...</option>';
+
+                if (business.contacts && business.contacts.length > 0) {
+                    business.contacts.forEach(contact => {
+                        const option = document.createElement('option');
+                        option.value = contact.name;
+                        option.textContent = contact.name + (contact.title ? ` (${contact.title})` : '');
+                        if (contact.isPrimary) {
+                            option.selected = true;
+                        }
+                        contactSelect.appendChild(option);
+                    });
+                }
+
+                // Reset activity type to default
+                document.getElementById('activityType').value = 'Sales Call';
+
+                // RESET UI: Hide detailed fields by default
+                document.getElementById('visitOptionalFields').style.display = 'none';
+                document.getElementById('toggleDetailsBtn').textContent = '+ Add Details (Contact / Opportunity)';
+
+                document.getElementById('voiceModal').classList.add('active');
+
+                // Close any open popups
+                map.closePopup();
+            } catch (error) {
+                console.error("Critical Error in addVisitNote:", error);
+                alert("Critical Error: " + error.message);
             }
+        };
 
-            // Check if browser supports speech recognition
-            if (!recognition) {
-                alert('Voice input is not supported in this browser.\n\nPlease use Chrome, Edge, or Safari for voice input.\n\nYou can still type your notes manually in the text area.');
+        // Toggle Optional Fields
+        window.toggleVisitDetails = function () {
+            const container = document.getElementById('visitOptionalFields');
+            const btn = document.getElementById('toggleDetailsBtn');
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                btn.textContent = '- Hide Details';
+            } else {
+                container.style.display = 'none';
+                btn.textContent = '+ Add Details (Contact / Opportunity)';
             }
-
-            currentBusinessId = businessId;
-            document.getElementById('modalBusinessName').textContent = `Add Visit Note - ${business.name}`;
-            document.getElementById('transcription').textContent = '';
-            document.getElementById('opportunityNotes').value = '';
-            document.getElementById('voiceStatus').textContent = 'Click the microphone to start';
-
-            // Populate contacts dropdown
-            const contactSelect = document.getElementById('visitContact');
-            contactSelect.innerHTML = '<option value="">Select contact...</option>';
-
-            if (business.contacts && business.contacts.length > 0) {
-                business.contacts.forEach(contact => {
-                    const option = document.createElement('option');
-                    option.value = contact.name;
-                    option.textContent = contact.name + (contact.title ? ` (${contact.title})` : '');
-                    if (contact.isPrimary) {
-                        option.selected = true;
-                    }
-                    contactSelect.appendChild(option);
-                });
-            }
-
-            // Reset activity type to default
-            document.getElementById('activityType').value = 'Sales Call';
-
-            document.getElementById('voiceModal').classList.add('active');
-
-            // Close any open popups
-            map.closePopup();
         };
 
         // Close voice modal
@@ -3351,7 +3395,7 @@
                 return;
             }
 
-            const business = businessesData.find(b => b.id === currentBusinessId);
+            const business = businessesData.find(b => b.id == currentBusinessId);
             if (!business) {
                 console.error('❌ saveVisitNote: Business object not found in data');
                 alert('Error: Business not found.');
@@ -4363,6 +4407,13 @@
 
 
         // Mobile Business Details Panel Logic
+        // Helper to open details by ID (safer for HTML clicks)
+        window.openBusinessDetailsPanelById = function (id) {
+            const b = businessesData.find(x => x.id == id);
+            if (b) openBusinessDetailsPanel(b);
+            else console.error("Business not found for ID:", id);
+        };
+
         window.openBusinessDetailsPanel = function (business) {
             // Close other menus (including scanner, search etc)
             closeAllMobileMenus();
@@ -4940,6 +4991,9 @@
                     ? 'background:#10b981; color:white;' // Green
                     : 'background:#3b82f6; color:white;'; // Blue (Standard)
 
+                // Pre-calculate action to avoid nested template literal issues
+                const checkInAction = isDone ? `undoStopCompletion(${index})` : `addVisitNote('${stop.id}')`;
+
                 html += `
                     <div class="route-stop" id="stop-${index}" style="background: #0f172a; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #334155; opacity: ${opacity}; transition: opacity 0.3s;">
                         <div style="display:flex; justify-content:space-between;">
@@ -4949,13 +5003,13 @@
                         <div style="font-size:13px; color:#cbd5e1; margin: 5px 0;">${stop.address}</div>
                         <div style="display:flex; gap:10px; margin-top:10px;">
                             <!-- Google Maps (Map Icon) -->
-                            <a href="${mapLink}" target="_blank" class="scanner-button" style="flex:0 0 50px; display:flex; align-items:center; justify-content:center; text-decoration:none; background:#3b82f6; color:white; font-size: 20px;" title="Navigate">🗺️</a>
+                            <a href="${mapLink}" target="_blank" class="scanner-button" style="flex:1; display:flex; align-items:center; justify-content:center; text-decoration:none; background:#3b82f6; color:white; font-size: 14px;" title="Navigate">🗺️ Map</a>
                             
                             <!-- Check In (Direct to Note) -->
-                            <button class="scanner-button" style="flex:1; ${checkInBtnStyle}" onclick="${isDone ? `undoStopCompletion(${index})` : `addVisitNote(${stop.id})`}">${checkInBtnText}</button>
+                            <button class="scanner-button" style="flex:2; ${checkInBtnStyle}" onclick="${checkInAction}">${checkInBtnText}</button>
                             
                             <!-- View Details (Info Icon) -->
-                            <button class="scanner-button" style="flex:0 0 50px; background:#475569; color:white;" onclick="openBusinessDetailsPanel(${JSON.stringify(stop).replace(/"/g, '&quot;')})" title="Details">ℹ️</button>
+                            <button class="scanner-button" style="flex:1; background:#475569; color:white;" onclick="openBusinessDetailsPanelById('${stop.id}')" title="Details">ℹ️ Info</button>
                         </div>
                     </div>
                 `;
