@@ -3414,14 +3414,23 @@
             b.visits.push(newVisit);
 
             // Update interaction count (Safe Integer Increment)
-            const currentCount = parseInt(b.interactionCount || 0);
-            b.interactionCount = currentCount + 1;
+            let currentCount = 0;
+            if (b.interactionCount !== undefined && b.interactionCount !== null) {
+                currentCount = parseInt(b.interactionCount, 10);
+                if (isNaN(currentCount)) currentCount = 0;
+            }
+
+            const newCount = currentCount + 1;
+            console.log(`[DEBUG] Updating interaction count for Business ${b.id} (${b.name}) from ${currentCount} to ${newCount}`);
+
+            b.interactionCount = newCount;
             b.lastVisit = newVisit.date;
 
             // Save via PUT business
             apiCall(`/api/businesses/${b.id}`, 'PUT', b)
                 .then(resp => {
-                    showToast(`✅ Saved! Visits: ${b.interactionCount}`);
+                    console.log("[DEBUG] Save successful", resp);
+                    showToast(`✅ Saved! Visits: ${newCount}`);
                     document.getElementById('voiceModalSafe').style.display = 'none';
                     updateBusinessMarker(b);
                     loadBusinesses();
