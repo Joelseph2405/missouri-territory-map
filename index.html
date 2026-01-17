@@ -3181,7 +3181,7 @@
 
         // Function to toggle customer status
         window.toggleCustomerStatus = async function (businessId) {
-            const business = businessesData.find(b => b.id === businessId);
+            const business = businessesData.find(b => b.id == businessId);
             if (business) {
                 const newStatus = business.customerStatus === 'existing' ? 'prospective' : 'existing';
                 business.customerStatus = newStatus;
@@ -3307,64 +3307,251 @@
             toast.style.opacity = '1';
             setTimeout(() => { toast.style.opacity = '0'; }, 2000);
         };
-
-        // Open voice input modal
+        // Open voice input modal (SAFE VERSION)
         window.addVisitNote = function (businessId) {
             console.log('📝 addVisitNote called for Business ID:', businessId);
             showToast("Opening Note Screen...");
 
-            try {
-                const business = businessesData.find(b => b.id == businessId);
-                if (!business) {
-                    const msg = `❌ Error: Business not found for ID: ${businessId}`;
-                    console.error(msg);
-                    alert(msg);
-                    return;
+            map.closePopup();
+
+            setTimeout(() => {
+                try {
+                    const business = businessesData.find(b => b.id == businessId);
+                    if (!business) return;
+
+                    currentBusinessId = businessId;
+
+                    document.getElementById('safeModalTitle').textContent = `Add Visit Note - ${business.name}`;
+                    document.getElementById('safeTranscription').textContent = '';
+
+                    // OPPORTUNITY PRE-FILL
+                    const oppInput = document.getElementById('safeOpportunityInput');
+                    oppInput.value = `${business.name} - `;
+                    document.getElementById('safeOpportunityList').innerHTML = ''; // Clear list
+
+                    // Contacts
+                    const select = document.getElementById('safeContactSelect');
+                    select.innerHTML = '<option value="">Select contact...</option>';
+                    if (business.contacts) {
+                        business.contacts.forEach(c => {
+                            const opt = document.createElement('option');
+                            opt.value = c.name;
+                            opt.textContent = c.name;
+                            if (c.isPrimary) opt.selected = true;
+                            select.appendChild(opt);
+                        });
+                    }
+
+                    const modal = document.getElementById('voiceModalSafe');
+                    if (modal.parentNode !== document.body) document.body.appendChild(modal);
+                    modal.style.display = 'flex';
+
+                    setTimeout(() => document.getElementById('safeTranscription').focus(), 50);
+
+                } catch (e) {
+                    alert("Error: " + e.message);
                 }
+            }, 100);
+        };
 
+        window.safeAddOpportunity = function () {
+            const input = document.getElementById('safeOpportunityInput');
+            const val = input.value.trim();
+            if (!val || val.endsWith('-')) return; // Don't add if just prefix
 
-                // Check if browser supports speech recognition
-                if (!recognition) {
-                    alert('Voice input is not supported in this browser.\n\nPlease use Chrome, Edge, or Safari for voice input.\n\nYou can still type your notes manually in the text area.');
-                }
+            const ul = document.getElementById('safeOpportunityList');
+            const li = document.createElement('li');
+            li.textContent = val;
+            ul.appendChild(li);
 
-                currentBusinessId = businessId;
-                document.getElementById('modalBusinessName').textContent = `Add Visit Note - ${business.name}`;
-                document.getElementById('transcription').textContent = '';
-                document.getElementById('opportunityNotes').value = '';
-                document.getElementById('voiceStatus').textContent = 'Click the microphone to start';
+            // clear but keep prefix? User probably wants to add another.
+            // Let's reset to business name prefix for next one
+            // We need business name again.
+            const b = businessesData.find(b => b.id == currentBusinessId);
+            if (b) input.value = `${b.name} - `;
+        };
 
-                // Populate contacts dropdown
-                const contactSelect = document.getElementById('visitContact');
-                contactSelect.innerHTML = '<option value="">Select contact...</option>';
+        window.openSafeCardScanner = function () {
+            window.scanningForSafeModal = true;
 
-                if (business.contacts && business.contacts.length > 0) {
-                    business.contacts.forEach(contact => {
-                        const option = document.createElement('option');
-                        option.value = contact.name;
-                        option.textContent = contact.name + (contact.title ? ` (${contact.title})` : '');
-                        if (contact.isPrimary) {
-                            option.selected = true;
+            // Use existing scanner logic
+            const modal = document.getElementById('cardScannerModal');
+            // Ensure scanner is ON TOP of safe modal
+            if (modal.parentNode !== document.body) document.body.appendChild(modal);
+            modal.style.zIndex = "1000000"; // Higher than 999999
+
+            openCardScanner(currentBusinessId); // call original opener
+        };
+
+        // Hook into finishScanning or create a wrapper?
+        // original finishScanning calls logic to save to business.
+        // We will Modify finishScanning to check flag.
+
+        window.saveSafeVisitNote = function () {
+            const note = document.getElementById('safeTranscription').innerText;
+            if (!note) { alert("Please enter a note."); return; }
+
+            const contact = document.getElementById('safeContactSelect').value;
+
+            // Gather Opportunities
+            const ul = document.getElementById('safeOpportunityList');
+            let opps = [];
+            ul.querySelectorAll('li').forEach(li => opps.push(li.textContent));
+            const oppString = opps.join('\n');
+
+            const b = businessesData.find(b => b.id == currentBusinessId);
+            if (!b) { alert("Business not found!"); return; }
+
+            const newVisit = {
+                date: new Date().toISOString(),
+                notes: note,          // Renderer expects 'notes'
+                metWith: contact,     // Renderer expects 'metWith'
+                activityType: 'Sales Call',
+                opportunityNotes: oppString // Renderer expects 'opportunityNotes'
+            };
+
+            if (!b.visits) b.visits = [];
+            b.visits.push(newVisit);
+
+            // Update interaction count
+            b.interactionCount = (b.interactionCount || 0) + 1;
+            b.lastVisit = newVisit.date;
+
+            // Save via PUT business
+            apiCall(`/api/businesses/${b.id}`, 'PUT', b)
+                .then(resp => {
+                    showToast("✅ Note Saved!");
+                    document.getElementById('voiceModalSafe').style.display = 'none';
+                    updateBusinessMarker(b);
+                    loadBusinesses();
+
+                    // --- UPDATE SMART ROUTE STATUS ---
+                    try {
+                        const savedRoute = localStorage.getItem('activeRoute');
+                        if (savedRoute) {
+                            const route = JSON.parse(savedRoute);
+                            // Find stop with this business ID
+                            const stopIndex = route.findIndex(s => s.id == currentBusinessId);
+                            if (stopIndex !== -1) {
+                                route[stopIndex].completed = true;
+                                route[stopIndex].completionTime = new Date().toISOString();
+                                localStorage.setItem('activeRoute', JSON.stringify(route));
+
+                                // Refresh Route UI
+                                if (window.renderRouteManifest) {
+                                    window.renderRouteManifest(route);
+                                }
+                            }
                         }
-                        contactSelect.appendChild(option);
-                    });
+                    } catch (e) {
+                        console.error("Error updating route status:", e);
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Failed to save: " + err);
+                });
+        };
+
+        // ... (rest of Safe Modal helpers)
+
+        window.safeQuickAddContact = function () {
+            const name = prompt("New Contact Name:");
+            if (name) {
+                const select = document.getElementById('safeContactSelect');
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                opt.selected = true;
+                select.appendChild(opt);
+
+                // Update local data
+                const b = businessesData.find(b => b.id == currentBusinessId);
+                if (b) {
+                    if (!b.contacts) b.contacts = [];
+                    b.contacts.push({ name: name, isPrimary: false });
                 }
+            }
+        };
 
-                // Reset activity type to default
-                document.getElementById('activityType').value = 'Sales Call';
+        window.safeToggleMic = function () {
+            if (!recognition) {
+                alert("Voice input not supported in this browser.");
+                return;
+            }
 
-                document.getElementById('voiceModal').classList.add('active');
+            if (isListening) {
+                recognition.stop();
+                // Button update handled in onend
+            } else {
+                // UPDATE RECOGNITION HANDLERS DYNAMICALLY FOR SAFE MODAL
 
-                // Focus the text area immediately for typing
-                setTimeout(() => {
-                    document.getElementById('transcription').focus();
-                }, 100);
+                recognition.onstart = function () {
+                    isListening = true;
+                    const btn = document.getElementById('safeMicBtn');
+                    if (btn) {
+                        btn.textContent = "🛑 Stop";
+                        btn.style.background = "#ef4444";
+                        btn.classList.add('listening');
+                    }
+                    document.getElementById('safeVoiceStatus').textContent = 'Listening... speak now';
+                };
 
-                // Close any open popups
-                map.closePopup();
-            } catch (error) {
-                console.error("Critical Error in addVisitNote:", error);
-                alert("Critical Error: " + error.message);
+                recognition.onresult = function (event) {
+                    let interim = '';
+                    let final = '';
+
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            final += transcript + ' ';
+                        } else {
+                            interim += transcript;
+                        }
+                    }
+
+                    // Append to existing text if needed, or just replace?
+                    // Usually we append to what was already there if we restart
+                    // But for simplicity, let's just act as if we are typing
+                    // Note: resultIndex might reset.
+
+                    // Better approach: Read current content? No, speech API is tricky.
+                    // Let's just update the div.
+                    const div = document.getElementById('safeTranscription');
+
+                    // If this is a new session, we might want to append.
+                    // For now, let's just append the NEW stuff to the div's innerText
+                    // actually, the simplest way is to just let it fill.
+
+                    // Simple hack: We only update with what we hear NOW.
+                    // If user typed before, we don't want to overwrite it.
+                    // So we need to manage state better or just append to end.
+
+                    // Implementation: Just show what we hear in this session
+                    // div.textContent = div.textContent + ... no that duplicates.
+
+                    // Correct:
+                    // We need to store 'pre-existing' text before mic started?
+                    // No, just inserting valid text at cursor is best, but hard.
+                    // Let's go with: Append final results.
+
+                    if (final) {
+                        div.textContent = (div.textContent + ' ' + final).trim();
+                    }
+                };
+
+                recognition.onend = function () {
+                    isListening = false;
+                    const btn = document.getElementById('safeMicBtn');
+                    if (btn) {
+                        btn.textContent = "🎤 Voice";
+                        btn.style.background = "#3b82f6";
+                        btn.classList.remove('listening');
+                    }
+                    document.getElementById('safeVoiceStatus').textContent = 'Click mic or type below';
+                };
+
+                recognition.start();
             }
         };
 
@@ -4197,7 +4384,25 @@
 
                 updateBusinessMarker(business);
                 closeCardScanner();
-                alert(`✅ Contact added successfully!\n\nContact: ${contactName}\nBusiness: ${business.name}`);
+
+                // SPECIAL HAHDLING FOR SAFE NOTE MODAL
+                if (window.scanningForSafeModal) {
+                    window.scanningForSafeModal = false;
+
+                    // Add to dropdown in Safe Modal
+                    const select = document.getElementById('safeContactSelect');
+                    if (select) {
+                        const opt = document.createElement('option');
+                        opt.value = contactName;
+                        opt.textContent = contactName;
+                        opt.selected = true;
+                        select.appendChild(opt);
+                    }
+                    // No alert, just seamless return
+                    showToast(`✅ Added ${contactName}`);
+                } else {
+                    alert(`✅ Contact added successfully!\n\nContact: ${contactName}\nBusiness: ${business.name}`);
+                }
             } catch (e) {
                 console.error('Error saving extracted contact:', e);
                 alert('Error saving contact.');
@@ -6340,6 +6545,64 @@
          * 5. All changes are saved automatically in your browser
          */
     </script>
+    <!-- FAILSAFE MODAL (Added to bypass z-index traps) -->
+    <div id="voiceModalSafe"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999999; align-items:center; justify-content:center;">
+        <div
+            style="background:white; padding:20px; border-radius:12px; width:90%; max-width:500px; box-shadow:0 0 20px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div id="safeModalTitle" style="font-size:18px; font-weight:bold;">Add Note</div>
+                <button id="safeMicBtn" onclick="safeToggleMic()"
+                    style="background:#3b82f6; color:white; border:none; padding:5px 15px; border-radius:15px; font-size:12px; cursor:pointer;">🎤
+                    Voice</button>
+            </div>
+
+            <div id="safeVoiceStatus" style="color:#666; margin-bottom:10px; font-size:12px;">Click mic or type below
+            </div>
+
+            <div id="safeTranscription" contenteditable="true"
+                style="border:2px solid #3b82f6; min-height:100px; padding:10px; border-radius:8px; margin-bottom:10px; background:#f8fafc;">
+            </div>
+
+            <div style="background:#f1f5f9; padding:10px; border-radius:8px; margin-bottom:10px;">
+                <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:5px;">Contact</label>
+                <div style="display:flex; gap:5px; margin-bottom:5px;">
+                    <select id="safeContactSelect" style="flex:1; padding:8px;">
+                        <option>Select...</option>
+                    </select>
+                    <button onclick="safeQuickAddContact()"
+                        style="padding:0 10px; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;"
+                        title="Add Name Manually">➕</button>
+                </div>
+                <!-- Scan Button -->
+                <button onclick="openSafeCardScanner()"
+                    style="width:100%; padding:8px; background:#8b5cf6; color:white; border:none; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">📷
+                    Scan Business Card</button>
+            </div>
+
+            <div style="background:#f1f5f9; padding:10px; border-radius:8px; margin-bottom:10px;">
+                <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:5px;">Opportunity</label>
+                <textarea id="safeOpportunityInput"
+                    style="width:100%; height:60px; padding:8px; border:1px solid #cbd5e1; border-radius:4px; margin-bottom:5px;"
+                    placeholder="Opportunity details..."></textarea>
+                <button onclick="safeAddOpportunity()"
+                    style="width:100%; padding:6px; background:#334155; color:white; border:none; border-radius:4px; cursor:pointer; font-size:12px;">+
+                    Add Opportunity</button>
+
+                <!-- Added Opportunities List -->
+                <ul id="safeOpportunityList" style="margin-top:10px; padding-left:20px; font-size:12px; color:#333;">
+                </ul>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button onclick="document.getElementById('voiceModalSafe').style.display='none'"
+                    style="flex:1; padding:10px; background:#ccc; border:none; border-radius:6px;">Cancel</button>
+                <button onclick="saveSafeVisitNote()"
+                    style="flex:1; padding:10px; background:#10b981; color:white; border:none; border-radius:6px; font-weight:bold;">Save
+                    Note</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
