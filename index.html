@@ -3413,17 +3413,24 @@
             if (!b.visits) b.visits = [];
             b.visits.push(newVisit);
 
-            // Update interaction count
-            b.interactionCount = (b.interactionCount || 0) + 1;
+            // Update interaction count (Safe Integer Increment)
+            const currentCount = parseInt(b.interactionCount || 0);
+            b.interactionCount = currentCount + 1;
             b.lastVisit = newVisit.date;
 
             // Save via PUT business
             apiCall(`/api/businesses/${b.id}`, 'PUT', b)
                 .then(resp => {
-                    showToast("✅ Note Saved!");
+                    showToast(`✅ Saved! Visits: ${b.interactionCount}`);
                     document.getElementById('voiceModalSafe').style.display = 'none';
                     updateBusinessMarker(b);
                     loadBusinesses();
+
+                    // Force Refresh Details Panel if open
+                    const panel = document.getElementById('businessDetailsPanel');
+                    if (panel && (panel.classList.contains('active') || panel.classList.contains('mobile-active'))) {
+                        openBusinessDetailsPanel(b);
+                    }
 
                     // --- UPDATE SMART ROUTE STATUS ---
                     try {
