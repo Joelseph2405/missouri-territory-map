@@ -2224,27 +2224,24 @@
             <div id="transcription" class="transcription-area" contenteditable="true"
                 placeholder="Speak or type your note here..."></div>
 
-            <!-- 2. OPTIONAL DETAILS TOGGLE -->
-            <div style="text-align: center; margin-top: 15px; margin-bottom: 5px;">
-                <button type="button" onclick="toggleVisitDetails()" id="toggleDetailsBtn"
-                    style="background: none; border: none; color: #3b82f6; font-size: 14px; font-weight: 600; cursor: pointer; padding: 5px;">
-                    + Add Details (Contact / Opportunity)
-                </button>
-            </div>
-
-            <!-- 3. HIDDEN DETAILS SECTION -->
+            <!-- 2. DETAILS SECTION (Always Visible) -->
             <div id="visitOptionalFields"
-                style="display: none; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 10px;">
+                style="display: block; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 10px;">
 
                 <!-- Contact -->
                 <div style="margin-bottom: 12px;">
                     <label
                         style="display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 4px;">Met
                         With</label>
-                    <select id="visitContact"
-                        style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
-                        <option value="">Select contact...</option>
-                    </select>
+                    <div style="display:flex; gap:5px;">
+                        <select id="visitContact"
+                            style="flex:1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+                            <option value="">Select contact...</option>
+                        </select>
+                        <button onclick="quickAddContact()"
+                            style="padding:0 10px; border:1px solid #cbd5e1; border-radius:6px; background:#f1f5f9; cursor:pointer;"
+                            title="Add New Contact">➕</button>
+                    </div>
                 </div>
 
                 <!-- Activity Type -->
@@ -3020,17 +3017,17 @@
                     ${visitsHTML}
 
                     <div style="margin-top: 15px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
-                        <button onclick="addVisitNote(${business.id})"
+                        <button onclick="addVisitNote('${business.id}')"
                                 style="background: #3b82f6; color: white; border: none; padding: 8px 16px;
                                        border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; margin-right: 8px; margin-bottom: 8px;">
                             🎤 Add Visit Note
                         </button>
-                        <button onclick="openCardScanner(${business.id})"
+                        <button onclick="openCardScanner('${business.id}')"
                                 style="background: #8b5cf6; color: white; border: none; padding: 8px 16px;
                                        border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; margin-right: 8px; margin-bottom: 8px;">
                             📷 Scan Business Card
                         </button>
-                        <button onclick="toggleCustomerStatus(${business.id})"
+                        <button onclick="toggleCustomerStatus('${business.id}')"
                                 style="background: #6b7280; color: white; border: none; padding: 8px 16px;
                                        border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; margin-bottom: 8px;">
                             Toggle Status
@@ -3211,6 +3208,24 @@
             }
         };
 
+        // Robust Click Handlers to avoid string escaping issues in HTML
+        window.handleCheckInClick = function (btn) {
+            const id = btn.getAttribute('data-id');
+            const isDone = btn.getAttribute('data-is-done') === 'true';
+            const index = parseInt(btn.getAttribute('data-index'));
+
+            if (isDone) {
+                undoStopCompletion(index);
+            } else {
+                addVisitNote(id);
+            }
+        };
+
+        window.handleInfoClick = function (btn) {
+            const id = btn.getAttribute('data-id');
+            openBusinessDetailsPanelById(id);
+        };
+
         // ============================================
         // PHASE 4: VOICE INPUT AND VISIT TRACKING
         // ============================================
@@ -3269,9 +3284,34 @@
             };
         }
 
+
+        // Debug / UI Feedback Toast
+        window.showToast = function (message) {
+            let toast = document.getElementById('debug-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'debug-toast';
+                toast.style.position = 'fixed';
+                toast.style.bottom = '20px';
+                toast.style.left = '50%';
+                toast.style.transform = 'translateX(-50%)';
+                toast.style.backgroundColor = '#333';
+                toast.style.color = '#fff';
+                toast.style.padding = '10px 20px';
+                toast.style.borderRadius = '20px';
+                toast.style.zIndex = '99999';
+                toast.style.transition = 'opacity 0.5s';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = message;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+        };
+
         // Open voice input modal
         window.addVisitNote = function (businessId) {
             console.log('📝 addVisitNote called for Business ID:', businessId);
+            showToast("Opening Note Screen...");
 
             try {
                 const business = businessesData.find(b => b.id == businessId);
@@ -3313,11 +3353,12 @@
                 // Reset activity type to default
                 document.getElementById('activityType').value = 'Sales Call';
 
-                // RESET UI: Hide detailed fields by default
-                document.getElementById('visitOptionalFields').style.display = 'none';
-                document.getElementById('toggleDetailsBtn').textContent = '+ Add Details (Contact / Opportunity)';
-
                 document.getElementById('voiceModal').classList.add('active');
+
+                // Focus the text area immediately for typing
+                setTimeout(() => {
+                    document.getElementById('transcription').focus();
+                }, 100);
 
                 // Close any open popups
                 map.closePopup();
@@ -3337,6 +3378,29 @@
             } else {
                 container.style.display = 'none';
                 btn.textContent = '+ Add Details (Contact / Opportunity)';
+            }
+        };
+
+        // Quick Add Contact Logic
+        window.quickAddContact = function () {
+            const name = prompt("Enter new contact name:");
+            if (!name) return;
+
+            // Add to dropdown
+            const select = document.getElementById('visitContact');
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name + " (New)";
+            option.selected = true;
+            select.appendChild(option);
+
+            // Should properly save this to backend later, 
+            // but for now it will be saved when the visit is saved if logic permits.
+            // For now, let's at least update the local object so it feels real
+            const business = businessesData.find(b => b.id == currentBusinessId);
+            if (business) {
+                if (!business.contacts) business.contacts = [];
+                business.contacts.push({ name: name, isPrimary: false });
             }
         };
 
@@ -4987,12 +5051,10 @@
                 const opacity = isDone ? '0.5' : '1';
                 const checkInBtnText = isDone ? '✅ Done' : '📝 Check In';
                 // Blue for Action, Green for Success
+                // Blue for Action, Green for Success
                 const checkInBtnStyle = isDone
                     ? 'background:#10b981; color:white;' // Green
                     : 'background:#3b82f6; color:white;'; // Blue (Standard)
-
-                // Pre-calculate action to avoid nested template literal issues
-                const checkInAction = isDone ? `undoStopCompletion(${index})` : `addVisitNote('${stop.id}')`;
 
                 html += `
                     <div class="route-stop" id="stop-${index}" style="background: #0f172a; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #334155; opacity: ${opacity}; transition: opacity 0.3s;">
@@ -5006,10 +5068,13 @@
                             <a href="${mapLink}" target="_blank" class="scanner-button" style="flex:1; display:flex; align-items:center; justify-content:center; text-decoration:none; background:#3b82f6; color:white; font-size: 14px;" title="Navigate">🗺️ Map</a>
                             
                             <!-- Check In (Direct to Note) -->
-                            <button class="scanner-button" style="flex:2; ${checkInBtnStyle}" onclick="${checkInAction}">${checkInBtnText}</button>
+                            <button class="scanner-button" style="flex:2; ${checkInBtnStyle}" 
+                                data-id="${stop.id}" data-index="${index}" data-is-done="${isDone}"
+                                onclick="handleCheckInClick(this)">${checkInBtnText}</button>
                             
                             <!-- View Details (Info Icon) -->
-                            <button class="scanner-button" style="flex:1; background:#475569; color:white;" onclick="openBusinessDetailsPanelById('${stop.id}')" title="Details">ℹ️ Info</button>
+                            <button class="scanner-button" style="flex:1; background:#475569; color:white;" 
+                                data-id="${stop.id}" onclick="handleInfoClick(this)" title="Details">ℹ️ Info</button>
                         </div>
                     </div>
                 `;
