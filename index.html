@@ -6910,12 +6910,14 @@
             // Helper: Check if YYYY-MM-DD string matches Today's Local Date
             const isTodayDateStr = (dateStr) => {
                 if (!dateStr) return false;
+                // Extract just the date part if it's an ISO string (e.g., "2026-01-17T22:55:14.172Z" -> "2026-01-17")
+                const datePart = dateStr.split('T')[0];
                 // Construct local YYYY-MM-DD for today to compare
                 const year = todayDate.getFullYear();
                 const month = String(todayDate.getMonth() + 1).padStart(2, '0');
                 const day = String(todayDate.getDate()).padStart(2, '0');
                 const localTodayStr = `${year}-${month}-${day}`;
-                return dateStr === localTodayStr;
+                return datePart === localTodayStr;
             }
 
             let reportText = `Daily Prospecting Recap - ${todayDate.toLocaleDateString()}\n\n`;
