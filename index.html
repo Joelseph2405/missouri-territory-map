@@ -2414,7 +2414,7 @@
     <div id="businessFormModal" class="business-form-modal">
         <div class="business-form-content">
             <div class="form-header">
-                <span>Add New Business</span>
+                <span id="businessFormTitle">Add New Business</span>
                 <button class="close-mobile-btn" onclick="closeBusinessForm()">×</button>
             </div>
             <div class="form-subtitle">Fill out the form below or use voice guidance</div>
@@ -3478,23 +3478,66 @@
         // ... (rest of Safe Modal helpers)
 
         window.safeQuickAddContact = function () {
-            const name = prompt("New Contact Name:");
-            if (name) {
-                const select = document.getElementById('safeContactSelect');
-                const opt = document.createElement('option');
-                opt.value = name;
-                opt.textContent = name;
-                opt.selected = true;
-                select.appendChild(opt);
+            document.getElementById('safeContactSelectMode').style.display = 'none';
+            document.getElementById('safeContactForm').style.display = 'block';
+            document.getElementById('safeContactName').focus();
+        };
 
-                // Update local data
-                const b = businessesData.find(b => b.id == currentBusinessId);
-                if (b) {
-                    if (!b.contacts) b.contacts = [];
-                    b.contacts.push({ name: name, isPrimary: false });
-                }
+        window.cancelSafeContact = function () {
+            document.getElementById('safeContactForm').style.display = 'none';
+            document.getElementById('safeContactSelectMode').style.display = 'block';
+            // Clear fields
+            document.getElementById('safeContactName').value = '';
+            document.getElementById('safeContactTitle').value = '';
+            document.getElementById('safeContactPhone').value = '';
+            document.getElementById('safeContactEmail').value = '';
+            document.getElementById('safeContactNotes').value = '';
+        };
+
+        window.saveNewSafeContact = function () {
+            const name = document.getElementById('safeContactName').value.trim();
+            if (!name) { alert("Name is required."); return; }
+
+            const newContact = {
+                name: name,
+                title: document.getElementById('safeContactTitle').value.trim(),
+                phone: document.getElementById('safeContactPhone').value.trim(),
+                email: document.getElementById('safeContactEmail').value.trim(),
+                notes: document.getElementById('safeContactNotes').value.trim(),
+                isPrimary: false
+            };
+
+            // Get current business
+            const b = businessesData.find(b => b.id == currentBusinessId);
+            if (b) {
+                if (!b.contacts) b.contacts = [];
+                b.contacts.push(newContact);
+
+                // SAVE IMMEDIATELY
+                apiCall(`/api/businesses/${b.id}`, 'PUT', b)
+                    .then(() => {
+                        showToast(`✅ Contact Saved: ${name}`);
+
+                        // Add to dropdown and Select by Name
+                        const select = document.getElementById('safeContactSelect');
+                        const opt = document.createElement('option');
+                        opt.value = name;
+                        opt.textContent = name;
+                        opt.selected = true;
+                        select.appendChild(opt);
+
+                        // Close Form
+                        window.cancelSafeContact();
+
+                        // Refresh data in bg
+                        loadBusinesses();
+                    })
+                    .catch(err => alert("Failed to save contact: " + err));
+            } else {
+                alert("Error: Current business not found.");
             }
         };
+
 
         window.safeToggleMic = function () {
             if (!recognition) {
@@ -6588,18 +6631,47 @@
 
             <div style="background:#f1f5f9; padding:10px; border-radius:8px; margin-bottom:10px;">
                 <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:5px;">Contact</label>
-                <div style="display:flex; gap:5px; margin-bottom:5px;">
-                    <select id="safeContactSelect" style="flex:1; padding:8px;">
-                        <option>Select...</option>
-                    </select>
-                    <button onclick="safeQuickAddContact()"
-                        style="padding:0 10px; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;"
-                        title="Add Name Manually">➕</button>
+
+                <!-- Select Mode (Default) -->
+                <div id="safeContactSelectMode">
+                    <div style="display:flex; gap:5px; margin-bottom:5px;">
+                        <select id="safeContactSelect" style="flex:1; padding:8px;">
+                            <option>Select...</option>
+                        </select>
+                        <button onclick="safeQuickAddContact()"
+                            style="padding:0 10px; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer; background:white;"
+                            title="Add Name Manually">➕</button>
+                    </div>
+                    <!-- Scan Button -->
+                    <button onclick="openSafeCardScanner()"
+                        style="width:100%; padding:8px; background:#8b5cf6; color:white; border:none; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">📷
+                        Scan Business Card</button>
                 </div>
-                <!-- Scan Button -->
-                <button onclick="openSafeCardScanner()"
-                    style="width:100%; padding:8px; background:#8b5cf6; color:white; border:none; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">📷
-                    Scan Business Card</button>
+
+                <!-- Add Contact Form (Hidden) -->
+                <div id="safeContactForm"
+                    style="display:none; margin-top:5px; background:#e2e8f0; padding:10px; border-radius:6px;">
+                    <div style="font-size:12px; font-weight:bold; margin-bottom:8px; color:#334155;">New Contact
+                        Details:</div>
+                    <input id="safeContactName" placeholder="Name *"
+                        style="width:100%; margin-bottom:8px; padding:6px; border:1px solid #cbd5e1; border-radius:4px;">
+                    <input id="safeContactTitle" placeholder="Title (e.g. Manager)"
+                        style="width:100%; margin-bottom:8px; padding:6px; border:1px solid #cbd5e1; border-radius:4px;">
+                    <input id="safeContactPhone" placeholder="Phone"
+                        style="width:100%; margin-bottom:8px; padding:6px; border:1px solid #cbd5e1; border-radius:4px;">
+                    <input id="safeContactEmail" placeholder="Email"
+                        style="width:100%; margin-bottom:8px; padding:6px; border:1px solid #cbd5e1; border-radius:4px;">
+                    <textarea id="safeContactNotes" placeholder="Notes (optional)"
+                        style="width:100%; height:50px; margin-bottom:8px; padding:6px; border:1px solid #cbd5e1; border-radius:4px; font-family:inherit;"></textarea>
+
+                    <div style="display:flex; gap:8px;">
+                        <button onclick="saveNewSafeContact()"
+                            style="flex:1; background:#10b981; color:white; border:none; padding:6px; border-radius:4px; font-weight:bold; cursor:pointer;">Save
+                            Contact</button>
+                        <button onclick="cancelSafeContact()"
+                            style="flex:1; background:#94a3b8; color:white; border:none; padding:6px; border-radius:4px; cursor:pointer;">Cancel</button>
+                    </div>
+                </div>
             </div>
 
             <div style="background:#f1f5f9; padding:10px; border-radius:8px; margin-bottom:10px;">
