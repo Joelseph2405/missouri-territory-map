@@ -5619,6 +5619,7 @@
 
                 // Check search term
                 if (searchTerm) {
+                    // Build searchable text from business and contact details
                     const searchableText = [
                         business.name,
                         business.address,
@@ -5626,8 +5627,16 @@
                         business.zipCode,
                         business.type,
                         business.customerStatus,
-                        ...(business.visits || []).map(v => v.notes)
-                    ].join(' ').toLowerCase();
+                        ...(business.visits || []).map(v => v.notes),
+                        // Add contact information to search
+                        ...(business.contacts || []).map(c => [
+                            c.name,
+                            c.title,
+                            c.email,
+                            c.phone,
+                            c.notes
+                        ].filter(Boolean).join(' '))
+                    ].filter(Boolean).join(' ').toLowerCase();
 
                     if (!searchableText.includes(searchTerm)) return;
                 }
