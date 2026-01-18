@@ -2132,8 +2132,15 @@
 
 
             <!-- Start Point (Future) -->
-            <input type="text" id="searchInput" class="search-input"
-                placeholder="Search businesses, addresses, zip codes...">
+            <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                <input type="text" id="searchInput" class="search-input"
+                    placeholder="Search businesses, contacts, phone, email..." style="flex: 1;"
+                    onkeypress="if(event.key === 'Enter') performSearch()">
+                <button onclick="performSearch()"
+                    style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; white-space: nowrap;">
+                    🔍 Search
+                </button>
+            </div>
 
             <!-- Customer Status Filter -->
             <div class="filter-section">
@@ -5687,6 +5694,65 @@
 
             // Reapply filters (which will show all)
             applyFilters();
+        };
+
+        // Perform search and open first result
+        window.performSearch = function () {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            if (!searchTerm) {
+                showToast('Please enter a search term');
+                return;
+            }
+
+            // Apply filters first to get matching businesses
+            applyFilters();
+
+            // Find first matching business
+            let firstMatch = null;
+            businessesData.forEach(business => {
+                if (firstMatch) return; // Already found one
+
+                // Build searchable text (same logic as applyFilters)
+                const searchableText = [
+                    business.name,
+                    business.address,
+                    business.city,
+                    business.zipCode,
+                    business.type,
+                    business.customerStatus,
+                    ...(business.visits || []).map(v => v.notes),
+                    ...(business.contacts || []).map(c => [
+                        c.name,
+                        c.title,
+                        c.email,
+                        c.phone,
+                        c.notes
+                    ].filter(Boolean).join(' '))
+                ].filter(Boolean).join(' ').toLowerCase();
+
+                if (searchableText.includes(searchTerm)) {
+                    firstMatch = business;
+                }
+            });
+
+            if (firstMatch) {
+                // Zoom to the business
+                map.setView([firstMatch.lat, firstMatch.lng], 16);
+
+                // Find and open the marker popup
+                businessMarkersLayer.eachLayer(layer => {
+                    if (layer.businessData && layer.businessData.id === firstMatch.id) {
+                        setTimeout(() => {
+                            layer.openPopup();
+                        }, 300); // Small delay to let zoom animation complete
+                    }
+                });
+
+                showToast(`Found: ${firstMatch.name}`);
+            } else {
+                showToast('No matching businesses found');
+            }
         };
 
         // Real-time search as user types
