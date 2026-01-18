@@ -2867,7 +2867,9 @@
         // Function to create custom marker icon based on business status and activity
         function createCustomMarker(business) {
             const isExisting = business.customerStatus === 'existing';
-            const interactions = business.interactionCount || 0;
+            // Handle Postgres (lowercase) vs normal
+            const count = (business.interactionCount !== undefined ? business.interactionCount : business.interactioncount);
+            const interactions = count || 0;
 
             // Color: Green for existing, Yellow for prospective
             const color = isExisting ? '#22c55e' : '#eab308';
@@ -3000,7 +3002,7 @@
                         <!-- Touchpoints Badge -->
                         <div style="display:flex; justify-content:space-between; background:#eff6ff; padding:8px; border-radius:6px; border:1px solid #bfdbfe; margin-bottom:10px;">
                              <div style="font-size:12px; color:#1e40af; font-weight:bold;">📊 Touchpoints</div>
-                             <div style="font-size:14px; color:#1e3a8a; font-weight:800;">${business.interactionCount || 0} Visits</div>
+                             <div style="font-size:14px; color:#1e3a8a; font-weight:800;">${business.interactionCount || business.interactioncount || 0} Visits</div>
                         </div>
                     </div>
 
@@ -3008,7 +3010,7 @@
                         <div><strong>Address:</strong> ${business.address}, ${business.city}, MO ${business.zipCode}</div>
                         <div><strong>Type:</strong> ${business.type}</div>
                         ${business.phone ? `<div><strong>Phone:</strong> ${business.phone}</div>` : ''}
-                        <div><strong>Interactions:</strong> ${business.interactionCount} visits</div>
+                        <div><strong>Interactions:</strong> ${business.interactionCount || business.interactioncount || 0} visits</div>
                         <div><strong>Last Visit:</strong> ${lastVisitDate}</div>
                     </div>
 
@@ -3415,8 +3417,12 @@
 
             // Update interaction count (Safe Integer Increment)
             let currentCount = 0;
-            if (b.interactionCount !== undefined && b.interactionCount !== null) {
-                currentCount = parseInt(b.interactionCount, 10);
+            // Handle Postgres (interactioncount) vs SQLite (interactionCount)
+            let val = b.interactionCount;
+            if (val === undefined || val === null) val = b.interactioncount;
+
+            if (val !== undefined && val !== null) {
+                currentCount = parseInt(val, 10);
                 if (isNaN(currentCount)) currentCount = 0;
             }
 
