@@ -2921,12 +2921,17 @@
         function createContactsHTML(business) {
             const hasContacts = business.contacts && business.contacts.length > 0;
 
-            const contactsHTML = hasContacts ? business.contacts.map(contact => `
-                <div style="margin: 8px 0; padding: 10px; background: #f9fafb; border-radius: 6px; font-size: 13px;">
-                    <div style="font-weight: 600; color: #111827;">
+            const contactsHTML = hasContacts ? business.contacts.map((contact, index) => `
+                <div style="margin: 8px 0; padding: 10px; background: #f9fafb; border-radius: 6px; font-size: 13px; position: relative;">
+                    <div style="font-weight: 600; color: #111827; padding-right: 30px;">
                         ${contact.name}
                         ${contact.isPrimary ? '<span style="display: inline-block; background: #3b82f6; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-left: 5px;">PRIMARY</span>' : ''}
                     </div>
+                    <button onclick="openContactEditor(${business.id}, ${index})" 
+                        style="position: absolute; top: 10px; right: 10px; background: none; border: none; cursor: pointer; color: #64748b; font-size: 16px;" 
+                        title="Edit Contact">
+                        ✎
+                    </button>
                     ${contact.title ? `<div style="color: #6b7280; font-size: 12px; margin-top: 2px;">${contact.title}</div>` : ''}
                     <div style="margin-top: 5px; font-size: 12px; color: #4b5563;">
                         ${contact.phone ? `<div>📞 ${contact.phone}</div>` : ''}
@@ -6688,12 +6693,165 @@
                 </ul>
             </div>
 
-            <div style="display:flex; gap:10px;">
-                <button onclick="document.getElementById('voiceModalSafe').style.display='none'"
-                    style="flex:1; padding:10px; background:#ccc; border:none; border-radius:6px;">Cancel</button>
-                <button onclick="saveSafeVisitNote()"
-                    style="flex:1; padding:10px; background:#10b981; color:white; border:none; border-radius:6px; font-weight:bold;">Save
-                    Note</button>
+            </ul>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+            <button onclick="document.getElementById('voiceModalSafe').style.display='none'"
+                style="flex:1; padding:10px; background:#ccc; border:none; border-radius:6px;">Cancel</button>
+            <button onclick="saveSafeVisitNote()"
+                style="flex:1; padding:10px; background:#10b981; color:white; border:none; border-radius:6px; font-weight:bold;">Save
+                Note</button>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        // --- CONTACT EDITOR LOGIC ---
+        window.openContactEditor = function (businessId, index) {
+            const b = businessesData.find(x => x.id == businessId);
+            if (!b || !b.contacts || !b.contacts[index]) return;
+
+            const c = b.contacts[index];
+
+            document.getElementById('editContactId').value = businessId;
+            document.getElementById('editContactIndex').value = index;
+
+            document.getElementById('editContactName').value = c.name || '';
+            document.getElementById('editContactTitle').value = c.title || '';
+            document.getElementById('editContactPhone').value = c.phone || '';
+            document.getElementById('editContactEmail').value = c.email || '';
+            document.getElementById('editContactNotes').value = c.notes || '';
+
+            // Show Modal
+            document.getElementById('contactEditorModal').style.display = 'flex';
+        };
+
+        window.closeContactEditor = function () {
+            document.getElementById('contactEditorModal').style.display = 'none';
+        };
+
+        window.saveContactChanges = function () {
+            const bId = document.getElementById('editContactId').value;
+            const idx = document.getElementById('editContactIndex').value;
+
+            const b = businessesData.find(x => x.id == bId);
+            if (!b) return;
+
+            // Update Object
+            b.contacts[idx].name = document.getElementById('editContactName').value.trim();
+            b.contacts[idx].title = document.getElementById('editContactTitle').value.trim();
+            b.contacts[idx].phone = document.getElementById('editContactPhone').value.trim();
+            b.contacts[idx].email = document.getElementById('editContactEmail').value.trim();
+            b.contacts[idx].notes = document.getElementById('editContactNotes').value.trim();
+
+            // Save to API
+            apiCall(`/api/businesses/${b.id}`, 'PUT', b)
+                .then(() => {
+                    showToast('✅ Contact Updated');
+                    closeContactEditor();
+
+                    // Refresh UI if open
+                    loadBusinesses(); // Fetches fresh data globally
+
+                    // If details panel is open, refresh it manually to show changes instantly
+                    // We need to wait for loadBusinesses or just re-render with local 'b'
+                    // Re-rendering with local 'b' is instant:
+                    const panel = document.getElementById('businessDetailsPanel');
+                    if (panel && (panel.classList.contains('active') || panel.classList.contains('mobile-active'))) {
+                        openBusinessDetailsPanel(b);
+                    }
+                })
+                .catch(e => alert("Error saving contact: " + e));
+        };
+
+        window.deleteContact = function () {
+            if (!confirm("Are you sure you want to delete this contact?")) return;
+
+            const bId = document.getElementById('editContactId').value;
+            const idx = document.getElementById('editContactIndex').value;
+
+            const b = businessesData.find(x => x.id == bId);
+            if (!b) return;
+
+            // Remove
+            b.contacts.splice(idx, 1);
+
+            apiCall(`/api/businesses/${b.id}`, 'PUT', b)
+                .then(() => {
+                    showToast('🗑️ Contact Deleted');
+                    closeContactEditor();
+                    loadBusinesses();
+                    const panel = document.getElementById('businessDetailsPanel');
+                    if (panel && (panel.classList.contains('active') || panel.classList.contains('mobile-active'))) {
+                        openBusinessDetailsPanel(b);
+                    }
+                })
+                .catch(e => alert("Error deleting contact: " + e));
+        }
+    </script>
+    <!-- CONTACT EDITOR MODAL (Safe/Top-Level) -->
+    <div id="contactEditorModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999999; align-items:center; justify-content:center;">
+        <div
+            style="background:white; padding:20px; border-radius:12px; width:90%; max-width:400px; box-shadow:0 0 20px rgba(0,0,0,0.5);">
+            <div
+                style="font-size:18px; font-weight:bold; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                Edit Contact
+            </div>
+
+            <input id="editContactId" type="hidden">
+            <input id="editContactIndex" type="hidden">
+
+            <div style="margin-bottom:10px;">
+                <label
+                    style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px; color:#475569;">Name</label>
+                <input id="editContactName"
+                    style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+            </div>
+
+            <div style="margin-bottom:10px;">
+                <label
+                    style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px; color:#475569;">Title</label>
+                <input id="editContactTitle"
+                    style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+            </div>
+
+            <div style="margin-bottom:10px;">
+                <label
+                    style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px; color:#475569;">Phone</label>
+                <input id="editContactPhone"
+                    style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+            </div>
+
+            <div style="margin-bottom:10px;">
+                <label
+                    style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px; color:#475569;">Email</label>
+                <input id="editContactEmail"
+                    style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <label
+                    style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px; color:#475569;">Notes</label>
+                <textarea id="editContactNotes"
+                    style="width:100%; height:60px; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-family:inherit;"></textarea>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button onclick="deleteContact()"
+                    style="background:#ef4444; color:white; border:none; padding:10px; border-radius:6px; cursor:pointer;"
+                    title="Delete Contact">
+                    🗑️
+                </button>
+                <button onclick="closeContactEditor()"
+                    style="flex:1; background:#94a3b8; color:white; border:none; padding:10px; border-radius:6px; cursor:pointer;">
+                    Cancel
+                </button>
+                <button onclick="saveContactChanges()"
+                    style="flex:1; background:#2563eb; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer;">
+                    Save Changes
+                </button>
             </div>
         </div>
     </div>
