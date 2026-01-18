@@ -2578,11 +2578,19 @@
     <!-- Data Management Button (Desktop Floating Action Button) -->
     <button class="fab-data-button" onclick="toggleDataPanel()" title="Import Data">📊</button>
 
+    <!-- Daily Recap Button (Desktop FAB) -->
+    <button class="fab-data-button" onclick="generateDailyRecap()" title="Daily Recap"
+        style="bottom: 150px;">📅</button>
+
     <!-- Mobile Bottom Navigation Bar -->
     <div class="mobile-nav">
         <button class="nav-item" onclick="toggleLegendMobile()">
             <span class="nav-icon">i</span>
             <span class="nav-label">Legend</span>
+        </button>
+        <button class="nav-item" onclick="generateDailyRecap()">
+            <span class="nav-icon">📅</span>
+            <span class="nav-label">Recap</span>
         </button>
         <button class="nav-item" onclick="toggleContactsPanel()">
             <span class="nav-icon">👥</span>
@@ -3509,7 +3517,8 @@
                 phone: document.getElementById('safeContactPhone').value.trim(),
                 email: document.getElementById('safeContactEmail').value.trim(),
                 notes: document.getElementById('safeContactNotes').value.trim(),
-                isPrimary: false
+                isPrimary: false,
+                createdAt: new Date().toISOString() // Track when added
             };
 
             // Get current business
@@ -6314,6 +6323,7 @@
                 interactionCount: 0,
                 lastVisit: null,
                 priority: priority,
+                createdAt: new Date().toISOString(), // Track creation time
                 visits: []
             };
 
@@ -6855,6 +6865,149 @@
             </div>
         </div>
     </div>
+    <!-- DAILY RECAP MODAL -->
+    <div id="dailyRecapModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999999; align-items:center; justify-content:center;">
+        <div
+            style="background:white; padding:20px; border-radius:12px; width:90%; max-width:500px; box-shadow:0 0 20px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <div style="font-size:18px; font-weight:bold;">📊 Daily Recap - <span id="recapDate"></span></div>
+                <button onclick="document.getElementById('dailyRecapModal').style.display='none'"
+                    style="border:none; background:none; font-size:20px; cursor:pointer;">×</button>
+            </div>
+
+            <div id="recapContent"></div>
+
+            <div style="margin-top:20px; display:flex; gap:10px;">
+                <a id="emailRecapBtn" href="#"
+                    style="flex:1; text-align:center; padding:10px; background:#3b82f6; color:white; border-radius:6px; text-decoration:none; font-size:14px; font-weight:bold;">📧
+                    Email Report</a>
+                <a id="textRecapBtn" href="#"
+                    style="flex:1; text-align:center; padding:10px; background:#10b981; color:white; border-radius:6px; text-decoration:none; font-size:14px; font-weight:bold;">💬
+                    Text Report</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DAILY RECAP LOGIC ---
+        window.generateDailyRecap = function () {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('recapDate').textContent = new Date().toLocaleDateString();
+
+            let reportText = `Daily Prospecting Recap - ${new Date().toLocaleDateString()}\n\n`;
+            let html = '';
+
+            // 1. New Businesses
+            const newBusinesses = businessesData.filter(b => b.createdAt && b.createdAt.startsWith(today));
+            html += `<div style="margin-bottom:15px;"><div style="font-weight:bold; color:#1e40af; margin-bottom:5px;">New Businesses (${newBusinesses.length})</div>`;
+            reportText += `--- NEW BUSINESSES (${newBusinesses.length}) ---\n`;
+
+            if (newBusinesses.length > 0) {
+                newBusinesses.forEach(b => {
+                    const time = b.createdAt ? new Date(b.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+                    html += `<div style="font-size:13px; margin-bottom:4px;">⏱️ ${time} - <b>${b.name}</b><br><span style="color:#666; padding-left:24px;">${b.address}</span></div>`;
+                    reportText += `${time} - ${b.name} - ${b.address}\n`;
+                });
+            } else {
+                html += `<div style="font-size:12px; color:#999; font-style:italic;">No new businesses added today.</div>`;
+                reportText += `(None)\n`;
+            }
+            html += `</div>`;
+
+            // 2. Visits
+            let visits = [];
+            businessesData.forEach(b => {
+                if (b.visits) {
+                    b.visits.forEach(v => { // Use 'v' to iterate visits
+                        if (v.date.startsWith(today)) {
+                            visits.push({ ...v, businessName: b.name, businessAddress: b.address });
+                        }
+                    });
+                }
+            });
+
+            // Fix: Sort visits if needed? They might be out of order.
+            visits.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            reportText += `\n--- VISITS TODAY (${visits.length}) ---\n`;
+            html += `<div style="margin-bottom:15px;"><div style="font-weight:bold; color:#1e40af; margin-bottom:5px;">Visits Today (${visits.length})</div>`;
+
+            if (visits.length > 0) {
+                visits.forEach(v => {
+                    const time = new Date(v.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const notePreview = v.notes ? v.notes.substring(0, 50) + (v.notes.length > 50 ? '...' : '') : 'No notes';
+                    html += `<div style="font-size:13px; margin-bottom:6px;">⏱️ ${time} - <b>${v.businessName}</b><br><span style="color:#666; padding-left:24px;">${v.businessAddress}</span><div style="font-style:italic; font-size:12px; color:#444; padding-left:24px;">"${notePreview}"</div></div>`;
+                    reportText += `${time} - ${v.businessName} - ${v.businessAddress} - "${v.notes || ''}"\n`;
+                });
+            } else {
+                html += `<div style="font-size:12px; color:#999; font-style:italic;">No visits logged.</div>`;
+                reportText += `(None)\n`;
+            }
+            html += `</div>`;
+
+            // 3. New Contacts
+            let newContacts = [];
+            businessesData.forEach(b => {
+                if (b.contacts) {
+                    b.contacts.forEach(c => {
+                        if (c.createdAt && c.createdAt.startsWith(today)) {
+                            newContacts.push({ ...c, businessName: b.name });
+                        }
+                    });
+                }
+            });
+
+            reportText += `\n--- NEW CONTACTS (${newContacts.length}) ---\n`;
+            html += `<div style="margin-bottom:15px;"><div style="font-weight:bold; color:#1e40af; margin-bottom:5px;">New Contacts (${newContacts.length})</div>`;
+            if (newContacts.length > 0) {
+                newContacts.forEach(c => {
+                    const time = c.createdAt ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                    html += `<div style="font-size:13px; margin-bottom:4px;">⏱️ ${time} - <b>${c.name}</b> (${c.title || 'No Title'})<br><span style="color:#666; padding-left:24px;">@ ${c.businessName}</span></div>`;
+                    reportText += `${time} - ${c.name} (${c.title}) @ ${c.businessName}\n`;
+                });
+            } else {
+                html += `<div style="font-size:12px; color:#999; font-style:italic;">No new contacts.</div>`;
+                reportText += `(None)\n`;
+            }
+            html += `</div>`;
+
+            // 4. Opportunities
+            let opportunities = [];
+            businessesData.forEach(b => {
+                if (b.visits) { // Opportunities are stored in visits
+                    b.visits.forEach(v => {
+                        if (v.date.startsWith(today) && v.opportunityNotes) {
+                            opportunities.push({ opp: v.opportunityNotes, businessName: b.name, date: v.date });
+                        }
+                    });
+                }
+            });
+
+            reportText += `\n--- OPPORTUNITIES (${opportunities.length}) ---\n`;
+            html += `<div style="margin-bottom:15px;"><div style="font-weight:bold; color:#1e40af; margin-bottom:5px;">Opportunities (${opportunities.length})</div>`;
+            if (opportunities.length > 0) {
+                opportunities.forEach(o => {
+                    const time = new Date(o.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    html += `<div style="font-size:13px; margin-bottom:4px;">⏱️ ${time} - <b>${o.businessName}</b><br><span style="color:#047857; padding-left:24px;">💡 ${o.opp}</span></div>`;
+                    reportText += `${time} - ${o.businessName} - ${o.opp}\n`;
+                });
+            } else {
+                html += `<div style="font-size:12px; color:#999; font-style:italic;">No new opportunities.</div>`;
+                reportText += `(None)\n`;
+            }
+            html += `</div>`;
+
+            // Render
+            document.getElementById('recapContent').innerHTML = html;
+            document.getElementById('dailyRecapModal').style.display = 'flex';
+
+            // Share Links
+            document.getElementById('emailRecapBtn').href = `mailto:?subject=Daily Recap - ${today}&body=${encodeURIComponent(reportText)}`;
+            document.getElementById('textRecapBtn').href = `sms:&body=${encodeURIComponent(reportText)}`; // Note: SMS body support varies
+        };
+    </script>
 </body>
 
 </html>
