@@ -6893,14 +6893,36 @@
     <script>
         // --- DAILY RECAP LOGIC ---
         window.generateDailyRecap = function () {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('recapDate').textContent = new Date().toLocaleDateString();
+            const todayDate = new Date();
+            document.getElementById('recapDate').textContent = todayDate.toLocaleDateString();
 
-            let reportText = `Daily Prospecting Recap - ${new Date().toLocaleDateString()}\n\n`;
+            // Helper: Check if a date string/object matches Today's Local Date
+            const isToday = (dateInput) => {
+                if (!dateInput) return false;
+                const d = new Date(dateInput);
+                if (isNaN(d.getTime())) return false; // Invalid date
+
+                return d.getDate() === todayDate.getDate() &&
+                    d.getMonth() === todayDate.getMonth() &&
+                    d.getFullYear() === todayDate.getFullYear();
+            };
+
+            // Helper: Check if YYYY-MM-DD string matches Today's Local Date
+            const isTodayDateStr = (dateStr) => {
+                if (!dateStr) return false;
+                // Construct local YYYY-MM-DD for today to compare
+                const year = todayDate.getFullYear();
+                const month = String(todayDate.getMonth() + 1).padStart(2, '0');
+                const day = String(todayDate.getDate()).padStart(2, '0');
+                const localTodayStr = `${year}-${month}-${day}`;
+                return dateStr === localTodayStr;
+            }
+
+            let reportText = `Daily Prospecting Recap - ${todayDate.toLocaleDateString()}\n\n`;
             let html = '';
 
-            // 1. New Businesses
-            const newBusinesses = businessesData.filter(b => b.createdAt && b.createdAt.startsWith(today));
+            // 1. New Businesses (uses ISO timestamp)
+            const newBusinesses = businessesData.filter(b => isToday(b.createdAt));
             html += `<div style="margin-bottom:15px;"><div style="font-weight:bold; color:#1e40af; margin-bottom:5px;">New Businesses (${newBusinesses.length})</div>`;
             reportText += `--- NEW BUSINESSES (${newBusinesses.length}) ---\n`;
 
@@ -6916,30 +6938,33 @@
             }
             html += `</div>`;
 
-            // 2. Visits
+            // 2. Visits (uses YYYY-MM-DD string)
             let visits = [];
             businessesData.forEach(b => {
                 if (b.visits) {
-                    b.visits.forEach(v => { // Use 'v' to iterate visits
-                        if (v.date.startsWith(today)) {
+                    b.visits.forEach(v => {
+                        if (isTodayDateStr(v.date)) {
                             visits.push({ ...v, businessName: b.name, businessAddress: b.address });
                         }
                     });
                 }
             });
 
-            // Fix: Sort visits if needed? They might be out of order.
-            visits.sort((a, b) => new Date(a.date) - new Date(b.date));
+            // Sort by time? Visits don't have time usually, just date. Capture order?
+            // Existing logic didn't really sort well either. 
+            // We can assume array order roughly matches time if added sequentially.
+            // visits.sort((a,b) => ...); 
 
             reportText += `\n--- VISITS TODAY (${visits.length}) ---\n`;
             html += `<div style="margin-bottom:15px;"><div style="font-weight:bold; color:#1e40af; margin-bottom:5px;">Visits Today (${visits.length})</div>`;
 
             if (visits.length > 0) {
                 visits.forEach(v => {
-                    const time = new Date(v.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    // Visits only have Date, not Time usually. Use checkmark.
+                    const time = '✅';
                     const notePreview = v.notes ? v.notes.substring(0, 50) + (v.notes.length > 50 ? '...' : '') : 'No notes';
-                    html += `<div style="font-size:13px; margin-bottom:6px;">⏱️ ${time} - <b>${v.businessName}</b><br><span style="color:#666; padding-left:24px;">${v.businessAddress}</span><div style="font-style:italic; font-size:12px; color:#444; padding-left:24px;">"${notePreview}"</div></div>`;
-                    reportText += `${time} - ${v.businessName} - ${v.businessAddress} - "${v.notes || ''}"\n`;
+                    html += `<div style="font-size:13px; margin-bottom:6px;">${time} <b>${v.businessName}</b><br><span style="color:#666; padding-left:24px;">${v.businessAddress}</span><div style="font-style:italic; font-size:12px; color:#444; padding-left:24px;">"${notePreview}"</div></div>`;
+                    reportText += `- ${v.businessName} - ${v.businessAddress} - "${v.notes || ''}"\n`;
                 });
             } else {
                 html += `<div style="font-size:12px; color:#999; font-style:italic;">No visits logged.</div>`;
@@ -6947,12 +6972,12 @@
             }
             html += `</div>`;
 
-            // 3. New Contacts
+            // 3. New Contacts (uses ISO timestamp)
             let newContacts = [];
             businessesData.forEach(b => {
                 if (b.contacts) {
                     b.contacts.forEach(c => {
-                        if (c.createdAt && c.createdAt.startsWith(today)) {
+                        if (isToday(c.createdAt)) {
                             newContacts.push({ ...c, businessName: b.name });
                         }
                     });
@@ -6973,12 +6998,12 @@
             }
             html += `</div>`;
 
-            // 4. Opportunities
+            // 4. Opportunities (uses YYYY-MM-DD string from visit)
             let opportunities = [];
             businessesData.forEach(b => {
-                if (b.visits) { // Opportunities are stored in visits
+                if (b.visits) {
                     b.visits.forEach(v => {
-                        if (v.date.startsWith(today) && v.opportunityNotes) {
+                        if (isTodayDateStr(v.date) && v.opportunityNotes) {
                             opportunities.push({ opp: v.opportunityNotes, businessName: b.name, date: v.date });
                         }
                     });
@@ -6989,9 +7014,10 @@
             html += `<div style="margin-bottom:15px;"><div style="font-weight:bold; color:#1e40af; margin-bottom:5px;">Opportunities (${opportunities.length})</div>`;
             if (opportunities.length > 0) {
                 opportunities.forEach(o => {
-                    const time = new Date(o.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    html += `<div style="font-size:13px; margin-bottom:4px;">⏱️ ${time} - <b>${o.businessName}</b><br><span style="color:#047857; padding-left:24px;">💡 ${o.opp}</span></div>`;
-                    reportText += `${time} - ${o.businessName} - ${o.opp}\n`;
+                    // Date only
+                    // const time = new Date(o.date).toLocaleTimeString... // No time in visit date string
+                    html += `<div style="font-size:13px; margin-bottom:4px;">💡 <b>${o.businessName}</b><br><span style="color:#047857; padding-left:24px;">${o.opp}</span></div>`;
+                    reportText += `- ${o.businessName} - ${o.opp}\n`;
                 });
             } else {
                 html += `<div style="font-size:12px; color:#999; font-style:italic;">No new opportunities.</div>`;
@@ -7004,8 +7030,8 @@
             document.getElementById('dailyRecapModal').style.display = 'flex';
 
             // Share Links
-            document.getElementById('emailRecapBtn').href = `mailto:?subject=Daily Recap - ${today}&body=${encodeURIComponent(reportText)}`;
-            document.getElementById('textRecapBtn').href = `sms:&body=${encodeURIComponent(reportText)}`; // Note: SMS body support varies
+            document.getElementById('emailRecapBtn').href = `mailto:?subject=Daily Recap - ${todayDate.toLocaleDateString()}&body=${encodeURIComponent(reportText)}`;
+            document.getElementById('textRecapBtn').href = `sms:&body=${encodeURIComponent(reportText)}`;
         };
     </script>
 </body>
