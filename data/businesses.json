@@ -11072,12 +11072,30 @@
       "lng": -90.6305183,
       "type": "Business Services",
       "customerStatus": "prospective",
-      "interactionCount": 0,
-      "lastVisit": null,
+      "interactionCount": 1,
+      "lastVisit": "2026-01-19T03:04:14.316Z",
       "priority": null,
       "phone": null,
-      "contacts": null,
-      "visits": null,
+      "contacts": [
+        {
+          "createdAt": "2026-01-19T03:04:04.516Z",
+          "email": "jane@doe.com",
+          "isPrimary": false,
+          "name": "Jane",
+          "notes": "Cool",
+          "phone": "812",
+          "title": "VP"
+        }
+      ],
+      "visits": [
+        {
+          "date": "2026-01-19T03:04:14.316Z",
+          "notes": "Visit Note Test 1",
+          "metWith": "Jane",
+          "activityType": "Sales Call",
+          "opportunityNotes": "Tera Enterprises, Inc. - 1VL, 22MI"
+        }
+      ],
       "employees": 20
     },
     {
@@ -18864,14 +18882,46 @@
       "zipCode": "63301",
       "lat": 38.7734262,
       "lng": -90.8236559,
-      "type": "Construction",
-      "customerStatus": "prospective",
-      "interactionCount": 0,
-      "lastVisit": null,
-      "priority": null,
+      "type": "Other",
+      "customerStatus": "existing",
+      "interactionCount": 2,
+      "lastVisit": "2026-01-17T22:55:48.566Z",
+      "priority": "",
       "phone": null,
-      "contacts": null,
-      "visits": null,
+      "contacts": [
+        {
+          "email": "jane@stcharlespaint.com",
+          "isPrimary": false,
+          "name": "Jane",
+          "notes": "Great person to work with",
+          "phone": "636.252.7968",
+          "title": "Princess"
+        },
+        {
+          "isPrimary": false,
+          "name": "Tom",
+          "title": "King",
+          "phone": "785.697.9039",
+          "email": "tom@stcharlespaint.com",
+          "notes": "Cool dude"
+        }
+      ],
+      "visits": [
+        {
+          "activityType": "Sales Call",
+          "date": "2026-01-17T22:55:14.172Z",
+          "metWith": "Jane",
+          "notes": "Met with Jane",
+          "opportunityNotes": "Saint Charles Painting LLC - 6VL"
+        },
+        {
+          "activityType": "Sales Call",
+          "date": "2026-01-17T22:55:48.566Z",
+          "metWith": "Tom",
+          "notes": "Met with Tom",
+          "opportunityNotes": "Saint Charles Painting LLC - 5VL"
+        }
+      ],
       "employees": 10
     },
     {
@@ -26642,12 +26692,25 @@
       "lng": -90.6639766,
       "type": "Finance,Insurance",
       "customerStatus": "prospective",
-      "interactionCount": 0,
-      "lastVisit": null,
+      "interactionCount": 1,
+      "lastVisit": "2026-01-17T22:49:25.349Z",
       "priority": null,
       "phone": null,
-      "contacts": null,
-      "visits": null,
+      "contacts": [
+        {
+          "name": "Jon Doe",
+          "isPrimary": false
+        }
+      ],
+      "visits": [
+        {
+          "date": "2026-01-17T22:49:25.349Z",
+          "note": "Hit this location for the 3rd time this week with no success running into the decision maker",
+          "contact": "Jon Doe",
+          "activityType": "Sales Call",
+          "opportunity": "Missouri Valley Federal Credit Union - 7VL"
+        }
+      ],
       "employees": 15
     },
     {
@@ -27884,12 +27947,25 @@
       "lng": -90.9373572,
       "type": "Construction",
       "customerStatus": "prospective",
-      "interactionCount": 0,
-      "lastVisit": null,
+      "interactionCount": 1,
+      "lastVisit": "2026-01-17T22:52:50.690Z",
       "priority": null,
       "phone": null,
-      "contacts": null,
-      "visits": null,
+      "contacts": [
+        {
+          "name": "Jane Doe",
+          "isPrimary": false
+        }
+      ],
+      "visits": [
+        {
+          "date": "2026-01-17T22:52:50.690Z",
+          "note": "Went in and spoke with Jane",
+          "contact": "Jane Doe",
+          "activityType": "Sales Call",
+          "opportunity": "Mid-River Asphalt, Inc. - 5VL"
+        }
+      ],
       "employees": 14
     },
     {
@@ -29619,6 +29695,24 @@
       "contacts": null,
       "visits": null,
       "employees": 12
+    },
+    {
+      "id": 1798,
+      "name": "Saint Charles Painting LLC",
+      "address": "7 Charity Dr",
+      "city": "Saint Charles",
+      "zipCode": "63301",
+      "lat": 38.7734262,
+      "lng": -90.8236559,
+      "type": "Other",
+      "customerStatus": "prospective",
+      "interactionCount": 0,
+      "lastVisit": null,
+      "priority": "",
+      "phone": null,
+      "contacts": [],
+      "visits": [],
+      "employees": null
     }
   ]
 }
