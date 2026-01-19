@@ -3423,8 +3423,15 @@
             const b = businessesData.find(b => b.id == currentBusinessId);
             if (!b) { alert("Business not found!"); return; }
 
+            // Get local date string (YYYY-MM-DD)
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const localDateStr = `${year}-${month}-${day}`;
+
             const newVisit = {
-                date: new Date().toISOString(),
+                date: localDateStr + 'T' + now.toTimeString().split(' ')[0] + '.000Z',  // Local date with time
                 notes: note,          // Renderer expects 'notes'
                 metWith: contact,     // Renderer expects 'metWith'
                 activityType: 'Sales Call',
@@ -3740,8 +3747,15 @@
             }
 
             // Create new visit object with enhanced fields
+            // Get local date string (YYYY-MM-DD)
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const localDateStr = `${year}-${month}-${day}`;
+
             const newVisit = {
-                date: new Date().toISOString().split('T')[0],  // YYYY-MM-DD format
+                date: localDateStr + 'T' + now.toTimeString().split(' ')[0] + '.000Z',  // Local date with time
                 notes: transcription,
                 duration: 'Just now',
                 metWith: metWith || 'Not specified',
