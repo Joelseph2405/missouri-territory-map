@@ -7047,9 +7047,13 @@
         window.showDailyReportOptions = function () {
             document.getElementById('reportsMenuModal').style.display = 'none';
             document.getElementById('dailyReportDateModal').style.display = 'flex';
-            // Set default date to today
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('customReportDate').value = today;
+            // Set default date to today in LOCAL timezone
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const localDateStr = `${year}-${month}-${day}`;
+            document.getElementById('customReportDate').value = localDateStr;
         };
 
         window.closeDailyReportDateModal = function () {
