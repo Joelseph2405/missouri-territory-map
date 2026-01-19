@@ -7135,33 +7135,41 @@
             }
             html += `</div>`;
 
-            // 2. Visits (uses YYYY-MM-DD string)
-            let visits = [];
+            // 2. Visits (Grouped by Business)
+            let visitedBusinesses = [];
             businessesData.forEach(b => {
                 if (b.visits) {
-                    b.visits.forEach(v => {
-                        if (isTargetDateStr(v.date)) {
-                            visits.push({ ...v, businessName: b.name, businessAddress: b.address });
-                        }
-                    });
+                    const todaysVisits = b.visits.filter(v => isTargetDateStr(v.date));
+                    if (todaysVisits.length > 0) {
+                        visitedBusinesses.push({
+                            name: b.name,
+                            address: b.address,
+                            logs: todaysVisits
+                        });
+                    }
                 }
             });
 
-            // Sort by time? Visits don't have time usually, just date. Capture order?
-            // Existing logic didn't really sort well either. 
-            // We can assume array order roughly matches time if added sequentially.
-            // visits.sort((a,b) => ...); 
+            reportText += `\n--- VISITS TODAY (${visitedBusinesses.length} stops) ---\n`;
+            html += `<div style="margin-bottom:15px;"><div style="font-weight:bold; color:#1e40af; margin-bottom:5px;">Visits Today (${visitedBusinesses.length} stops)</div>`;
 
-            reportText += `\n--- VISITS TODAY (${visits.length}) ---\n`;
-            html += `<div style="margin-bottom:15px;"><div style="font-weight:bold; color:#1e40af; margin-bottom:5px;">Visits Today (${visits.length})</div>`;
-
-            if (visits.length > 0) {
-                visits.forEach(v => {
-                    // Visits only have Date, not Time usually. Use checkmark.
-                    const time = '✅';
-                    const notePreview = v.notes ? v.notes.substring(0, 50) + (v.notes.length > 50 ? '...' : '') : 'No notes';
-                    html += `<div style="font-size:13px; margin-bottom:6px;">${time} <b>${v.businessName}</b><br><span style="color:#666; padding-left:24px;">${v.businessAddress}</span><div style="font-style:italic; font-size:12px; color:#444; padding-left:24px;">"${notePreview}"</div></div>`;
-                    reportText += `- ${v.businessName} - ${v.businessAddress} - "${v.notes || ''}"\n`;
+            if (visitedBusinesses.length > 0) {
+                visitedBusinesses.forEach(vb => {
+                    const countStr = vb.logs.length > 1 ? ` (${vb.logs.length})` : '';
+                    html += `<div style="font-size:13px; margin-bottom:8px;">✅ <b>${vb.name}</b>${countStr}<br><span style="color:#666; padding-left:24px;">${vb.address}</span>`;
+                    
+                    // Add distinct notes
+                    const distinctNotes = [...new Set(vb.logs.map(l => l.notes).filter(n => n && n.trim() !== ''))];
+                    
+                    distinctNotes.forEach(note => {
+                         html += `<div style="font-style:italic; font-size:12px; color:#444; padding-left:24px; margin-top:2px;">• "${note}"</div>`;
+                    });
+                    
+                    html += `</div>`;
+                    
+                    // Text Report Format
+                    const notesText = distinctNotes.map(n => `"${n}"`).join(', ');
+                    reportText += `- ${vb.name} - ${vb.address}` + (notesText ? ` - Notes: ${notesText}` : '') + `\n`;
                 });
             } else {
                 html += `<div style="font-size:12px; color:#999; font-style:italic;">No visits logged.</div>`;
