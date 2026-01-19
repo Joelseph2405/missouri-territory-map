@@ -2586,8 +2586,7 @@
     <button class="fab-data-button" onclick="toggleDataPanel()" title="Import Data">📊</button>
 
     <!-- Daily Recap Button (Desktop FAB) -->
-    <button class="fab-data-button" onclick="generateDailyRecap()" title="Daily Recap"
-        style="bottom: 150px;">📅</button>
+    <button class="fab-data-button" onclick="openReportsMenu()" title="Reports" style="bottom: 150px;">📊</button>
 
     <!-- Mobile Bottom Navigation Bar -->
     <div class="mobile-nav">
@@ -2595,9 +2594,9 @@
             <span class="nav-icon">i</span>
             <span class="nav-label">Legend</span>
         </button>
-        <button class="nav-item" onclick="generateDailyRecap()">
-            <span class="nav-icon">📅</span>
-            <span class="nav-label">Recap</span>
+        <button class="nav-item" onclick="openReportsMenu()">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Reports</span>
         </button>
         <button class="nav-item" onclick="toggleContactsPanel()">
             <span class="nav-icon">👥</span>
@@ -6875,6 +6874,80 @@
                 .catch(e => alert("Error deleting contact: " + e));
         }
     </script>
+
+    <!-- REPORTS SELECTION MODAL -->
+    <div id="reportsMenuModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999999; align-items:center; justify-content:center;">
+        <div
+            style="background:white; padding:20px; border-radius:12px; width:90%; max-width:400px; box-shadow:0 0 20px rgba(0,0,0,0.5);">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <div style="font-size:18px; font-weight:bold;">📊 Reports</div>
+                <button onclick="document.getElementById('reportsMenuModal').style.display='none'"
+                    style="border:none; background:none; font-size:20px; cursor:pointer;">×</button>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <!-- Daily Report -->
+                <button onclick="showDailyReportOptions()"
+                    style="padding:15px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-size:16px; font-weight:600; text-align:left;">
+                    📅 Daily Report
+                    <div style="font-size:12px; font-weight:normal; margin-top:4px; opacity:0.9;">Detailed breakdown for
+                        a specific date</div>
+                </button>
+
+                <!-- Weekly Summary -->
+                <button onclick="generateWeeklySummary()"
+                    style="padding:15px; background:#10b981; color:white; border:none; border-radius:8px; cursor:pointer; font-size:16px; font-weight:600; text-align:left;">
+                    📊 Weekly Summary
+                    <div style="font-size:12px; font-weight:normal; margin-top:4px; opacity:0.9;">High-level counts for
+                        last 7 days</div>
+                </button>
+
+                <!-- Monthly Summary -->
+                <button onclick="generateMonthlySummary()"
+                    style="padding:15px; background:#8b5cf6; color:white; border:none; border-radius:8px; cursor:pointer; font-size:16px; font-weight:600; text-align:left;">
+                    📊 Monthly Summary
+                    <div style="font-size:12px; font-weight:normal; margin-top:4px; opacity:0.9;">High-level counts for
+                        last 30 days</div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DAILY REPORT DATE SELECTION MODAL -->
+    <div id="dailyReportDateModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999999; align-items:center; justify-content:center;">
+        <div
+            style="background:white; padding:20px; border-radius:12px; width:90%; max-width:400px; box-shadow:0 0 20px rgba(0,0,0,0.5);">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <div style="font-size:18px; font-weight:bold;">📅 Select Date</div>
+                <button onclick="closeDailyReportDateModal()"
+                    style="border:none; background:none; font-size:20px; cursor:pointer;">×</button>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <button onclick="generateDailyRecap(new Date())"
+                    style="padding:15px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-size:16px; font-weight:600;">
+                    Today
+                </button>
+
+                <div style="border-top:1px solid #eee; padding-top:12px;">
+                    <label
+                        style="display:block; font-size:14px; font-weight:600; margin-bottom:8px; color:#475569;">Custom
+                        Date:</label>
+                    <input type="date" id="customReportDate"
+                        style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px;">
+                    <button onclick="generateDailyRecapCustomDate()"
+                        style="width:100%; margin-top:10px; padding:12px; background:#10b981; color:white; border:none; border-radius:8px; cursor:pointer; font-size:14px; font-weight:600;">
+                        Generate Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- CONTACT EDITOR MODAL (Safe/Top-Level) -->
     <div id="contactEditorModal"
         style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999999; align-items:center; justify-content:center;">
@@ -6966,40 +7039,69 @@
     </div>
 
     <script>
-        // --- DAILY RECAP LOGIC ---
-        window.generateDailyRecap = function () {
-            const todayDate = new Date();
-            document.getElementById('recapDate').textContent = todayDate.toLocaleDateString();
+        // --- REPORTS MENU LOGIC ---
+        window.openReportsMenu = function () {
+            document.getElementById('reportsMenuModal').style.display = 'flex';
+        };
 
-            // Helper: Check if a date string/object matches Today's Local Date
-            const isToday = (dateInput) => {
+        window.showDailyReportOptions = function () {
+            document.getElementById('reportsMenuModal').style.display = 'none';
+            document.getElementById('dailyReportDateModal').style.display = 'flex';
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('customReportDate').value = today;
+        };
+
+        window.closeDailyReportDateModal = function () {
+            document.getElementById('dailyReportDateModal').style.display = 'none';
+        };
+
+        window.generateDailyRecapCustomDate = function () {
+            const dateInput = document.getElementById('customReportDate').value;
+            if (!dateInput) {
+                showToast('Please select a date');
+                return;
+            }
+            const selectedDate = new Date(dateInput + 'T00:00:00');
+            generateDailyRecap(selectedDate);
+            closeDailyReportDateModal();
+        };
+
+        // --- DAILY RECAP LOGIC ---
+        window.generateDailyRecap = function (targetDate) {
+            // Default to today if no date provided
+            const reportDate = targetDate || new Date();
+            document.getElementById('recapDate').textContent = reportDate.toLocaleDateString();
+
+            // Helper: Check if a date string/object matches the reportDate's Local Date
+            const isTargetDate = (dateInput) => {
                 if (!dateInput) return false;
                 const d = new Date(dateInput);
                 if (isNaN(d.getTime())) return false; // Invalid date
 
-                return d.getDate() === todayDate.getDate() &&
-                    d.getMonth() === todayDate.getMonth() &&
-                    d.getFullYear() === todayDate.getFullYear();
+                return d.getDate() === reportDate.getDate() &&
+                    d.getMonth() === reportDate.getMonth() &&
+                    d.getFullYear() === reportDate.getFullYear();
             };
 
-            // Helper: Check if YYYY-MM-DD string matches Today's Local Date
-            const isTodayDateStr = (dateStr) => {
+            // Helper: Check if YYYY-MM-DD string matches reportDate's Local Date
+            const isTargetDateStr = (dateStr) => {
                 if (!dateStr) return false;
                 // Extract just the date part if it's an ISO string (e.g., "2026-01-17T22:55:14.172Z" -> "2026-01-17")
                 const datePart = dateStr.split('T')[0];
-                // Construct local YYYY-MM-DD for today to compare
-                const year = todayDate.getFullYear();
-                const month = String(todayDate.getMonth() + 1).padStart(2, '0');
-                const day = String(todayDate.getDate()).padStart(2, '0');
-                const localTodayStr = `${year}-${month}-${day}`;
-                return datePart === localTodayStr;
+                // Construct local YYYY-MM-DD for reportDate to compare
+                const year = reportDate.getFullYear();
+                const month = String(reportDate.getMonth() + 1).padStart(2, '0');
+                const day = String(reportDate.getDate()).padStart(2, '0');
+                const localDateStr = `${year}-${month}-${day}`;
+                return datePart === localDateStr;
             }
 
-            let reportText = `Daily Prospecting Recap - ${todayDate.toLocaleDateString()}\n\n`;
+            let reportText = `Daily Prospecting Recap - ${reportDate.toLocaleDateString()}\n\n`;
             let html = '';
 
             // 1. New Businesses (uses ISO timestamp)
-            const newBusinesses = businessesData.filter(b => isToday(b.createdAt));
+            const newBusinesses = businessesData.filter(b => isTargetDate(b.createdAt));
             html += `<div style="margin-bottom:15px;"><div style="font-weight:bold; color:#1e40af; margin-bottom:5px;">New Businesses (${newBusinesses.length})</div>`;
             reportText += `--- NEW BUSINESSES (${newBusinesses.length}) ---\n`;
 
@@ -7020,7 +7122,7 @@
             businessesData.forEach(b => {
                 if (b.visits) {
                     b.visits.forEach(v => {
-                        if (isTodayDateStr(v.date)) {
+                        if (isTargetDateStr(v.date)) {
                             visits.push({ ...v, businessName: b.name, businessAddress: b.address });
                         }
                     });
@@ -7054,7 +7156,7 @@
             businessesData.forEach(b => {
                 if (b.contacts) {
                     b.contacts.forEach(c => {
-                        if (isToday(c.createdAt)) {
+                        if (isTargetDate(c.createdAt)) {
                             newContacts.push({ ...c, businessName: b.name });
                         }
                     });
@@ -7080,7 +7182,7 @@
             businessesData.forEach(b => {
                 if (b.visits) {
                     b.visits.forEach(v => {
-                        if (isTodayDateStr(v.date) && v.opportunityNotes) {
+                        if (isTargetDateStr(v.date) && v.opportunityNotes) {
                             opportunities.push({ opp: v.opportunityNotes, businessName: b.name, date: v.date });
                         }
                     });
@@ -7106,8 +7208,179 @@
             document.getElementById('recapContent').innerHTML = html;
             document.getElementById('dailyRecapModal').style.display = 'flex';
 
+
             // Share Links
-            document.getElementById('emailRecapBtn').href = `mailto:?subject=Daily Recap - ${todayDate.toLocaleDateString()}&body=${encodeURIComponent(reportText)}`;
+            document.getElementById('emailRecapBtn').href = `mailto:?subject=Daily Recap - ${reportDate.toLocaleDateString()}&body=${encodeURIComponent(reportText)}`;
+            document.getElementById('textRecapBtn').href = `sms:&body=${encodeURIComponent(reportText)}`;
+        };
+
+        // --- WEEKLY SUMMARY LOGIC ---
+        window.generateWeeklySummary = function () {
+            document.getElementById('reportsMenuModal').style.display = 'none';
+
+            const today = new Date();
+            const sevenDaysAgo = new Date(today);
+            sevenDaysAgo.setDate(today.getDate() - 7);
+
+            let totalVisits = 0;
+            let totalContacts = 0;
+            let totalBusinesses = 0;
+            let totalOpportunities = 0;
+
+            businessesData.forEach(b => {
+                // Count new businesses
+                if (b.createdAt) {
+                    const createdDate = new Date(b.createdAt);
+                    if (createdDate >= sevenDaysAgo && createdDate <= today) {
+                        totalBusinesses++;
+                    }
+                }
+
+                // Count visits
+                if (b.visits) {
+                    b.visits.forEach(v => {
+                        if (v.date) {
+                            const visitDate = new Date(v.date.split('T')[0]);
+                            if (visitDate >= sevenDaysAgo && visitDate <= today) {
+                                totalVisits++;
+                                if (v.opportunityNotes) totalOpportunities++;
+                            }
+                        }
+                    });
+                }
+
+                // Count contacts
+                if (b.contacts) {
+                    b.contacts.forEach(c => {
+                        if (c.createdAt) {
+                            const contactDate = new Date(c.createdAt);
+                            if (contactDate >= sevenDaysAgo && contactDate <= today) {
+                                totalContacts++;
+                            }
+                        }
+                    });
+                }
+            });
+
+            const html = `
+                <div style="margin-bottom:20px;">
+                    <div style="font-size:16px; font-weight:bold; color:#1e40af; margin-bottom:15px;">Last 7 Days Summary</div>
+                    
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                        <div style="background:#eff6ff; padding:15px; border-radius:8px; text-align:center;">
+                            <div style="font-size:28px; font-weight:bold; color:#3b82f6;">${totalVisits}</div>
+                            <div style="font-size:14px; color:#475569; margin-top:4px;">Visits</div>
+                        </div>
+                        
+                        <div style="background:#f0fdf4; padding:15px; border-radius:8px; text-align:center;">
+                            <div style="font-size:28px; font-weight:bold; color:#10b981;">${totalContacts}</div>
+                            <div style="font-size:14px; color:#475569; margin-top:4px;">New Contacts</div>
+                        </div>
+                        
+                        <div style="background:#fef3c7; padding:15px; border-radius:8px; text-align:center;">
+                            <div style="font-size:28px; font-weight:bold; color:#f59e0b;">${totalBusinesses}</div>
+                            <div style="font-size:14px; color:#475569; margin-top:4px;">New Businesses</div>
+                        </div>
+                        
+                        <div style="background:#fae8ff; padding:15px; border-radius:8px; text-align:center;">
+                            <div style="font-size:28px; font-weight:bold; color:#a855f7;">${totalOpportunities}</div>
+                            <div style="font-size:14px; color:#475569; margin-top:4px;">Opportunities</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const reportText = `Weekly Summary (Last 7 Days)\n\nVisits: ${totalVisits}\nNew Contacts: ${totalContacts}\nNew Businesses: ${totalBusinesses}\nOpportunities: ${totalOpportunities}`;
+
+            document.getElementById('recapDate').textContent = 'Last 7 Days';
+            document.getElementById('recapContent').innerHTML = html;
+            document.getElementById('dailyRecapModal').style.display = 'flex';
+            document.getElementById('emailRecapBtn').href = `mailto:?subject=Weekly Summary&body=${encodeURIComponent(reportText)}`;
+            document.getElementById('textRecapBtn').href = `sms:&body=${encodeURIComponent(reportText)}`;
+        };
+
+        // --- MONTHLY SUMMARY LOGIC ---
+        window.generateMonthlySummary = function () {
+            document.getElementById('reportsMenuModal').style.display = 'none';
+
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today);
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+
+            let totalVisits = 0;
+            let totalContacts = 0;
+            let totalBusinesses = 0;
+            let totalOpportunities = 0;
+
+            businessesData.forEach(b => {
+                // Count new businesses
+                if (b.createdAt) {
+                    const createdDate = new Date(b.createdAt);
+                    if (createdDate >= thirtyDaysAgo && createdDate <= today) {
+                        totalBusinesses++;
+                    }
+                }
+
+                // Count visits
+                if (b.visits) {
+                    b.visits.forEach(v => {
+                        if (v.date) {
+                            const visitDate = new Date(v.date.split('T')[0]);
+                            if (visitDate >= thirtyDaysAgo && visitDate <= today) {
+                                totalVisits++;
+                                if (v.opportunityNotes) totalOpportunities++;
+                            }
+                        }
+                    });
+                }
+
+                // Count contacts
+                if (b.contacts) {
+                    b.contacts.forEach(c => {
+                        if (c.createdAt) {
+                            const contactDate = new Date(c.createdAt);
+                            if (contactDate >= thirtyDaysAgo && contactDate <= today) {
+                                totalContacts++;
+                            }
+                        }
+                    });
+                }
+            });
+
+            const html = `
+                <div style="margin-bottom:20px;">
+                    <div style="font-size:16px; font-weight:bold; color:#1e40af; margin-bottom:15px;">Last 30 Days Summary</div>
+                    
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                        <div style="background:#eff6ff; padding:15px; border-radius:8px; text-align:center;">
+                            <div style="font-size:28px; font-weight:bold; color:#3b82f6;">${totalVisits}</div>
+                            <div style="font-size:14px; color:#475569; margin-top:4px;">Visits</div>
+                        </div>
+                        
+                        <div style="background:#f0fdf4; padding:15px; border-radius:8px; text-align:center;">
+                            <div style="font-size:28px; font-weight:bold; color:#10b981;">${totalContacts}</div>
+                            <div style="font-size:14px; color:#475569; margin-top:4px;">New Contacts</div>
+                        </div>
+                        
+                        <div style="background:#fef3c7; padding:15px; border-radius:8px; text-align:center;">
+                            <div style="font-size:28px; font-weight:bold; color:#f59e0b;">${totalBusinesses}</div>
+                            <div style="font-size:14px; color:#475569; margin-top:4px;">New Businesses</div>
+                        </div>
+                        
+                        <div style="background:#fae8ff; padding:15px; border-radius:8px; text-align:center;">
+                            <div style="font-size:28px; font-weight:bold; color:#a855f7;">${totalOpportunities}</div>
+                            <div style="font-size:14px; color:#475569; margin-top:4px;">Opportunities</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const reportText = `Monthly Summary (Last 30 Days)\n\nVisits: ${totalVisits}\nNew Contacts: ${totalContacts}\nNew Businesses: ${totalBusinesses}\nOpportunities: ${totalOpportunities}`;
+
+            document.getElementById('recapDate').textContent = 'Last 30 Days';
+            document.getElementById('recapContent').innerHTML = html;
+            document.getElementById('dailyRecapModal').style.display = 'flex';
+            document.getElementById('emailRecapBtn').href = `mailto:?subject=Monthly Summary&body=${encodeURIComponent(reportText)}`;
             document.getElementById('textRecapBtn').href = `sms:&body=${encodeURIComponent(reportText)}`;
         };
     </script>
