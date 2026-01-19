@@ -40,13 +40,12 @@ def init_db():
                 print(f"Schema Validation Failed (likely missing column): {e}")
                 bad_zips = 999999 # FORCE RESET
 
-            # AGGRESSIVE RESET: If we have very few records OR many verified bad records
-            if (count < 100 and len(businesses) > 1000) or (bad_zips > 500):
-                 print(f"⚠️ Detected potential data issue (Count: {count}, Bad Zips: {bad_zips}). PERFORMING HARD RESET.")
-                 c.execute("DROP TABLE IF EXISTS businesses")
-                 database.init_tables(conn) # Recreate empty
-                 print("✅ Table recreated.")
-                 count = 0 # Now it's empty
+            # FORCE RESET TO CLEAR STALE DATA (Ghost Visits)
+            print("🧹 FORCING DATABASE RESET to clear stale test data...")
+            c.execute("DROP TABLE IF EXISTS businesses")
+            database.init_tables(conn) # Recreate empty
+            print("✅ Table recreated.")
+            count = 0 # Now it's empty
             
             # Seed if we have more data in file than in DB...
             
