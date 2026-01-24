@@ -31,13 +31,18 @@ def fix_locations():
         # Geocode
         lat, lng = geocode_address(row['address'], row['city'], row['zipCode'])
         
+        if lat is None:
+            # Fallback to City/Zip
+            print(f"   ⚠️ Exact match failed for '{name}'. Trying City/Zip fallback...")
+            lat, lng = geocode_address("", row['city'], row['zipCode'])
+            
         if lat and lng:
             cursor.execute("UPDATE businesses SET lat = ?, lng = ? WHERE id = ?", (lat, lng, b_id))
             updated_count += 1
             print(f"[{i+1}/{total}] ✅ Fixed '{name}': {lat}, {lng}")
         else:
             failed_count += 1
-            print(f"[{i+1}/{total}] ⚠️ Could not geocode '{name}' ({row['address']})")
+            print(f"[{i+1}/{total}] ❌ Could not geocode '{name}' ({row['address']})")
 
         # Commit every 10 records to save progress
         if i % 10 == 0:
