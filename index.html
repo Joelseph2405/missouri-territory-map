@@ -2467,13 +2467,19 @@
                     <button class="capture-button" id="captureBtn" onclick="capturePhoto()"></button>
 
                     <div id="postCaptureControls"
-                        style="display: none; gap: 10px; justify-content: center; width: 100%;">
+                        style="display: none; gap: 15px; justify-content: center; width: 100%; padding: 0 20px;">
+
+                        <!-- Retake (Small) -->
                         <button class="scan-action-btn" onclick="retakePhoto()"
-                            style="background: #f3f4f6; color: #374151;">Retake</button>
+                            style="background: #f3f4f6; color: #374151; font-size: 12px; padding: 10px;">Retake</button>
+
+                        <!-- Scan Back (Primary if front only) -->
                         <button class="scan-action-btn" id="scanBackBtn" onclick="prepareBackSide()"
-                            style="background: #3b82f6; color: white;">Scan Back Side</button>
+                            style="background: #3b82f6; color: white; flex: 1;">📷 Scan Back</button>
+
+                        <!-- Process (Success) -->
                         <button class="scan-action-btn" onclick="finishScanning()"
-                            style="background: #10b981; color: white;">Done Processing</button>
+                            style="background: #10b981; color: white; flex: 1;">✨ Process Now</button>
                     </div>
                 </div>
             </div>
@@ -2489,6 +2495,14 @@
             <div id="ocrStatus" class="ocr-status"></div>
 
             <div id="extractedData" class="extracted-data">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin:0; font-size: 16px;">Verified Information</h3>
+                    <button onclick="exportExtractedVCard()"
+                        style="background: #eff6ff; color: #3b82f6; border: 1px solid #3b82f6; padding: 5px 10px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                        📥 Save to Phone
+                    </button>
+                </div>
+
                 <div class="data-field">
                     <label>Contact Name</label>
                     <input type="text" id="extractedName">
@@ -4311,12 +4325,15 @@
             document.getElementById('cardImageFront').style.display = 'none';
             document.getElementById('cardImageBack').style.display = 'none';
             document.getElementById('scannerInstruction').textContent = 'Position Front of Card';
-            // Reset UI
+
+            // UI Reset
             document.getElementById('captureBtn').style.display = 'block';
             document.getElementById('postCaptureControls').style.display = 'none';
-            document.getElementById('videoContainer').classList.add('active'); // Ensure video is visible
+            document.getElementById('videoContainer').classList.add('active');
 
-            // Note: Camera start is handled by startCamera(), not called here to avoid recursion
+            // Reset Buttons
+            const scanBackBtn = document.getElementById('scanBackBtn');
+            if (scanBackBtn) scanBackBtn.style.display = 'block'; // Reset visibility
         }
 
         window.capturePhoto = function () {
@@ -4334,29 +4351,37 @@
             scannedImages[currentScanSide] = imageData;
 
             // Update UI preview
-            const previewImg = document.getElementById(currentScanSide === 'front' ? 'cardImageFront' : 'cardImageBack');
-            previewImg.src = imageData;
-            previewImg.style.display = 'block';
+            if (currentScanSide === 'front') {
+                const img = document.getElementById('cardImageFront');
+                img.src = imageData;
+                img.style.display = 'block';
+            } else {
+                const img = document.getElementById('cardImageBack');
+                img.src = imageData;
+                img.style.display = 'block';
+            }
 
-            // Pause video to show "Frozen" frame implies capture
-            video.pause();
-
-            // Show controls
+            // Hide Camera UI, Show Actions
             document.getElementById('captureBtn').style.display = 'none';
             document.getElementById('postCaptureControls').style.display = 'flex';
 
-            // If we just scanned back, hide "Scan Back" button
-            const scanBackBtn = document.getElementById('scanBackBtn');
+            // Logic: If on back side, hide "Scan Back" button (already done)
             if (currentScanSide === 'back') {
-                scanBackBtn.style.display = 'none';
-            } else {
-                scanBackBtn.style.display = 'block';
+                document.getElementById('scanBackBtn').style.display = 'none';
             }
         };
 
         window.retakePhoto = function () {
-            const video = document.getElementById('cardVideo');
-            video.play();
+            // clear current side
+            delete scannedImages[currentScanSide];
+
+            if (currentScanSide === 'front') {
+                document.getElementById('cardImageFront').style.display = 'none';
+            } else {
+                document.getElementById('cardImageBack').style.display = 'none';
+            }
+
+            // Reset UI to capture mode
             document.getElementById('captureBtn').style.display = 'block';
             document.getElementById('postCaptureControls').style.display = 'none';
         };
@@ -4364,8 +4389,15 @@
         window.prepareBackSide = function () {
             currentScanSide = 'back';
             document.getElementById('scannerInstruction').textContent = 'Position Back of Card';
-            window.retakePhoto(); // Resume camera
+
+            // Reset UI for capture
+            document.getElementById('captureBtn').style.display = 'block';
+            document.getElementById('postCaptureControls').style.display = 'none';
+
+            // Check if we need to restart/ensure camera is running
+            // (It should still be running, just hidden behind overlay or preview logic if we added that)
         };
+
 
         window.finishScanning = async function () {
             // Stop camera
@@ -4667,10 +4699,52 @@
                 } else {
                     alert(`✅ Contact added successfully!\n\nContact: ${contactName}\nBusiness: ${business.name}`);
                 }
+
+                // CRITICAL FIX: Refresh Global Contacts List
+                if (typeof loadGlobalContacts === 'function') {
+                    console.log("Refreshing global contacts list...");
+                    loadGlobalContacts();
+                }
+
             } catch (e) {
                 console.error('Error saving extracted contact:', e);
                 alert('Error saving contact.');
             }
+        };
+
+        // Export Extracted Data to vCard (Immediate)
+        window.exportExtractedVCard = function () {
+            const name = document.getElementById('extractedName').value.trim();
+            const title = document.getElementById('extractedTitle').value.trim();
+            const company = document.getElementById('extractedCompany').value.trim();
+            const phone = document.getElementById('extractedPhone').value.trim();
+            const email = document.getElementById('extractedEmail').value.trim();
+            const address = document.getElementById('extractedAddress').value.trim();
+
+            if (!name) {
+                alert("No contact name found to export.");
+                return;
+            }
+
+            const vcard = [
+                'BEGIN:VCARD',
+                'VERSION:3.0',
+                `FN:${name}`,
+                title ? `TITLE:${title}` : '',
+                company ? `ORG:${company}` : '',
+                phone ? `TEL;TYPE=CELL:${phone}` : '',
+                email ? `EMAIL:${email}` : '',
+                address ? `ADR;TYPE=WORK:;;${address};;;;` : '',
+                'END:VCARD'
+            ].filter(Boolean).join('\n');
+
+            const blob = new Blob([vcard], { type: 'text/vcard' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${name.replace(/\s+/g, '_')}.vcf`;
+            a.click();
+            URL.revokeObjectURL(url);
         };
 
         // Create new business from scanned business card
