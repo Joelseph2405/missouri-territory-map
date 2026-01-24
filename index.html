@@ -53,7 +53,7 @@
             color: #333;
         }
 
-        < !-- Mobile Header - BMG Black Box (Black Ops / Stealth) --><div class="mobile-header"><button onclick="window.openContactsModal()" style="position:absolute; left:15px; background:none; border:none; font-size:24px; cursor:pointer;" title="Contacts">👥</button>BMG BLACK SITES <button onclick="document.getElementById('reportsMenuModal').style.display='flex'" style="position:absolute; right:15px; background:none; border:none; font-size:24px; cursor:pointer;" title="Reports">📊</button></div>
+
 
         /* Mobile Header - BMG Black Box (Black Ops / Stealth) */
         .mobile-header {
@@ -1988,7 +1988,13 @@
     </div>
     <!-- Mobile Header -->
     <div class="mobile-header">
-        BLACK BOX PROSPECTING
+        <button onclick="window.openContactsModal()"
+            style="position:absolute; left:15px; background:none; border:none; font-size:24px; cursor:pointer;"
+            title="Contacts">👥</button>
+        BMG BLACK SITES
+        <button onclick="document.getElementById('reportsMenuModal').style.display='flex'"
+            style="position:absolute; right:15px; background:none; border:none; font-size:24px; cursor:pointer;"
+            title="Reports">📊</button>
     </div>
 
     <!-- CONTACTS PANEL -->
