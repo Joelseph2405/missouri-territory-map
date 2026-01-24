@@ -3249,7 +3249,20 @@
             try {
                 const response = await apiCall(API_URL);
                 if (response.businesses) {
-                    businessesData = response.businesses;
+                    // Normalize data keys (Handle Postgres lowercase vs SQLite camelCase)
+                    businessesData = response.businesses.map(b => {
+                        const rawStatus = (b.customerStatus || b.customerstatus || 'prospective').toString().toLowerCase().trim();
+                        // Map to standard values
+                        const status = rawStatus.includes('existing') ? 'existing' : 'prospective';
+
+                        return {
+                            ...b,
+                            customerStatus: status,
+                            interactionCount: b.interactionCount !== undefined ? b.interactionCount : (b.interactioncount || 0),
+                            zipCode: b.zipCode || b.zipcode || b.zip_code || '',
+                            lastVisit: b.lastVisit || b.lastvisit || null
+                        };
+                    });
                     console.log(`Loaded ${businessesData.length} businesses from API`);
                     populateIndustryDropdown(); // Update dropdowns with real data
                 } else {
