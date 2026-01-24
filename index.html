@@ -4712,36 +4712,75 @@
 
             // Find line that looks like a title
             for (let i = 0; i < unknownLines.length; i++) {
-                if (titleWords.some(word => fuzzyContains(unknownLines[i], word))) {
-                    info.title = unknownLines[i];
+                const line = unknownLines[i];
+                // Check if line contains a title word
+                const matchedWord = titleWords.find(word => fuzzyContains(line, word));
+
+                if (matchedWord) {
+                    // CRITICAL FIX: Check if line is "Name - Title" or "Name | Title"
+                    // If the line is long and the title word is at the END, split it.
+                    const separators = ['-', '|', '•', ','];
+                    let splitFound = false;
+
+                    for (const sep of separators) {
+                        if (line.includes(sep)) {
+                            const parts = line.split(sep);
+                            // If the second part looks like the title
+                            if (parts.length > 1 && fuzzyContains(parts[1], matchedWord)) {
+                                info.name = parts[0].trim();
+                                info.title = parts[1].trim();
+                                splitFound = true;
+                                break; // Found split, stop checking separators
+                            }
+                        }
+                    }
+
+                    if (!splitFound) {
+                        // Regular behavior: Whole line is title
+                        info.title = line;
+                    }
+
                     titleIndex = i;
                     break;
                 }
             }
 
-            // Guess Name (Before title, or first line)
-            if (titleIndex > 0) {
-                // Name is likely the line BEFORE title
-                info.name = unknownLines[titleIndex - 1];
-                // Company is likely line AFTER title? or maybe 2 lines before?
-                // Heuristic: If title is index 1, Name is 0. Company might be 2 or not there.
-                if (unknownLines.length > titleIndex + 1) {
-                    info.company = unknownLines[titleIndex + 1];
-                }
-            } else {
-                // No title found. Fallback:
-                if (unknownLines.length > 0) {
-                    // Check if first line triggers "garbage" detector?
-                    // (Already filtered symbol-only lines, but check for weird mixed casing?)
-                    info.name = unknownLines[0];
-                }
-                if (unknownLines.length > 1) {
-                    info.company = unknownLines[1]; // Guess second line is company
+            // Guess Name (If not already found by split)
+            if (!info.name) {
+                if (titleIndex > 0) {
+                    // Name is likely the line BEFORE title
+                    info.name = unknownLines[titleIndex - 1];
+                    // Company is likely line AFTER title
+                    if (unknownLines.length > titleIndex + 1) {
+                        // Check if next line looks like an address/phone? No, those are filtered.
+                        // Assume company.
+                        info.company = unknownLines[titleIndex + 1];
+                    }
+                } else {
+                    // No title found, or Title was first line.
+                    // Fallback: Pick first line that looks like a Name (Capitalized)
+                    const probableName = unknownLines.find(l => /^[A-Z]/.test(l) && l.length > 3 && l.includes(' '));
+                    if (probableName) {
+                        info.name = probableName;
+                        // Try to find company (next line that isn't name)
+                        const nameIdx = unknownLines.indexOf(probableName);
+                        if (unknownLines.length > nameIdx + 1) {
+                            info.company = unknownLines[nameIdx + 1];
+                        }
+                    } else if (unknownLines.length > 0) {
+                        // Last resort: First line (even if lowercase garbage, user can edit)
+                        // But try to skip very short lowercase junk
+                        const decentLine = unknownLines.find(l => l.length > 4);
+                        if (decentLine) info.name = decentLine;
+                    }
                 }
             }
 
             // Cleanup Name (Remove common prefixes like "Name:")
             if (info.name) info.name = info.name.replace(/^(name|contact)[:\s]*/i, '');
+
+            // Cleanup Title
+            if (info.title) info.title = info.title.replace(/^(title|job|position)[:\s]*/i, '');
 
             return info;
         }
