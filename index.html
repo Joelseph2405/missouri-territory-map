@@ -4426,9 +4426,14 @@
                 let combinedText = "";
 
                 for (let i = 0; i < imagesToProcess.length; i++) {
-                    statusDiv.textContent = `Reading image ${i + 1}/${imagesToProcess.length}...`;
+                    statusDiv.textContent = `Optimizing image ${i + 1}/${imagesToProcess.length}...`;
+
+                    // PREPROCESS IMAGE (Grayscale + Binarization)
+                    const processedImage = await preprocessImage(imagesToProcess[i]);
+
+                    statusDiv.textContent = `Reading text ${i + 1}/${imagesToProcess.length}...`;
                     const result = await Tesseract.recognize(
-                        imagesToProcess[i],
+                        processedImage,
                         'eng',
                         { logger: m => console.log(m) }
                     );
@@ -4437,7 +4442,6 @@
 
                 statusDiv.textContent = 'Analyzing text...';
 
-                // CRITICAL FIX: Capture and Use Data
                 const extractedInfo = parseBusinessCardText(combinedText);
 
                 // Populate Form
@@ -4450,10 +4454,8 @@
 
                 statusDiv.textContent = 'Scanning complete!';
 
-                // Show Form
                 document.getElementById('extractedData').classList.add('active');
 
-                // Show Buttons based on context
                 if (currentScanBusinessId) {
                     document.getElementById('saveContactBtn').style.display = 'block';
                     document.getElementById('createBusinessBtn').style.display = 'none';
@@ -4469,6 +4471,46 @@
                 if (overlay) overlay.style.display = 'none';
             }
         };
+
+        // IMAGE PREPROCESSING FOR BETTER OCR
+        function preprocessImage(dataUrl) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+
+                    // Grayscale & Binarization (Thresholding)
+                    // Threshold: 128 is standard middle ground
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i];
+                        const g = data[i + 1];
+                        const b = data[i + 2];
+
+                        // Luminosity formula
+                        const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+                        // Binarize (Black or White)
+                        // Adjust threshold if needed (e.g., 100 for lighter text, 140 for cleaner background)
+                        const val = gray > 120 ? 255 : 0;
+
+                        data[i] = val;
+                        data[i + 1] = val;
+                        data[i + 2] = val;
+                    }
+
+                    ctx.putImageData(imageData, 0, 0);
+                    resolve(canvas.toDataURL('image/jpeg'));
+                };
+                img.src = dataUrl;
+            });
+        }
 
         // Initialize Camera Mode
         let currentFacingMode = 'environment';
