@@ -4399,6 +4399,68 @@
         };
 
 
+        // Initialize Camera Mode
+        let currentFacingMode = 'environment';
+
+        // Override startCamera to reset state and use current mode
+        const originalStartCamera = window.startCamera;
+        window.startCamera = async function () {
+            resetScannerState();
+
+            // Show Flip Button
+            const flipBtn = document.getElementById('flipCameraBtn');
+            if (flipBtn) flipBtn.style.visibility = 'visible';
+
+            try {
+                if (videoStream) {
+                    videoStream.getTracks().forEach(track => track.stop());
+                }
+
+                const constraints = {
+                    video: {
+                        facingMode: currentFacingMode
+                    }
+                };
+
+                videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+                const video = document.getElementById('cardVideo');
+                video.srcObject = videoStream;
+                document.getElementById('videoContainer').classList.add('active');
+            } catch (err) {
+                console.error("Camera error:", err);
+                document.getElementById('permissionHelpModal').classList.add('active');
+            }
+        };
+
+        // Toggle Camera Function
+        window.flipCamera = async function () {
+            currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+            // Restart camera with new mode
+            await window.startCamera();
+        };
+
+        // Handle file upload
+        window.handleFileUpload = function (event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const imageData = e.target.result;
+                const imagePreview = document.getElementById('cardImageFront');
+
+                imagePreview.src = imageData;
+                imagePreview.style.display = 'block';
+
+                document.getElementById('videoContainer').classList.remove('active');
+
+                scannedImages = { front: imageData };
+                finishScanning();
+            };
+
+            reader.readAsDataURL(file);
+        };
+
         window.finishScanning = async function () {
             // Stop camera
             if (videoStream) {
