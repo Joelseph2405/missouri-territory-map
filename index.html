@@ -4582,23 +4582,56 @@
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                     const data = imageData.data;
 
-                    // Grayscale & Binarization (Thresholding)
-                    // Threshold: 128 is standard middle ground
+                    // 1. Calculate Average Brightness
+                    let totalBrightness = 0;
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i];
+                        const g = data[i + 1];
+                        const b = data[i + 2];
+                        // Luminosity
+                        const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                        totalBrightness += gray;
+                    }
+                    const avgBrightness = totalBrightness / (data.length / 4);
+                    const isDarkMode = avgBrightness < 128; // If avg is dark, assume dark card
+
+                    console.log(`Image Brightness: ${avgBrightness.toFixed(0)} | Dark Mode: ${isDarkMode}`);
+
+                    // 2. Grayscale & Enhancement & Inversion
                     for (let i = 0; i < data.length; i += 4) {
                         const r = data[i];
                         const g = data[i + 1];
                         const b = data[i + 2];
 
-                        // Luminosity formula
-                        const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                        // Convert to Gray
+                        let gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
 
-                        // Binarize (Black or White)
-                        // Adjust threshold if needed (e.g., 100 for lighter text, 140 for cleaner background)
-                        const val = gray > 120 ? 255 : 0;
+                        // INVERT if Dark Mode (Make text black, background white)
+                        if (isDarkMode) {
+                            gray = 255 - gray;
+                        }
 
-                        data[i] = val;
-                        data[i + 1] = val;
-                        data[i + 2] = val;
+                        // Contrast Stretch (Simple)
+                        // Make darks darker, lights lighter
+                        // Instead of hard threshold (which kills detail), use soft curve
+                        // Or just standard Tesseract preference: clear binarization
+                        // Let's use a dynamic threshold based on the *new* average (which is now light)
+
+                        // For Tesseract, simple grayscale is often better than bad binarization.
+                        // But high contrast helps.
+                        // Let's do a simple linear contrast boost
+                        gray = (gray - 128) * 1.5 + 128;
+                        // Clamp
+                        if (gray < 0) gray = 0;
+                        if (gray > 255) gray = 255;
+
+                        // Optional: Binarize?
+                        // If we inverted, background is white (255), text is black (0).
+                        // Let's leave it as High Contrast Grayscale for now, less risky than threshold.
+
+                        data[i] = gray;
+                        data[i + 1] = gray;
+                        data[i + 2] = gray;
                     }
 
                     ctx.putImageData(imageData, 0, 0);
