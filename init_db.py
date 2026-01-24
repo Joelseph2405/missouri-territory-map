@@ -40,11 +40,22 @@ def init_db():
                 print(f"Schema Validation Failed (likely missing column): {e}")
                 bad_zips = 999999 # FORCE RESET
 
-            # FORCE RESET (User Request): Always wipe and reload to ensure clean state from JSON
-            print(f"♻️ FORCED RESET: Dropping table to ensure data matches source file ({len(businesses)} records)...")
-            c.execute("DROP TABLE IF EXISTS businesses")
-            database.init_tables(conn) # Recreate empty
-            print("✅ Table recreated.")
+            # FORCE RESET (User Request): Always wipe to ensure clean state
+            print(f"♻️ FORCED RESET: Dropping tables to ensure clean slate...")
+            
+            if database.get_engine() == 'postgres':
+                # Postgres requires CASCADE if FKs exist
+                c.execute("DROP TABLE IF EXISTS reminders CASCADE")
+                c.execute("DROP TABLE IF EXISTS contacts CASCADE")
+                c.execute("DROP TABLE IF EXISTS businesses CASCADE")
+            else:
+                # SQLite
+                c.execute("DROP TABLE IF EXISTS reminders")
+                c.execute("DROP TABLE IF EXISTS contacts")
+                c.execute("DROP TABLE IF EXISTS businesses")
+                
+            database.init_tables(conn) # Recreate all
+            print("✅ Tables recreated.")
             count = 0 
             # End Force Reset
             
