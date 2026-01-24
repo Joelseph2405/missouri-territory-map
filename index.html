@@ -3302,7 +3302,7 @@
                             map.closePopup();
 
                             // Open Mobile Panel
-                            openBusinessDetailsPanel(business);
+                            openBusinessDetailsPanel(business, 'map');
                         } else {
                             // Desktop: Use Standard Popup
                             // Bind it on demand if not already bound
@@ -3391,7 +3391,7 @@
 
         window.handleInfoClick = function (btn) {
             const id = btn.getAttribute('data-id');
-            openBusinessDetailsPanelById(id);
+            openBusinessDetailsPanelById(id, 'route');
         };
 
         // ============================================
@@ -4925,19 +4925,26 @@
 
         // Mobile Business Details Panel Logic
         // Helper to open details by ID (safer for HTML clicks)
-        window.openBusinessDetailsPanelById = function (id) {
+        window.openBusinessDetailsPanelById = function (id, source = 'map') {
             const b = businessesData.find(x => x.id == id);
-            if (b) openBusinessDetailsPanel(b);
+            if (b) openBusinessDetailsPanel(b, source);
             else console.error("Business not found for ID:", id);
         };
 
-        window.openBusinessDetailsPanel = function (business) {
+        window.openBusinessDetailsPanel = function (business, source = null) {
             // Close other menus (including scanner, search etc)
             closeAllMobileMenus();
 
             const panel = document.getElementById('businessDetailsPanel');
             const title = document.getElementById('businessDetailsTitle');
             const content = document.getElementById('businessDetailsContent');
+
+            // Determine effective source:
+            // 1. Explicitly passed source
+            // 2. Existing source on panel (if we are just refreshing content)
+            // 3. Default to 'map'
+            const effectiveSource = source || panel.dataset.source || 'map';
+            panel.dataset.source = effectiveSource;
 
             // Set Title
             title.textContent = business.name || 'Business Details';
@@ -4955,15 +4962,15 @@
         };
 
         window.closeBusinessDetailsPanel = function () {
-            // Use the centralized cleaner to strip 'active'/'mobile-active' from everything
-            // This ensures no overlay conflicts
-            const wasDetailsOpen = document.getElementById('businessDetailsPanel').classList.contains('active');
+            const panel = document.getElementById('businessDetailsPanel');
+            const wasDetailsOpen = panel.classList.contains('active');
+            const source = panel.dataset.source || 'map'; // Default to map if missing
 
             closeAllMobileMenus(); // Nuclear option: clear deck
 
-            // Smart Navigation: Jump back to Route IF we just came from it (checking persistent state)
+            // Smart Navigation: Jump back to Route IF we just came from it (checking persistent state AND source)
             const savedRoute = localStorage.getItem('activeRoute');
-            if (savedRoute && wasDetailsOpen) {
+            if (savedRoute && wasDetailsOpen && source === 'route') {
                 const routeModal = document.getElementById('routeSetupModal');
                 if (routeModal) {
                     // Activate Route Modal
@@ -7047,11 +7054,18 @@
             const biz = businessesData.find(b => b.id == id);
             if (biz) {
                 map.setView([biz.lat, biz.lng], 16);
-                businessMarkersLayer.eachLayer(layer => {
-                    if (layer.businessData && layer.businessData.id == id) {
-                        setTimeout(() => layer.openPopup(), 300);
-                    }
-                });
+
+                if (window.innerWidth <= 768) {
+                    // Mobile: Open the panel directly
+                    openBusinessDetailsPanel(biz, 'map');
+                } else {
+                    // Desktop: Open the popup
+                    businessMarkersLayer.eachLayer(layer => {
+                        if (layer.businessData && layer.businessData.id == id) {
+                            setTimeout(() => layer.openPopup(), 300);
+                        }
+                    });
+                }
             }
         };
 
