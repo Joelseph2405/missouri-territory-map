@@ -4547,12 +4547,60 @@
                 }
 
             } catch (error) {
-                console.error(error);
-                statusDiv.textContent = 'Error during scanning.';
-            } finally {
-                if (overlay) overlay.style.display = 'none';
+                console.error('OCR Error:', error);
+                statusDiv.textContent = '❌ Error processing image.';
+                statusDiv.className = 'ocr-status active error';
+                document.getElementById('extractedData').classList.add('active');
+                if (currentScanBusinessId) {
+                    document.getElementById('saveContactBtn').style.display = 'block';
+                    document.getElementById('createBusinessBtn').style.display = 'none';
+                } else {
+                    document.getElementById('saveContactBtn').style.display = 'none';
+                    document.getElementById('createBusinessBtn').style.display = 'block';
+                }
+                if (overlay) overlay.style.display = 'none'; // Hide Overlay
             }
         };
+
+        // IMAGE PREPROCESSING FOR BETTER OCR
+        function preprocessImage(dataUrl) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+
+                    // Grayscale & Binarization (Thresholding)
+                    // Threshold: 128 is standard middle ground
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i];
+                        const g = data[i + 1];
+                        const b = data[i + 2];
+
+                        // Luminosity formula
+                        const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+                        // Binarize (Black or White)
+                        // Adjust threshold if needed (e.g., 100 for lighter text, 140 for cleaner background)
+                        const val = gray > 120 ? 255 : 0;
+
+                        data[i] = val;
+                        data[i + 1] = val;
+                        data[i + 2] = val;
+                    }
+
+                    ctx.putImageData(imageData, 0, 0);
+                    resolve(canvas.toDataURL('image/jpeg'));
+                };
+                img.src = dataUrl;
+            });
+        }
 
         // Parse business card text (Layout Awareness: Font Size)
         function parseBusinessCardText(text, linesData = []) {
