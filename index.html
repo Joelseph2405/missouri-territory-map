@@ -4414,14 +4414,19 @@
 
             if (imagesToProcess.length === 0) return;
 
-            document.getElementById('ocrStatus').textContent = 'Processing... (This usually takes a few seconds)';
+            const statusDiv = document.getElementById('ocrStatus');
+            statusDiv.textContent = 'Processing... (This usually takes a few seconds)';
+
+            // Show Overlay
+            const overlay = document.getElementById('scannerProcessingOverlay');
+            if (overlay) overlay.style.display = 'flex';
 
             try {
                 // Process sequentially
                 let combinedText = "";
 
                 for (let i = 0; i < imagesToProcess.length; i++) {
-                    document.getElementById('ocrStatus').textContent = `Reading image ${i + 1}/${imagesToProcess.length}...`;
+                    statusDiv.textContent = `Reading image ${i + 1}/${imagesToProcess.length}...`;
                     const result = await Tesseract.recognize(
                         imagesToProcess[i],
                         'eng',
@@ -4430,13 +4435,38 @@
                     combinedText += result.data.text + "\n";
                 }
 
-                document.getElementById('ocrStatus').textContent = 'Analyzing text...';
-                parseBusinessCardText(combinedText);
-                document.getElementById('ocrStatus').textContent = 'Scanning complete!';
+                statusDiv.textContent = 'Analyzing text...';
+
+                // CRITICAL FIX: Capture and Use Data
+                const extractedInfo = parseBusinessCardText(combinedText);
+
+                // Populate Form
+                document.getElementById('extractedName').value = extractedInfo.name || '';
+                document.getElementById('extractedTitle').value = extractedInfo.title || '';
+                document.getElementById('extractedCompany').value = extractedInfo.company || '';
+                document.getElementById('extractedPhone').value = extractedInfo.phone || '';
+                document.getElementById('extractedEmail').value = extractedInfo.email || '';
+                document.getElementById('extractedAddress').value = extractedInfo.address || '';
+
+                statusDiv.textContent = 'Scanning complete!';
+
+                // Show Form
+                document.getElementById('extractedData').classList.add('active');
+
+                // Show Buttons based on context
+                if (currentScanBusinessId) {
+                    document.getElementById('saveContactBtn').style.display = 'block';
+                    document.getElementById('createBusinessBtn').style.display = 'none';
+                } else {
+                    document.getElementById('saveContactBtn').style.display = 'none';
+                    document.getElementById('createBusinessBtn').style.display = 'block';
+                }
 
             } catch (error) {
                 console.error(error);
-                document.getElementById('ocrStatus').textContent = 'Error during scanning.';
+                statusDiv.textContent = 'Error during scanning.';
+            } finally {
+                if (overlay) overlay.style.display = 'none';
             }
         };
 
