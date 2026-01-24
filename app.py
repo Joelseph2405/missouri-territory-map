@@ -15,10 +15,10 @@ CORS(app)
 # Initialize database if needed (mostly for local SQLite)
 # For Postgres, one-time migration script is better, but this check is harmless if fast
 # Initialize database (checks for tables/data and seeds if empty)
-# try:
-#     init_db()
-# except Exception as e:
-#     print(f"Startup initialization failed (non-critical if DB exists): {e}")
+try:
+    init_db()
+except Exception as e:
+    print(f"Startup initialization failed (non-critical if DB exists): {e}")
 
 def get_db_connection():
     return database.get_connection()
