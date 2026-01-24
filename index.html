@@ -4424,11 +4424,11 @@
             try {
                 // Process sequentially
                 let combinedText = "";
+                let combinedLines = []; // Store lines with bbox info
 
                 for (let i = 0; i < imagesToProcess.length; i++) {
                     statusDiv.textContent = `Optimizing image ${i + 1}/${imagesToProcess.length}...`;
 
-                    // PREPROCESS IMAGE (Grayscale + Binarization)
                     const processedImage = await preprocessImage(imagesToProcess[i]);
 
                     statusDiv.textContent = `Reading text ${i + 1}/${imagesToProcess.length}...`;
@@ -4438,11 +4438,25 @@
                         { logger: m => console.log(m) }
                     );
                     combinedText += result.data.text + "\n";
+
+                    // Collect line data for Layout Analysis
+                    if (result.data.lines) {
+                        result.data.lines.forEach(line => {
+                            // Calculate height from bbox
+                            const height = line.bbox.y1 - line.bbox.y0;
+                            combinedLines.push({
+                                text: line.text.trim(),
+                                height: height,
+                                confidence: line.confidence
+                            });
+                        });
+                    }
                 }
 
-                statusDiv.textContent = 'Analyzing text...';
+                statusDiv.textContent = 'Analyzing layout...';
 
-                const extractedInfo = parseBusinessCardText(combinedText);
+                // Use new Layout-Aware Parser
+                const extractedInfo = parseBusinessCardText(combinedText, combinedLines);
 
                 // Populate Form
                 document.getElementById('extractedName').value = extractedInfo.name || '';
@@ -4453,6 +4467,12 @@
                 document.getElementById('extractedAddress').value = extractedInfo.address || '';
 
                 statusDiv.textContent = 'Scanning complete!';
+
+                // Inject "Show Raw Text" Toggle
+                const rawToggle = document.createElement('div');
+                rawToggle.innerHTML = `<button onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'" style="margin-top:10px; font-size:12px; text-decoration:underline; border:none; background:none; cursor:pointer; color:#64748b;">Show Raw Text</button>
+                <div style="display:none; font-family:monospace; font-size:11px; background:#f1f5f9; padding:10px; margin-top:5px; white-space:pre-wrap; max-height:100px; overflow:auto;">${combinedText.replace(/</g, '&lt;')}</div>`;
+                statusDiv.appendChild(rawToggle);
 
                 document.getElementById('extractedData').classList.add('active');
 
@@ -4472,174 +4492,8 @@
             }
         };
 
-        // IMAGE PREPROCESSING FOR BETTER OCR
-        function preprocessImage(dataUrl) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const data = imageData.data;
-
-                    // Grayscale & Binarization (Thresholding)
-                    // Threshold: 128 is standard middle ground
-                    for (let i = 0; i < data.length; i += 4) {
-                        const r = data[i];
-                        const g = data[i + 1];
-                        const b = data[i + 2];
-
-                        // Luminosity formula
-                        const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-
-                        // Binarize (Black or White)
-                        // Adjust threshold if needed (e.g., 100 for lighter text, 140 for cleaner background)
-                        const val = gray > 120 ? 255 : 0;
-
-                        data[i] = val;
-                        data[i + 1] = val;
-                        data[i + 2] = val;
-                    }
-
-                    ctx.putImageData(imageData, 0, 0);
-                    resolve(canvas.toDataURL('image/jpeg'));
-                };
-                img.src = dataUrl;
-            });
-        }
-
-        // Initialize Camera Mode
-        let currentFacingMode = 'environment';
-
-        // Override startCamera to reset state and use current mode
-        const originalStartCamera = window.startCamera;
-        window.startCamera = async function () {
-            resetScannerState();
-
-            // Show Flip Button
-            const flipBtn = document.getElementById('flipCameraBtn');
-            if (flipBtn) flipBtn.style.visibility = 'visible';
-
-            try {
-                if (videoStream) {
-                    videoStream.getTracks().forEach(track => track.stop());
-                }
-
-                const constraints = {
-                    video: {
-                        facingMode: currentFacingMode
-                    }
-                };
-
-                videoStream = await navigator.mediaDevices.getUserMedia(constraints);
-                const video = document.getElementById('cardVideo');
-                video.srcObject = videoStream;
-                document.getElementById('videoContainer').classList.add('active');
-            } catch (err) {
-                console.error("Camera error:", err);
-                document.getElementById('permissionHelpModal').classList.add('active');
-            }
-        };
-
-        // Toggle Camera Function
-        window.flipCamera = async function () {
-            currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
-            // Restart camera with new mode
-            await window.startCamera();
-        };
-
-        // Handle file upload
-        window.handleFileUpload = function (event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const imageData = e.target.result;
-                const imagePreview = document.getElementById('cardImageFront');
-
-                imagePreview.src = imageData;
-                imagePreview.style.display = 'block';
-
-                document.getElementById('videoContainer').classList.remove('active');
-
-                scannedImages = { front: imageData };
-                finishScanning();
-            };
-
-            reader.readAsDataURL(file);
-        };
-
-        // Process image with Tesseract OCR (with Overlay)
-        async function processImageWithOCR(imageData) {
-            const statusDiv = document.getElementById('ocrStatus');
-            const overlay = document.getElementById('scannerProcessingOverlay');
-
-            statusDiv.textContent = '🔍 Processing business card...';
-            statusDiv.className = 'ocr-status active processing';
-            if (overlay) overlay.style.display = 'flex'; // Show Overlay
-
-            try {
-                // Run Tesseract OCR
-                const result = await Tesseract.recognize(
-                    imageData,
-                    'eng',
-                    {
-                        logger: info => {
-                            if (info.status === 'recognizing text') {
-                                const progress = Math.round(info.progress * 100);
-                                statusDiv.textContent = `🔍 Processing... ${progress}%`;
-                            }
-                        }
-                    }
-                );
-
-                const text = result.data.text;
-                console.log('OCR Result:', text);
-
-                const extractedInfo = parseBusinessCardText(text);
-
-                document.getElementById('extractedName').value = extractedInfo.name || '';
-                document.getElementById('extractedTitle').value = extractedInfo.title || '';
-                document.getElementById('extractedCompany').value = extractedInfo.company || '';
-                document.getElementById('extractedPhone').value = extractedInfo.phone || '';
-                document.getElementById('extractedEmail').value = extractedInfo.email || '';
-                document.getElementById('extractedAddress').value = extractedInfo.address || '';
-
-                statusDiv.textContent = '✅ Business card processed! Review below.';
-                statusDiv.className = 'ocr-status active success';
-                document.getElementById('extractedData').classList.add('active');
-
-                if (currentScanBusinessId) {
-                    document.getElementById('saveContactBtn').style.display = 'block';
-                    document.getElementById('createBusinessBtn').style.display = 'none';
-                } else {
-                    document.getElementById('saveContactBtn').style.display = 'none';
-                    document.getElementById('createBusinessBtn').style.display = 'block';
-                }
-
-            } catch (error) {
-                console.error('OCR Error:', error);
-                statusDiv.textContent = '❌ Error processing image.';
-                statusDiv.className = 'ocr-status active error';
-                document.getElementById('extractedData').classList.add('active');
-                if (currentScanBusinessId) {
-                    document.getElementById('saveContactBtn').style.display = 'block';
-                    document.getElementById('createBusinessBtn').style.display = 'none';
-                } else {
-                    document.getElementById('saveContactBtn').style.display = 'none';
-                    document.getElementById('createBusinessBtn').style.display = 'block';
-                }
-                if (overlay) overlay.style.display = 'none'; // Hide Overlay
-            }
-        }
-
-        // Parse business card text (Improved Regex & Fuzzy Logic)
-        function parseBusinessCardText(text) {
+        // Parse business card text (Layout Awareness: Font Size)
+        function parseBusinessCardText(text, linesData = []) {
             const info = {
                 name: '',
                 title: '',
@@ -4649,37 +4503,35 @@
                 address: ''
             };
 
-            // 0. Pre-clean text
-            // Remove common OCR noise lines like " | " or " . "
-            const lines = text.split('\n')
-                .map(l => l.trim())
-                .filter(l => l.length > 2) // Ignore very short lines
-                .filter(l => !/^[.,\-_|\\/:;!@#$%^&*()]+$/.test(l)); // Ignore pure symbol lines
+            // 0. Pre-clean and prepare lines
+            // If we have linesData (from Tesseract lines), use that. Otherwise fall back to text split.
+            let lines = [];
+            if (linesData.length > 0) {
+                lines = linesData.filter(l => l.text.length > 2 && !/^[.,\-_|\\/:;!@#$%^&*()]+$/.test(l.text));
+            } else {
+                lines = text.split('\n').map(l => ({ text: l.trim(), height: 0 }))
+                    .filter(l => l.text.length > 2)
+                    .filter(l => !/^[.,\-_|\\/:;!@#$%^&*()]+$/.test(l.text));
+            }
 
-            // Helper: Fuzzy Match (Simple Levenshtein-like check for containment)
-            // Returns true if 'target' is "mostly" inside 'source' (allows for minor OCR errors)
+            // Helper: Fuzzy Match
             const fuzzyContains = (source, target) => {
                 const s = source.toLowerCase().replace(/[^a-z]/g, '');
                 const t = target.toLowerCase().replace(/[^a-z]/g, '');
                 if (s.includes(t)) return true;
-
-                // Allow 1 missing/wrong char for longer words
                 if (t.length > 4) {
                     let matchCount = 0;
                     let sIdx = 0;
                     for (let i = 0; i < t.length; i++) {
                         const found = s.indexOf(t[i], sIdx);
-                        if (found >= sIdx) {
-                            matchCount++;
-                            sIdx = found + 1;
-                        }
+                        if (found >= sIdx) { matchCount++; sIdx = found + 1; }
                     }
                     return matchCount >= t.length - 1;
                 }
                 return false;
             };
 
-            // 1. Extract Email (Stricter)
+            // 1. Extract Email (Regex on full text is safer)
             const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
             const emailMatch = text.match(emailRegex);
             if (emailMatch) info.email = emailMatch[0];
@@ -4692,94 +4544,82 @@
             // 3. Extract Address (Keywords)
             const addressKeywords = ['street', 'st', 'avenue', 'ave', 'road', 'rd', 'drive', 'dr', 'lane', 'ln', 'boulevard', 'blvd', 'suite', 'ste', 'po box'];
             const addressLine = lines.find(line => {
-                const lower = line.toLowerCase();
-                return /\d+/.test(line) && addressKeywords.some(keyword => lower.includes(" " + keyword));
+                const lower = line.text.toLowerCase();
+                return /\d+/.test(line.text) && addressKeywords.some(keyword => lower.includes(" " + keyword));
             });
-            if (addressLine) info.address = addressLine.trim();
+            if (addressLine) info.address = addressLine.text.trim();
 
-            // 4. Heuristics for Name, Title, Company
-            // Skip lines that became email/phone/address
+            // 4. Layout Analysis for Name & Title
+            // Filter out lines that are known (Email, Phone, Address)
             const unknownLines = lines.filter(l =>
-                (!info.email || !l.includes(info.email)) &&
-                (!info.phone || !l.includes(info.phone)) &&
-                (!info.address || !l.includes(info.address))
+                (!info.email || !l.text.includes(info.email)) &&
+                (!info.phone || !l.text.includes(info.phone)) &&
+                (!info.address || !l.text.includes(info.address))
             );
 
-            // Detect Title first to help isolate Name/Company
-            const titleWords = ['manager', 'director', 'president', 'ceo', 'cfo', 'coo', 'owner', 'founder', 'vp', 'vice', 'chief', 'head', 'lead', 'associate', 'representative', 'consultant', 'executive', 'officer', 'agent'];
+            // STRATEGY: Largest Height = Name (usually)
+            // Sort unknown lines by height descending
+            const sortedByHeight = [...unknownLines].sort((a, b) => b.height - a.height);
 
-            let titleIndex = -1;
+            // Title Detection (same keyword list)
+            const titleWords = ['manager', 'director', 'president', 'ceo', 'cfo', 'coo', 'owner', 'founder', 'vp', 'vice', 'chief', 'head', 'lead', 'associate', 'representative', 'consultant', 'executive', 'officer', 'agent', 'sales'];
 
-            // Find line that looks like a title
+            // Check top 3 largest lines for Name
+            let nameFound = false;
+
+            if (sortedByHeight.length > 0) {
+                // The largest text is usually the Name or Company.
+                // If it contains "Inc", "LLC", "Ltd", it's company.
+                const largest = sortedByHeight[0];
+                const isCompany = /inc\.?|llc|ltd|corp\.?|group|solutions|company/i.test(largest.text);
+
+                if (!isCompany) {
+                    // Assume largest is Name
+                    info.name = largest.text;
+                    nameFound = true;
+
+                    // If we found name, remove it from list to find title
+                    const nameIdx = unknownLines.indexOf(largest);
+                    if (nameIdx > -1) unknownLines.splice(nameIdx, 1);
+                } else {
+                    info.company = largest.text;
+                    // Second largest might be name?
+                    if (sortedByHeight.length > 1) {
+                        info.name = sortedByHeight[1].text;
+                        nameFound = true;
+                    }
+                }
+            }
+
+            // If layout didn't give us a name, fallback to old heuristics?
+            // Actually, let's look for title now.
+            // Look through remaining unknown lines for keywords
             for (let i = 0; i < unknownLines.length; i++) {
                 const line = unknownLines[i];
-                // Check if line contains a title word
-                const matchedWord = titleWords.find(word => fuzzyContains(line, word));
+                const matchedWord = titleWords.find(word => fuzzyContains(line.text, word));
 
                 if (matchedWord) {
-                    // CRITICAL FIX: Check if line is "Name - Title" or "Name | Title"
-                    // If the line is long and the title word is at the END, split it.
-                    const separators = ['-', '|', '•', ','];
-                    let splitFound = false;
-
-                    for (const sep of separators) {
-                        if (line.includes(sep)) {
-                            const parts = line.split(sep);
-                            // If the second part looks like the title
-                            if (parts.length > 1 && fuzzyContains(parts[1], matchedWord)) {
-                                info.name = parts[0].trim();
-                                info.title = parts[1].trim();
-                                splitFound = true;
-                                break; // Found split, stop checking separators
-                            }
+                    // logic for "Name - Title" split handled in text? 
+                    // No, Tesseract lines usually split them unless they are close.
+                    // But if they are one line, let's keep the split logic
+                    if (line.text.includes('-') || line.text.includes('|')) {
+                        // Simplified split logic
+                        const parts = line.text.split(/[-|]/);
+                        if (parts.length > 1 && fuzzyContains(parts[1], matchedWord)) {
+                            info.title = parts[1].trim();
+                            if (!nameFound) info.name = parts[0].trim();
+                        } else {
+                            info.title = line.text;
                         }
+                    } else {
+                        info.title = line.text;
                     }
-
-                    if (!splitFound) {
-                        // Regular behavior: Whole line is title
-                        info.title = line;
-                    }
-
-                    titleIndex = i;
-                    break;
+                    break; // Found title
                 }
             }
 
-            // Guess Name (If not already found by split)
-            if (!info.name) {
-                if (titleIndex > 0) {
-                    // Name is likely the line BEFORE title
-                    info.name = unknownLines[titleIndex - 1];
-                    // Company is likely line AFTER title
-                    if (unknownLines.length > titleIndex + 1) {
-                        // Check if next line looks like an address/phone? No, those are filtered.
-                        // Assume company.
-                        info.company = unknownLines[titleIndex + 1];
-                    }
-                } else {
-                    // No title found, or Title was first line.
-                    // Fallback: Pick first line that looks like a Name (Capitalized)
-                    const probableName = unknownLines.find(l => /^[A-Z]/.test(l) && l.length > 3 && l.includes(' '));
-                    if (probableName) {
-                        info.name = probableName;
-                        // Try to find company (next line that isn't name)
-                        const nameIdx = unknownLines.indexOf(probableName);
-                        if (unknownLines.length > nameIdx + 1) {
-                            info.company = unknownLines[nameIdx + 1];
-                        }
-                    } else if (unknownLines.length > 0) {
-                        // Last resort: First line (even if lowercase garbage, user can edit)
-                        // But try to skip very short lowercase junk
-                        const decentLine = unknownLines.find(l => l.length > 4);
-                        if (decentLine) info.name = decentLine;
-                    }
-                }
-            }
-
-            // Cleanup Name (Remove common prefixes like "Name:")
+            // Cleanup
             if (info.name) info.name = info.name.replace(/^(name|contact)[:\s]*/i, '');
-
-            // Cleanup Title
             if (info.title) info.title = info.title.replace(/^(title|job|position)[:\s]*/i, '');
 
             return info;
