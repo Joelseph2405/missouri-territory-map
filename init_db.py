@@ -40,13 +40,30 @@ def init_db():
                 print(f"Schema Validation Failed (likely missing column): {e}")
                 bad_zips = 999999 # FORCE RESET
 
-            # FORCE RESET (User Request): Always wipe and reload to ensure clean state from JSON
-            print(f"♻️ FORCED RESET: Dropping table to ensure data matches source file ({len(businesses)} records)...")
-            c.execute("DROP TABLE IF EXISTS businesses")
-            database.init_tables(conn) # Recreate empty
-            print("✅ Table recreated.")
-            count = 0 
-            # End Force Reset
+            # SMART SYNC: Prune Orphans (User Request: "Get rid of original locations")
+            # This ensures the DB reflects ONLY what is in the JSON file + new app-created records (if logic allowed)
+            # But currently, user wants strict adherence to the file.
+            
+            # 1. Collect JSON IDs (assuming they are set, otherwise we rely on name matches? Local DB export has IDs)
+            json_ids = [b.get('id') for b in businesses if b.get('id') is not None]
+            
+            if json_ids:
+                if len(json_ids) > 100: # Safety check: don't wipe everything if file is tiny
+                    print(f"🧹 Pruning orphans... Keeping {len(json_ids)} records.")
+                    # Create placeholders for SQL
+                    placeholders = ','.join(['?'] * len(json_ids))
+                    sql_delete = f"DELETE FROM businesses WHERE id NOT IN ({placeholders})"
+                    
+                    # Execute
+                    # Note: SQLite vs Postgres limit on placeholders? 
+                    # If list is huge (thousands), this might break. 689 is fine.
+                    try:
+                        c.execute(sql_delete, tuple(json_ids))
+                        print(f"   Deleted {c.rowcount} orphan businesses.")
+                    except Exception as del_e:
+                        print(f"   ⚠️ Pruning failed (maybe too many parameters?): {del_e}")
+                else:
+                    print("⚠️ JSON count too low, skipping orphan pruning to be safe.")
             
             # Seed if we have more data in file than in DB...
             
