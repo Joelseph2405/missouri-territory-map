@@ -53,6 +53,8 @@
             color: #333;
         }
 
+        < !-- Mobile Header - BMG Black Box (Black Ops / Stealth) --><div class="mobile-header"><button onclick="window.openContactsModal()" style="position:absolute; left:15px; background:none; border:none; font-size:24px; cursor:pointer;" title="Contacts">👥</button>BMG BLACK SITES <button onclick="document.getElementById('reportsMenuModal').style.display='flex'" style="position:absolute; right:15px; background:none; border:none; font-size:24px; cursor:pointer;" title="Reports">📊</button></div>
+
         /* Mobile Header - BMG Black Box (Black Ops / Stealth) */
         .mobile-header {
             display: none;
@@ -6807,7 +6809,168 @@
     </div>
 
     <script>
-        // --- CONTACT EDITOR LOGIC ---
+        // --- GLOBAL CONTACTS LOGIC ---
+        let allContacts = [];
+
+        window.openContactsModal = async function () {
+            document.getElementById('contactsModal').style.display = 'flex';
+            await loadGlobalContacts();
+        };
+
+        async function loadGlobalContacts() {
+            const container = document.getElementById('contactsListContainer');
+            container.innerHTML = '<div style="text-align:center; margin-top:20px;">Loading...</div>';
+
+            try {
+                const res = await apiCall('/api/contacts');
+                allContacts = res.contacts;
+                renderContactsList(allContacts);
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<div style="color:red; text-align:center;">Error loading contacts.</div>';
+            }
+        }
+
+        window.filterGlobalContacts = function () {
+            const term = document.getElementById('contactSearchRef').value.toLowerCase();
+            const filtered = allContacts.filter(c =>
+                (c.name && c.name.toLowerCase().includes(term)) ||
+                (c.business_name && c.business_name.toLowerCase().includes(term))
+            );
+            renderContactsList(filtered);
+        };
+
+        function renderContactsList(list) {
+            const container = document.getElementById('contactsListContainer');
+
+            if (list.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:#94a3b8; margin-top:20px;">No contacts found.</div>';
+                return;
+            }
+
+            container.innerHTML = list.map(c => `
+                <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:bold; font-size:16px;">${c.name}</div>
+                        <div style="font-size:13px; color:#64748b;">
+                            ${c.title ? c.title + ' at ' : ''} 
+                            <a href="#" onclick="zoomToBusiness(${c.business_id}); document.getElementById('contactsModal').style.display='none'; return false;" style="color:#3b82f6; text-decoration:none;">
+                                ${c.business_name || 'Unlinked'}
+                            </a>
+                        </div>
+                        <div style="font-size:12px; color:#94a3b8; margin-top:2px;">
+                            ${c.phone ? '📞 ' + c.phone : ''} 
+                            ${c.email ? '✉️ ' + c.email : ''}
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        ${c.phone ? `<a href="tel:${c.phone}" style="padding:8px 12px; background:#eff6ff; color:#3b82f6; border-radius:6px; text-decoration:none; font-size:14px;">📞 Call</a>` : ''}
+                        <button onclick="exportVCard(${c.id})" style="padding:8px; background:#f1f5f9; border:none; border-radius:6px; cursor:pointer;" title="Save to Phone">📥</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.exportVCard = function (contactId) {
+            const c = allContacts.find(x => x.id === contactId);
+            if (!c) return;
+
+            // Simple vCard 3.0 format
+            const vcard = [
+                'BEGIN:VCARD',
+                'VERSION:3.0',
+                `FN:${c.name}`,
+                c.title ? `TITLE:${c.title}` : '',
+                c.business_name ? `ORG:${c.business_name}` : '',
+                c.phone ? `TEL;TYPE=CELL:${c.phone}` : '',
+                c.email ? `EMAIL:${c.email}` : '',
+                c.notes ? `NOTE:${c.notes}` : '',
+                'END:VCARD'
+            ].filter(Boolean).join('\n');
+
+            const blob = new Blob([vcard], { type: 'text/vcard' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${c.name.replace(/\s+/g, '_')}.vcf`;
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
+        window.zoomToBusiness = function (id) {
+            // Find marker logic similar to search
+            const biz = businessesData.find(b => b.id == id);
+            if (biz) {
+                map.setView([biz.lat, biz.lng], 16);
+                businessMarkersLayer.eachLayer(layer => {
+                    if (layer.businessData && layer.businessData.id == id) {
+                        setTimeout(() => layer.openPopup(), 300);
+                    }
+                });
+            }
+        };
+
+        // --- DASHBOARD & REMINDERS LOGIC ---
+
+        window.checkDashboard = async function () {
+            try {
+                // Get today's date YYYY-MM-DD
+                const today = new Date().toISOString().split('T')[0];
+                const res = await apiCall(`/api/reminders?due_before=${today}&status=pending`);
+                const reminders = res.reminders;
+
+                if (reminders.length > 0) {
+                    renderDashboard(reminders);
+                    document.getElementById('dashboardModal').style.display = 'flex';
+                }
+            } catch (e) {
+                console.error("Dashboard check failed", e);
+            }
+        };
+
+        function renderDashboard(tasks) {
+            const list = document.getElementById('dashboardRemindersList');
+            const stats = document.getElementById('dashboardStats');
+
+            stats.innerHTML = `
+                <div style="background:#eff6ff; padding:15px; border-radius:8px; text-align:center;">
+                    <div style="font-size:24px; font-weight:bold; color:#3b82f6;">${tasks.length}</div>
+                    <div style="font-size:12px; color:#475569;">Calls/Tasks Due</div>
+                </div>
+                <div style="background:#f0fdf4; padding:15px; border-radius:8px; text-align:center;">
+                    <div style="font-size:24px; font-weight:bold; color:#10b981;">0</div>
+                    <div style="font-size:12px; color:#475569;">Completed Today</div>
+                </div>
+            `;
+
+            list.innerHTML = tasks.map(t => {
+                const isOverdue = new Date(t.due_date) < new Date(new Date().setHours(0, 0, 0, 0));
+                return `
+                <div style="background:white; padding:12px; border-radius:6px; margin-bottom:8px; box-shadow:0 1px 2px rgba(0,0,0,0.05); border-left: 4px solid ${isOverdue ? '#ef4444' : '#3b82f6'};">
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <div>
+                            <div style="font-weight:600;">${t.contact_name || 'Contact'} @ ${t.business_name || 'Unknown'}</div>
+                            <div style="font-size:13px; color:#334155; margin-top:2px;">"${t.note}"</div>
+                            ${isOverdue ? '<div style="font-size:11px; color:#ef4444; font-weight:bold;">⚠️ Overdue</div>' : ''}
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:5px;">
+                            <button onclick="completeTask(${t.id}, this)" style="font-size:11px; padding:4px 8px; background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; border-radius:4px; cursor:pointer;">✅ Done</button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        window.completeTask = async function (id, btnEl) {
+            await apiCall(`/api/reminders/${id}/complete`, 'PUT');
+            btnEl.closest('div[style*="background:white"]').style.opacity = '0.5';
+            btnEl.textContent = 'Completed';
+        }
+
+        // --- DASHBOARD INIT ---
+        // Run check 1 second after load
+        setTimeout(checkDashboard, 1500);
         window.openContactEditor = function (businessId, index) {
             const b = businessesData.find(x => x.id == businessId);
             if (!b || !b.contacts || !b.contacts[index]) return;
@@ -6960,6 +7123,67 @@
                         Generate Report
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GLOBAL CONTACTS MODAL -->
+    <div id="contactsModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999999; align-items:center; justify-content:center;">
+        <div
+            style="background:white; padding:20px; border-radius:12px; width:90%; max-width:600px; height:80vh; display:flex; flex-direction:column; box-shadow:0 0 20px rgba(0,0,0,0.5);">
+
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <div style="font-size:18px; font-weight:bold;">👥 All Contacts</div>
+                <button onclick="document.getElementById('contactsModal').style.display='none'"
+                    style="border:none; background:none; font-size:20px; cursor:pointer;">×</button>
+            </div>
+
+            <!-- Sticky Search Header -->
+            <div style="margin-bottom:15px;">
+                <input type="text" id="contactSearchRef" placeholder="🔍 Search contacts by name, business..."
+                    style="width:100%; padding:12px; font-size:16px; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 1px 2px rgba(0,0,0,0.05);"
+                    oninput="filterGlobalContacts()">
+            </div>
+
+            <!-- Scrollable List -->
+            <div id="contactsListContainer" style="flex:1; overflow-y:auto; padding-right:5px;">
+                <div style="text-align:center; color:#94a3b8; margin-top:50px;">Loading contacts...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DAILY DASHBOARD MODAL -->
+    <div id="dashboardModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999999; align-items:center; justify-content:center;">
+        <div
+            style="background:white; padding:20px; border-radius:12px; width:90%; max-width:500px; box-shadow:0 0 20px rgba(0,0,0,0.5);">
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <div style="font-size:20px; font-weight:bold; color:#1e3a8a;">📅 Today's Focus</div>
+                <button onclick="document.getElementById('dashboardModal').style.display='none'"
+                    style="border:none; background:none; font-size:20px; cursor:pointer;">×</button>
+            </div>
+
+            <div id="dashboardStats" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+                <!-- Stats injected here -->
+            </div>
+
+            <div style="background:#f8fafc; border-radius:8px; padding:10px; max-height:300px; overflow-y:auto;">
+                <div style="font-weight:bold; margin-bottom:10px; color:#475569; position:sticky; top:0;">🔔 Calls to
+                    Make</div>
+                <div id="dashboardRemindersList">
+                    <div style="text-align:center; color:#94a3b8; font-style:italic;">No calls scheduled for today.
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:15px; text-align:center;">
+                <button onclick="document.getElementById('dashboardModal').style.display='none'"
+                    style="background:#3b82f6; color:white; padding:12px 30px; border-radius:25px; border:none; font-weight:bold; width:100%;">
+                    Let's Go! 🚀
+                </button>
             </div>
         </div>
     </div>
@@ -7410,6 +7634,70 @@
             document.getElementById('dailyRecapModal').style.display = 'flex';
             document.getElementById('emailRecapBtn').href = `mailto:?subject=Monthly Summary&body=${encodeURIComponent(reportText)}`;
             document.getElementById('textRecapBtn').href = `sms:&body=${encodeURIComponent(reportText)}`;
+        };
+        // --- SCANNER REMINDER UTILS ---
+        window.selectedFollowUpDate = null;
+
+        window.setFollowUp = function (days, btn) {
+            // Reset active states
+            const buttons = btn.parentElement.querySelectorAll('button');
+            buttons.forEach(b => b.classList.remove('active'));
+            // Clear date input visual if custom
+            if (days !== 'custom') {
+                document.getElementById('customFollowUp').value = '';
+            }
+
+            if (days === 'custom') {
+                const dateVal = document.getElementById('customFollowUp').value;
+                if (dateVal) window.selectedFollowUpDate = dateVal;
+                return;
+            }
+
+            // Calculate date
+            const date = new Date();
+            date.setDate(date.getDate() + parseInt(days));
+            window.selectedFollowUpDate = date.toISOString().split('T')[0];
+
+            // Set active
+            btn.classList.add('active');
+        };
+
+        window.saveExtractedContactWithReminder = async function () {
+            const name = document.getElementById('extractedName').value;
+            if (!name) return alert('Name is required');
+
+            const contactData = {
+                business_id: currentScanBusinessId,
+                name: name,
+                title: document.getElementById('extractedTitle').value,
+                phone: document.getElementById('extractedPhone').value,
+                email: document.getElementById('extractedEmail').value,
+                notes: document.getElementById('extractedNotes').value
+            };
+
+            try {
+                // 1. Save Contact
+                const cRes = await apiCall('/api/contacts', 'POST', contactData);
+                const info = { id: cRes.id }; // New Contact ID
+
+                // 2. Save Reminder (if set)
+                if (window.selectedFollowUpDate) {
+                    await apiCall('/api/reminders', 'POST', {
+                        business_id: currentScanBusinessId, // Can be null
+                        contact_id: info.id,
+                        due_date: window.selectedFollowUpDate,
+                        note: "Follow up with " + name
+                    });
+                }
+
+                alert('✅ Contact & Reminder Saved!');
+                closeCardScanner();
+                if (typeof loadGlobalContacts === 'function') loadGlobalContacts(); // Refresh list if open
+
+            } catch (e) {
+                console.error(e);
+                alert('Error saving data: ' + e);
+            }
         };
     </script>
 </body>

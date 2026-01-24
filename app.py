@@ -15,10 +15,10 @@ CORS(app)
 # Initialize database if needed (mostly for local SQLite)
 # For Postgres, one-time migration script is better, but this check is harmless if fast
 # Initialize database (checks for tables/data and seeds if empty)
-try:
-    init_db()
-except Exception as e:
-    print(f"Startup initialization failed (non-critical if DB exists): {e}")
+# try:
+#     init_db()
+# except Exception as e:
+#     print(f"Startup initialization failed (non-critical if DB exists): {e}")
 
 def get_db_connection():
     return database.get_connection()
@@ -48,15 +48,20 @@ def serve_static(path):
 
 @app.route('/api/businesses', methods=['GET'])
 def get_businesses():
+    print("DEBUG: Entering get_businesses")
     conn = get_db_connection()
     cursor = conn.cursor()
     # No params, simple query
+    print("DEBUG: Executing query")
     cursor.execute('SELECT * FROM businesses')
     businesses = cursor.fetchall()
+    print(f"DEBUG: Fetched {len(businesses)} rows")
     conn.close()
     
+    data = [business_from_row(b) for b in businesses]
+    print("DEBUG: Serialized data")
     return jsonify({
-        'businesses': [business_from_row(b) for b in businesses]
+        'businesses': data
     })
 
 @app.route('/api/force_reset_db', methods=['GET'])
@@ -226,6 +231,134 @@ def health_check():
         
     return jsonify(status)
 
+# --- CONTACTS API ---
+
+@app.route('/api/contacts', methods=['GET'])
+def get_contacts():
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    # Left join to get business name for context
+    sql = '''
+        SELECT c.*, b.name as business_name, b.address as business_address 
+        FROM contacts c
+        LEFT JOIN businesses b ON c.business_id = b.id
+        ORDER BY c.name ASC
+    '''
+    
+    c.execute(sql)
+    rows = c.fetchall()
+    conn.close()
+    
+    contacts = [dict(row) for row in rows]
+    return jsonify({'contacts': contacts})
+
+@app.route('/api/contacts', methods=['POST'])
+def add_contact():
+    data = request.json
+    
+    # Validation
+    if not data.get('name'):
+        return jsonify({'error': 'Name is required'}), 400
+        
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    sql = '''
+        INSERT INTO contacts (business_id, name, title, phone, email, notes)
+        VALUES (?, ?, ?, ?, ?, ?)
+    '''
+    
+    params = (
+        data.get('business_id'), # Can be None if unlinked (global only)
+        data.get('name'),
+        data.get('title'),
+        data.get('phone'),
+        data.get('email'),
+        data.get('notes')
+    )
+    
+    new_id = database.execute_insert_returning_id(c, sql, params)
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'id': new_id, 'message': 'Contact created'}), 201
+
+# --- REMINDERS API ---
+
+@app.route('/api/reminders', methods=['GET'])
+def get_reminders():
+    # Optional filter: due_before (YYYY-MM-DD)
+    due_before = request.args.get('due_before')
+    status_filter = request.args.get('status', 'pending') # Default to pending only
+    
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    sql = '''
+        SELECT r.*, b.name as business_name, c.name as contact_name
+        FROM reminders r
+        LEFT JOIN businesses b ON r.business_id = b.id
+        LEFT JOIN contacts c ON r.contact_id = c.id
+        WHERE r.status = ?
+    '''
+    params = [status_filter]
+    
+    if due_before:
+        # Append logic for due date
+        # Note: We store dates as TEXT YYYY-MM-DD, so string comparison works
+        sql += " AND r.due_date <= ?"
+        params.append(due_before)
+        
+    sql += " ORDER BY r.due_date ASC"
+    
+    c.execute(database.prepare_query(sql), tuple(params))
+    rows = c.fetchall()
+    conn.close()
+    
+    return jsonify({'reminders': [dict(row) for row in rows]})
+
+@app.route('/api/reminders', methods=['POST'])
+def add_reminder():
+    data = request.json
+    
+    if not data.get('due_date'):
+        return jsonify({'error': 'Due date is required'}), 400
+        
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    sql = '''
+        INSERT INTO reminders (business_id, contact_id, due_date, note, status)
+        VALUES (?, ?, ?, ?, 'pending')
+    '''
+    
+    params = (
+        data.get('business_id'),
+        data.get('contact_id'),
+        data.get('due_date'),
+        data.get('note', '')
+    )
+    
+    new_id = database.execute_insert_returning_id(c, sql, params)
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'id': new_id, 'message': 'Reminder created'}), 201
+
+@app.route('/api/reminders/<int:id>/complete', methods=['PUT'])
+def complete_reminder(id):
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    sql = "UPDATE reminders SET status = 'completed' WHERE id = ?"
+    c.execute(database.prepare_query(sql), (id,))
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True})
+
 @app.route('/api/import_csv', methods=['POST'])
 def import_csv():
     if 'file' not in request.files:
@@ -317,4 +450,4 @@ def import_csv():
 if __name__ == '__main__':
 
         
-    app.run(debug=True, port=8000)
+    app.run(debug=True, port=8000, threaded=True, use_reloader=False)

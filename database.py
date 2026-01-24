@@ -81,6 +81,31 @@ def init_tables(conn):
                 visits TEXT
             )
         ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS contacts (
+                id SERIAL PRIMARY KEY,
+                business_id INTEGER REFERENCES businesses(id),
+                name TEXT NOT NULL,
+                title TEXT,
+                phone TEXT,
+                email TEXT,
+                notes TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS reminders (
+                id SERIAL PRIMARY KEY,
+                business_id INTEGER REFERENCES businesses(id),
+                contact_id INTEGER REFERENCES contacts(id),
+                due_date TEXT,
+                note TEXT,
+                status TEXT DEFAULT 'pending',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
     else:
         # SQLite DDL
         cursor.execute('''
@@ -101,6 +126,34 @@ def init_tables(conn):
                 contacts TEXT,
                 visits TEXT,
                 employees INTEGER
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS contacts (
+                id INTEGER PRIMARY KEY,
+                business_id INTEGER,
+                name TEXT NOT NULL,
+                title TEXT,
+                phone TEXT,
+                email TEXT,
+                notes TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(business_id) REFERENCES businesses(id)
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS reminders (
+                id INTEGER PRIMARY KEY,
+                business_id INTEGER,
+                contact_id INTEGER,
+                due_date TEXT,
+                note TEXT,
+                status TEXT DEFAULT 'pending',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(business_id) REFERENCES businesses(id),
+                FOREIGN KEY(contact_id) REFERENCES contacts(id)
             )
         ''')
     
