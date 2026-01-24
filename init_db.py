@@ -40,24 +40,15 @@ def init_db():
                 print(f"Schema Validation Failed (likely missing column): {e}")
                 bad_zips = 999999 # FORCE RESET
 
-            # FORCE RESET (User Request): Always wipe to ensure clean state
-            print(f"♻️ FORCED RESET: Dropping tables to ensure clean slate...")
+            # FORCE RESET OFF: Back to normal mode (verify schema but don't wipe)
+            # if (count < 100 and len(businesses) > 1000) or (bad_zips > 500):
+            #      print(f"⚠️ Detected potential data issue (Count: {count}, Bad Zips: {bad_zips}). PERFORMING HARD RESET.")
+            #      c.execute("DROP TABLE IF EXISTS businesses")
+            #      database.init_tables(conn) # Recreate empty
+            #      print("✅ Table recreated.")
+            #      count = 0 
             
-            if database.get_engine() == 'postgres':
-                # Postgres requires CASCADE if FKs exist
-                c.execute("DROP TABLE IF EXISTS reminders CASCADE")
-                c.execute("DROP TABLE IF EXISTS contacts CASCADE")
-                c.execute("DROP TABLE IF EXISTS businesses CASCADE")
-            else:
-                # SQLite
-                c.execute("DROP TABLE IF EXISTS reminders")
-                c.execute("DROP TABLE IF EXISTS contacts")
-                c.execute("DROP TABLE IF EXISTS businesses")
-                
-            database.init_tables(conn) # Recreate all
-            print("✅ Tables recreated.")
-            count = 0 
-            # End Force Reset
+            # Seed if we have more data in file than in DB...
             
             # Seed if we have more data in file than in DB...
             
