@@ -50,8 +50,11 @@ def init_db():
             if json_ids:
                 if len(json_ids) > 100: # Safety check: don't wipe everything if file is tiny
                     print(f"🧹 Pruning orphans... Keeping {len(json_ids)} records.")
-                    # Create placeholders for SQL
-                    placeholders = ','.join(['?'] * len(json_ids))
+                    
+                    # Generate Placeholders dynamically based on Engine
+                    placeholder = '%s' if database.get_engine() == 'postgres' else '?'
+                    placeholders = ','.join([placeholder] * len(json_ids))
+                    
                     sql_delete = f"DELETE FROM businesses WHERE id NOT IN ({placeholders})"
                     
                     # Execute
