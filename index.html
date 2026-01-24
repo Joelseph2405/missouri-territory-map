@@ -97,9 +97,122 @@
             }
 
             /* Move Leaflet controls down so they aren't hidden by header */
+            /* Move Leaflet controls down so they aren't hidden by header */
             .leaflet-top {
                 top: 55px;
             }
+
+            /* Add bottom padding for map attribution to clear nav */
+            .leaflet-bottom {
+                bottom: 80px;
+            }
+        }
+
+        /* Bottom Navigation Bar (Mobile Only) */
+        .bottom-nav {
+            display: none;
+            /* Hidden on Desktop */
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background: rgba(5, 5, 5, 0.95);
+            /* Deep Black */
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #333;
+            z-index: 10001;
+            /* Below Modals (30000+), Above Map (1) */
+            display: flex;
+            /* Flex is overridden by media query display:none on desktop? No, need specific rule */
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: env(safe-area-inset-bottom);
+            /* iOS Home Bar safe area */
+        }
+
+        /* Hide on desktop by default via media query logic, 
+           but since .bottom-nav is new, let's target mobile explicit or hide desktop explicit. 
+           Easiest: Default none, show on Mobile. */
+
+        .nav-item {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: inherit;
+            font-size: 10px;
+            cursor: pointer;
+            width: 60px;
+            transition: color 0.2s;
+        }
+
+        .nav-item.active {
+            color: #3b82f6;
+        }
+
+        .nav-icon {
+            font-size: 24px;
+            margin-bottom: 2px;
+        }
+
+        /* Adjust FAB positions to clear Bottom Nav */
+        .fab-button {
+            position: fixed;
+            bottom: 90px;
+            /* Moved up from ~20px */
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            z-index: 10002;
+            /* Above Nav */
+            display: flex !important;
+            /* Force show on mobile */
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .fab-scan-button {
+            position: fixed;
+            bottom: 160px;
+            /* Stacked above FAB */
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #10b981;
+            /* Green for Scan */
+            color: white;
+            border: none;
+            font-size: 20px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            z-index: 10002;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .fab-data-button {
+            display: none !important;
+            /* Hide secondary buttons from FAB stack to clean up */
+        }
+
+        @media (min-width: 769px) {
+            .bottom-nav {
+                display: none !important;
+            }
+
+            /* Reset FABs for desktop if they were visible, but sidebar handles actions there */
         }
 
         /* Loading indicator */
@@ -1988,13 +2101,26 @@
     </div>
     <!-- Mobile Header -->
     <div class="mobile-header">
-        <button onclick="window.openContactsModal()"
-            style="position:absolute; left:15px; background:none; border:none; font-size:24px; cursor:pointer;"
-            title="Contacts">👥</button>
-        BMG BLACK SITES
-        <button onclick="document.getElementById('reportsMenuModal').style.display='flex'"
-            style="position:absolute; right:15px; background:none; border:none; font-size:24px; cursor:pointer;"
-            title="Reports">📊</button>
+        BMG Black Box
+    </div>
+
+    <!-- BOTTOM NAVIGATION BAR -->
+    <div class="bottom-nav">
+        <button class="nav-item" onclick="window.openContactsModal()">
+            <span class="nav-icon">👥</span>
+            <span class="nav-label">Contacts</span>
+        </button>
+        <button class="nav-item active" onclick="location.reload()"> <!-- Reset Map View -->
+            <span class="nav-icon">🗺️</span>
+            <span class="nav-label">Map</span>
+        </button>
+        <!-- The big FAB floats above, we just leave space or use a ghost item if needed -->
+        <div style="width: 60px;"></div> <!-- Spacer for FAB -->
+
+        <button class="nav-item" onclick="document.getElementById('reportsMenuModal').style.display='flex'">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Reports</span>
+        </button>
     </div>
 
     <!-- CONTACTS PANEL -->
