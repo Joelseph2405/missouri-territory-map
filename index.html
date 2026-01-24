@@ -2447,8 +2447,23 @@
                     </div>
                 </div>
 
+                <!-- Processing Overlay -->
+                <div class="scanner-overlay" id="scannerProcessingOverlay"
+                    style="display: none; background: rgba(0,0,0,0.85); z-index: 25; flex-direction: column; justify-content: center; align-items: center;">
+                    <div class="spinner"></div> <!-- CSS Spinner needed or use text -->
+                    <div style="color:white; margin-top:15px; font-weight:bold; font-size:18px;">Processing...</div>
+                    <div style="color:#cbd5e1; font-size:14px;">Extracting text</div>
+                </div>
+
                 <div id="scanControls" class="scan-controls"
-                    style="position: absolute; bottom: 20px; left: 0; width: 100%; z-index: 20;">
+                    style="position: absolute; bottom: 20px; left: 0; width: 100%; z-index: 20; display: flex; justify-content: center; align-items: center;">
+
+                    <!-- Flip Camera Button (Left) -->
+                    <button id="flipCameraBtn" onclick="flipCamera()"
+                        style="position: absolute; left: 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; visibility: visible;">
+                        🔄
+                    </button>
+
                     <button class="capture-button" id="captureBtn" onclick="capturePhoto()"></button>
 
                     <div id="postCaptureControls"
@@ -4393,27 +4408,45 @@
             }
         };
 
-        // Override startCamera to reset state
+        // Initialize Camera Mode
+        let currentFacingMode = 'environment';
+
+        // Override startCamera to reset state and use current mode
         const originalStartCamera = window.startCamera;
         window.startCamera = async function () {
             resetScannerState();
-            // Just reuse the logic or copy it. Original logic was:
+
+            // Show Flip Button
+            const flipBtn = document.getElementById('flipCameraBtn');
+            if (flipBtn) flipBtn.style.visibility = 'visible';
+
             try {
-                videoStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment' }
-                });
+                if (videoStream) {
+                    videoStream.getTracks().forEach(track => track.stop());
+                }
+
+                const constraints = {
+                    video: {
+                        facingMode: currentFacingMode
+                    }
+                };
+
+                videoStream = await navigator.mediaDevices.getUserMedia(constraints);
                 const video = document.getElementById('cardVideo');
                 video.srcObject = videoStream;
                 document.getElementById('videoContainer').classList.add('active');
             } catch (err) {
                 console.error("Camera error:", err);
-                // alert("Could not access camera. Please allow camera permissions.");
                 document.getElementById('permissionHelpModal').classList.add('active');
             }
         };
 
-        // Old function replaced by logic above
-        // processImageWithOCR(imageData);
+        // Toggle Camera Function
+        window.flipCamera = async function () {
+            currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+            // Restart camera with new mode
+            await window.startCamera();
+        };
 
         // Handle file upload
         window.handleFileUpload = function (event) {
@@ -4423,17 +4456,13 @@
             const reader = new FileReader();
             reader.onload = function (e) {
                 const imageData = e.target.result;
-                // Reuse the new preview elements
                 const imagePreview = document.getElementById('cardImageFront');
 
                 imagePreview.src = imageData;
                 imagePreview.style.display = 'block';
 
-                // Hide video if showing
                 document.getElementById('videoContainer').classList.remove('active');
 
-                // For file upload, we just process immediately as single side
-                // Logic reuse:
                 scannedImages = { front: imageData };
                 finishScanning();
             };
@@ -4441,11 +4470,14 @@
             reader.readAsDataURL(file);
         };
 
-        // Process image with Tesseract OCR
+        // Process image with Tesseract OCR (with Overlay)
         async function processImageWithOCR(imageData) {
             const statusDiv = document.getElementById('ocrStatus');
+            const overlay = document.getElementById('scannerProcessingOverlay');
+
             statusDiv.textContent = '🔍 Processing business card...';
             statusDiv.className = 'ocr-status active processing';
+            if (overlay) overlay.style.display = 'flex'; // Show Overlay
 
             try {
                 // Run Tesseract OCR
@@ -4462,14 +4494,11 @@
                     }
                 );
 
-                // Extract text from OCR result
                 const text = result.data.text;
                 console.log('OCR Result:', text);
 
-                // Parse the text to extract contact information
                 const extractedInfo = parseBusinessCardText(text);
 
-                // Populate the form fields
                 document.getElementById('extractedName').value = extractedInfo.name || '';
                 document.getElementById('extractedTitle').value = extractedInfo.title || '';
                 document.getElementById('extractedCompany').value = extractedInfo.company || '';
@@ -4477,33 +4506,23 @@
                 document.getElementById('extractedEmail').value = extractedInfo.email || '';
                 document.getElementById('extractedAddress').value = extractedInfo.address || '';
 
-                // Show success message
-                statusDiv.textContent = '✅ Business card processed! Review and edit the information below.';
+                statusDiv.textContent = '✅ Business card processed! Review below.';
                 statusDiv.className = 'ocr-status active success';
-
-                // Show extracted data form
                 document.getElementById('extractedData').classList.add('active');
 
-                // Show the appropriate button based on context
                 if (currentScanBusinessId) {
-                    // Adding contact to existing business
                     document.getElementById('saveContactBtn').style.display = 'block';
                     document.getElementById('createBusinessBtn').style.display = 'none';
                 } else {
-                    // Creating new business
                     document.getElementById('saveContactBtn').style.display = 'none';
                     document.getElementById('createBusinessBtn').style.display = 'block';
                 }
 
             } catch (error) {
                 console.error('OCR Error:', error);
-                statusDiv.textContent = '❌ Error processing image. Please try again or enter information manually.';
+                statusDiv.textContent = '❌ Error processing image.';
                 statusDiv.className = 'ocr-status active error';
-
-                // Still show the form so user can enter manually
                 document.getElementById('extractedData').classList.add('active');
-
-                // Show the appropriate button based on context
                 if (currentScanBusinessId) {
                     document.getElementById('saveContactBtn').style.display = 'block';
                     document.getElementById('createBusinessBtn').style.display = 'none';
@@ -4511,10 +4530,12 @@
                     document.getElementById('saveContactBtn').style.display = 'none';
                     document.getElementById('createBusinessBtn').style.display = 'block';
                 }
+            } finally {
+                if (overlay) overlay.style.display = 'none'; // Hide Overlay
             }
         }
 
-        // Parse business card text to extract contact information
+        // Parse business card text (Improved Regex)
         function parseBusinessCardText(text) {
             const info = {
                 name: '',
@@ -4525,52 +4546,47 @@
                 address: ''
             };
 
-            const lines = text.split('\n').filter(line => line.trim());
+            const lines = text.split('\n').filter(line => line.trim().length > 2); // Ignore artifacts
 
-            // Extract email (look for @ symbol)
+            // 1. Extract Email (Stricter)
             const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
             const emailMatch = text.match(emailRegex);
-            if (emailMatch) {
-                info.email = emailMatch[0];
-            }
+            if (emailMatch) info.email = emailMatch[0];
 
-            // Extract phone (various formats)
-            const phoneRegex = /(\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
+            // 2. Extract Phone (Dots, spaces, parens)
+            // Matches: (555) 555-5555, 555.555.5555, +1 555 555 5555
+            const phoneRegex = /(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
             const phoneMatch = text.match(phoneRegex);
-            if (phoneMatch) {
-                info.phone = phoneMatch[0];
-            }
+            if (phoneMatch) info.phone = phoneMatch[0];
 
-            // Extract address (look for street number patterns and common address keywords)
-            const addressKeywords = ['street', 'st', 'avenue', 'ave', 'road', 'rd', 'drive', 'dr', 'lane', 'ln', 'boulevard', 'blvd', 'suite', 'ste'];
+            // 3. Extract Address (Keywords)
+            const addressKeywords = ['street', 'st', 'avenue', 'ave', 'road', 'rd', 'drive', 'dr', 'lane', 'ln', 'boulevard', 'blvd', 'suite', 'ste', 'po box'];
             const addressLine = lines.find(line => {
                 const lower = line.toLowerCase();
-                return /\d+/.test(line) && addressKeywords.some(keyword => lower.includes(keyword));
+                return /\d+/.test(line) && addressKeywords.some(keyword => lower.includes(" " + keyword)); // Ensure word boundary
             });
-            if (addressLine) {
-                info.address = addressLine.trim();
-            }
+            if (addressLine) info.address = addressLine.trim();
 
-            // Heuristic: First line is often the name
-            if (lines.length > 0) {
-                info.name = lines[0].trim();
-            }
+            // 4. Heuristics for Name & Title
+            // Skip lines that became email/phone/address
+            const unknownLines = lines.filter(l =>
+                (!info.email || !l.includes(info.email)) &&
+                (!info.phone || !l.includes(info.phone)) &&
+                (!info.address || !l.includes(info.address))
+            );
 
-            // Second line is often title or company
-            if (lines.length > 1) {
-                const secondLine = lines[1].trim();
-                // If it contains common title words, it's likely a title
-                const titleWords = ['manager', 'director', 'president', 'ceo', 'cfo', 'coo', 'owner', 'founder', 'vp', 'vice', 'chief', 'head', 'lead'];
+            if (unknownLines.length > 0) info.name = unknownLines[0].trim();
+
+            if (unknownLines.length > 1) {
+                const secondLine = unknownLines[1].trim();
+                const titleWords = ['manager', 'director', 'president', 'ceo', 'cfo', 'coo', 'owner', 'founder', 'vp', 'vice', 'chief', 'head', 'lead', 'associate', 'representative', 'consultant', 'executive'];
+
                 if (titleWords.some(word => secondLine.toLowerCase().includes(word))) {
                     info.title = secondLine;
-                    if (lines.length > 2) {
-                        info.company = lines[2].trim();
-                    }
+                    if (unknownLines.length > 2) info.company = unknownLines[2].trim();
                 } else {
-                    info.company = secondLine;
-                    if (lines.length > 2) {
-                        info.title = lines[2].trim();
-                    }
+                    info.company = secondLine; // Assume Company if not title
+                    if (unknownLines.length > 2) info.title = unknownLines[2].trim();
                 }
             }
 
@@ -7002,27 +7018,69 @@
                 return;
             }
 
-            container.innerHTML = list.map(c => `
-                <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <div style="font-weight:bold; font-size:16px;">${c.name}</div>
-                        <div style="font-size:13px; color:#64748b;">
-                            ${c.title ? c.title + ' at ' : ''} 
-                            <a href="#" onclick="zoomToBusiness(${c.business_id}); document.getElementById('contactsModal').style.display='none'; return false;" style="color:#3b82f6; text-decoration:none;">
-                                ${c.business_name || 'Unlinked'}
-                            </a>
+            // 1. Sort Alphabetically
+            list.sort((a, b) => a.name.localeCompare(b.name));
+
+            // 2. Group by First Letter
+            const groups = {};
+            list.forEach(c => {
+                const letter = c.name.charAt(0).toUpperCase();
+                if (!groups[letter]) groups[letter] = [];
+                groups[letter].push(c);
+            });
+
+            // 3. Render Groups
+            let html = '';
+            Object.keys(groups).sort().forEach(letter => {
+                // Group Header
+                html += `<div style="padding: 10px 15px; background: #f1f5f9; color: #64748b; font-weight: bold; font-size: 14px; position: sticky; top: 0; z-index: 10;">${letter}</div>`;
+
+                // Contacts in Group
+                groups[letter].forEach(c => {
+                    const initials = c.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+                    // Generate random pastel color based on name char code (consistent color for same name)
+                    const colorIndex = c.name.charCodeAt(0) % 6;
+                    const colors = ['#f87171', '#fb923c', '#fbbf24', '#4ade80', '#60a5fa', '#a78bfa'];
+                    const avatarColor = colors[colorIndex];
+
+                    const businessName = c.business_name || 'Unlinked';
+                    const hasPhone = c.phone && c.phone.length > 0;
+                    const hasEmail = c.email && c.email.length > 0;
+
+                    html += `
+                    <div style="padding: 15px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 15px; background: white;">
+                        <!-- Avatar -->
+                        <div style="width: 45px; height: 45px; background: ${avatarColor}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; flex-shrink: 0;">
+                            ${initials}
                         </div>
-                        <div style="font-size:12px; color:#94a3b8; margin-top:2px;">
-                            ${c.phone ? '📞 ' + c.phone : ''} 
-                            ${c.email ? '✉️ ' + c.email : ''}
+                        
+                        <!-- Info -->
+                        <div style="flex: 1; min-width: 0;"> <!-- min-width 0 allows text-overflow ellipsis -->
+                            <div style="font-weight: 600; font-size: 16px; color: #1e293b;">${c.name}</div>
+                            <div style="font-size: 13px; color: #64748b; margin-top: 2px;">
+                                ${c.title ? `<span style="color:#0f172a;">${c.title}</span> • ` : ''} 
+                                <a href="#" onclick="zoomToBusiness(${c.business_id}); document.getElementById('contactsModal').style.display='none'; return false;" style="color:#3b82f6; text-decoration:none;">
+                                    ${businessName}
+                                </a>
+                            </div>
+                            <!-- Tags/Badges line -->
+                            <div style="margin-top: 4px; display: flex; gap: 5px; flex-wrap: wrap;">
+                                ${hasPhone ? `<span style="font-size: 11px; background: #eff6ff; color: #3b82f6; padding: 2px 6px; border-radius: 4px;">📱 ${c.phone}</span>` : ''}
+                                ${hasEmail ? `<span style="font-size: 11px; background: #f0fdf4; color: #15803d; padding: 2px 6px; border-radius: 4px;">✉️ ${c.email}</span>` : ''}
+                            </div>
                         </div>
-                    </div>
-                    <div style="display:flex; gap:8px;">
-                        ${c.phone ? `<a href="tel:${c.phone}" style="padding:8px 12px; background:#eff6ff; color:#3b82f6; border-radius:6px; text-decoration:none; font-size:14px;">📞 Call</a>` : ''}
-                        <button onclick="exportVCard(${c.id})" style="padding:8px; background:#f1f5f9; border:none; border-radius:6px; cursor:pointer;" title="Save to Phone">📥</button>
-                    </div>
-                </div>
-            `).join('');
+
+                        <!-- Actions -->
+                        <div style="display: flex; gap: 10px;">
+                            ${hasPhone ? `<a href="tel:${c.phone}" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: #eff6ff; color: #3b82f6; border-radius: 50%; text-decoration: none;" title="Call">📞</a>` : ''}
+                            ${hasEmail ? `<a href="mailto:${c.email}" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: #f0fdf4; color: #15803d; border-radius: 50%; text-decoration: none;" title="Email">✉️</a>` : ''}
+                            <button onclick="exportVCard(${c.id})" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: #f1f5f9; color: #475569; border: none; border-radius: 50%; cursor: pointer;" title="Save to Phone">📥</button>
+                        </div>
+                    </div>`;
+                });
+            });
+
+            container.innerHTML = html;
         }
 
         window.exportVCard = function (contactId) {
