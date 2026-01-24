@@ -14,6 +14,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
 
+    <!-- Tesseract.js for OCR -->
+    <script src='https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js'></script>
+
+    <!-- Compromise.js for NLP (Natural Language Processing) -->
+    <script src="https://unpkg.com/compromise"></script>
+
     <style>
         /* Reset and base styles */
         * {
@@ -4602,7 +4608,7 @@
             });
         }
 
-        // Parse business card text (Layout Awareness: Font Size)
+        // Parse business card text (Layout Analysis + NLP Expert Agent)
         function parseBusinessCardText(text, linesData = []) {
             const info = {
                 name: '',
@@ -4614,15 +4620,27 @@
             };
 
             // 0. Pre-clean and prepare lines
-            // If we have linesData (from Tesseract lines), use that. Otherwise fall back to text split.
             let lines = [];
             if (linesData.length > 0) {
+                // Filter out short garbage lines
                 lines = linesData.filter(l => l.text.length > 2 && !/^[.,\-_|\\/:;!@#$%^&*()]+$/.test(l.text));
             } else {
                 lines = text.split('\n').map(l => ({ text: l.trim(), height: 0 }))
                     .filter(l => l.text.length > 2)
                     .filter(l => !/^[.,\-_|\\/:;!@#$%^&*()]+$/.test(l.text));
             }
+
+            // NLP AGENT: Analyze all text
+            // "compromise" library is exposed as "nlp"
+            // We combine all text for better sentence analysis
+            const fullText = lines.map(l => l.text).join('\n');
+            const doc = nlp(fullText);
+
+            // Extract NLP Entities
+            const people = doc.people().json().map(p => p.text);
+            const organizations = doc.organizations().json().map(o => o.text);
+
+            console.log("NLP Thinking... People:", people, "Orgs:", organizations);
 
             // Helper: Fuzzy Match
             const fuzzyContains = (source, target) => {
@@ -4641,7 +4659,7 @@
                 return false;
             };
 
-            // 1. Extract Email (Regex on full text is safer)
+            // 1. Extract Email (Regex is best for this)
             const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
             const emailMatch = text.match(emailRegex);
             if (emailMatch) info.email = emailMatch[0];
@@ -4651,7 +4669,7 @@
             const phoneMatch = text.match(phoneRegex);
             if (phoneMatch) info.phone = phoneMatch[0];
 
-            // 3. Extract Address (Keywords)
+            // 3. Extract Address keywords
             const addressKeywords = ['street', 'st', 'avenue', 'ave', 'road', 'rd', 'drive', 'dr', 'lane', 'ln', 'boulevard', 'blvd', 'suite', 'ste', 'po box'];
             const addressLine = lines.find(line => {
                 const lower = line.text.toLowerCase();
@@ -4659,72 +4677,94 @@
             });
             if (addressLine) info.address = addressLine.text.trim();
 
-            // 4. Layout Analysis for Name & Title
-            // Filter out lines that are known (Email, Phone, Address)
+            // 4. SMART LOGIC: Combine Layout (Size) + NLP (Grammar)
+
+            // Sort lines by height (Largest typically Name)
             const unknownLines = lines.filter(l =>
                 (!info.email || !l.text.includes(info.email)) &&
                 (!info.phone || !l.text.includes(info.phone)) &&
                 (!info.address || !l.text.includes(info.address))
             );
-
-            // STRATEGY: Largest Height = Name (usually)
-            // Sort unknown lines by height descending
             const sortedByHeight = [...unknownLines].sort((a, b) => b.height - a.height);
 
-            // Title Detection (same keyword list)
-            const titleWords = ['manager', 'director', 'president', 'ceo', 'cfo', 'coo', 'owner', 'founder', 'vp', 'vice', 'chief', 'head', 'lead', 'associate', 'representative', 'consultant', 'executive', 'officer', 'agent', 'sales'];
+            // A. Find Name
+            if (people.length > 0) {
+                // Perfect world: The largest text IS a person found by NLP
+                // Check if the largest font line matches a detected person
+                if (sortedByHeight.length > 0) {
+                    const largestLine = sortedByHeight[0].text;
+                    // Is the largest line detected as a person?
+                    const match = people.find(p => fuzzyContains(largestLine, p) || fuzzyContains(p, largestLine));
 
-            // Check top 3 largest lines for Name
-            let nameFound = false;
+                    if (match) {
+                        info.name = largestLine; // Confirmed by both Size + NLP
+                    } else {
+                        // NLP found a person, but it wasn't the biggest text.
+                        // Maybe the biggest text is the company?
+                        // Trust NLP for name if strict reliability is needed, OR stick to size.
+                        // Let's trust NLP if the largest text looks like a Company
+                        const isCompany = /inc\.?|llc|ltd|corp\.?|group|solutions|company/i.test(largestLine) || organizations.some(o => fuzzyContains(largestLine, o));
 
-            if (sortedByHeight.length > 0) {
-                // The largest text is usually the Name or Company.
-                // If it contains "Inc", "LLC", "Ltd", it's company.
-                const largest = sortedByHeight[0];
-                const isCompany = /inc\.?|llc|ltd|corp\.?|group|solutions|company/i.test(largest.text);
-
-                if (!isCompany) {
-                    // Assume largest is Name
-                    info.name = largest.text;
-                    nameFound = true;
-
-                    // If we found name, remove it from list to find title
-                    const nameIdx = unknownLines.indexOf(largest);
-                    if (nameIdx > -1) unknownLines.splice(nameIdx, 1);
-                } else {
-                    info.company = largest.text;
-                    // Second largest might be name?
-                    if (sortedByHeight.length > 1) {
-                        info.name = sortedByHeight[1].text;
-                        nameFound = true;
+                        if (isCompany) {
+                            info.company = largestLine;
+                            info.name = people[0]; // Pick the best NLP Person
+                        } else {
+                            // Largest text is NOT a company, but NLP didn't flag it as a person.
+                            // It might be a person NLP missed (e.g. "Au E").
+                            // Or it might be a weird title.
+                            // Let's fallback to "Largest Text" heuristic if grammatical name is found elsewhere?
+                            // User complained about "Au e". NLP would likely NOT flag "Au e" as a person.
+                            // So if NLP found "Ryan Barron" elsewhere, use that.
+                            info.name = people[0];
+                        }
                     }
+                } else {
+                    info.name = people[0];
+                }
+            } else {
+                // NLP failed to find ANY person. Fallback to Size Heuristic.
+                if (sortedByHeight.length > 0) {
+                    const largest = sortedByHeight[0];
+                    const isCompany = /inc\.?|llc|ltd|corp\.?|group|solutions|company/i.test(largest.text);
+                    if (!isCompany) info.name = largest.text;
+                    else info.company = largest.text;
                 }
             }
 
-            // If layout didn't give us a name, fallback to old heuristics?
-            // Actually, let's look for title now.
-            // Look through remaining unknown lines for keywords
-            for (let i = 0; i < unknownLines.length; i++) {
-                const line = unknownLines[i];
-                const matchedWord = titleWords.find(word => fuzzyContains(line.text, word));
+            // B. Find Company (if not set)
+            if (!info.company) {
+                if (organizations.length > 0) {
+                    info.company = organizations[0];
+                } else if (sortedByHeight.length > 1) {
+                    // Use second largest text?
+                    // Only if we haven't used it for name
+                    const candidate = sortedByHeight.find(l => l.text !== info.name);
+                    if (candidate) info.company = candidate.text;
+                }
+            }
 
-                if (matchedWord) {
-                    // logic for "Name - Title" split handled in text? 
-                    // No, Tesseract lines usually split them unless they are close.
-                    // But if they are one line, let's keep the split logic
-                    if (line.text.includes('-') || line.text.includes('|')) {
-                        // Simplified split logic
-                        const parts = line.text.split(/[-|]/);
-                        if (parts.length > 1 && fuzzyContains(parts[1], matchedWord)) {
-                            info.title = parts[1].trim();
-                            if (!nameFound) info.name = parts[0].trim();
-                        } else {
-                            info.title = line.text;
-                        }
+            // C. Find Title
+            const titleWords = ['manager', 'director', 'president', 'ceo', 'cfo', 'coo', 'owner', 'founder', 'vp', 'vice', 'chief', 'head', 'lead', 'associate', 'representative', 'consultant', 'executive', 'officer', 'agent', 'sales'];
+
+            // Search lines specifically for title keywords
+            for (const line of unknownLines) {
+                // If this line is already used for name/company, skip
+                if (line.text === info.name || line.text === info.company) continue;
+
+                if (titleWords.some(word => fuzzyContains(line.text, word))) {
+                    // Check for split "Name - Title" scenario
+                    // (Though NLP usually extracts Name from that string, leaving the Title part to be found here?)
+                    // If NLP extracted "Ryan Barron" from "Ryan Barron - President", 
+                    // then "Ryan Barron - President" might still be in the unknownLines.
+
+                    if (info.name && line.text.includes(info.name)) {
+                        // The line contains the name, so the OTHER part is the title
+                        const rest = line.text.replace(info.name, '').replace(/[-|,\s]+/, '').trim();
+                        if (rest.length > 2) info.title = rest;
                     } else {
                         info.title = line.text;
                     }
-                    break; // Found title
+                    break;
                 }
             }
 
