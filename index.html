@@ -4634,12 +4634,11 @@
                     document.getElementById('saveContactBtn').style.display = 'none';
                     document.getElementById('createBusinessBtn').style.display = 'block';
                 }
-            } finally {
                 if (overlay) overlay.style.display = 'none'; // Hide Overlay
             }
         }
 
-        // Parse business card text (Improved Regex)
+        // Parse business card text (Improved Regex & Fuzzy Logic)
         function parseBusinessCardText(text) {
             const info = {
                 name: '',
@@ -4650,15 +4649,42 @@
                 address: ''
             };
 
-            const lines = text.split('\n').filter(line => line.trim().length > 2); // Ignore artifacts
+            // 0. Pre-clean text
+            // Remove common OCR noise lines like " | " or " . "
+            const lines = text.split('\n')
+                .map(l => l.trim())
+                .filter(l => l.length > 2) // Ignore very short lines
+                .filter(l => !/^[.,\-_|\\/:;!@#$%^&*()]+$/.test(l)); // Ignore pure symbol lines
+
+            // Helper: Fuzzy Match (Simple Levenshtein-like check for containment)
+            // Returns true if 'target' is "mostly" inside 'source' (allows for minor OCR errors)
+            const fuzzyContains = (source, target) => {
+                const s = source.toLowerCase().replace(/[^a-z]/g, '');
+                const t = target.toLowerCase().replace(/[^a-z]/g, '');
+                if (s.includes(t)) return true;
+
+                // Allow 1 missing/wrong char for longer words
+                if (t.length > 4) {
+                    let matchCount = 0;
+                    let sIdx = 0;
+                    for (let i = 0; i < t.length; i++) {
+                        const found = s.indexOf(t[i], sIdx);
+                        if (found >= sIdx) {
+                            matchCount++;
+                            sIdx = found + 1;
+                        }
+                    }
+                    return matchCount >= t.length - 1;
+                }
+                return false;
+            };
 
             // 1. Extract Email (Stricter)
             const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
             const emailMatch = text.match(emailRegex);
             if (emailMatch) info.email = emailMatch[0];
 
-            // 2. Extract Phone (Dots, spaces, parens)
-            // Matches: (555) 555-5555, 555.555.5555, +1 555 555 5555
+            // 2. Extract Phone
             const phoneRegex = /(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
             const phoneMatch = text.match(phoneRegex);
             if (phoneMatch) info.phone = phoneMatch[0];
@@ -4667,11 +4693,11 @@
             const addressKeywords = ['street', 'st', 'avenue', 'ave', 'road', 'rd', 'drive', 'dr', 'lane', 'ln', 'boulevard', 'blvd', 'suite', 'ste', 'po box'];
             const addressLine = lines.find(line => {
                 const lower = line.toLowerCase();
-                return /\d+/.test(line) && addressKeywords.some(keyword => lower.includes(" " + keyword)); // Ensure word boundary
+                return /\d+/.test(line) && addressKeywords.some(keyword => lower.includes(" " + keyword));
             });
             if (addressLine) info.address = addressLine.trim();
 
-            // 4. Heuristics for Name & Title
+            // 4. Heuristics for Name, Title, Company
             // Skip lines that became email/phone/address
             const unknownLines = lines.filter(l =>
                 (!info.email || !l.includes(info.email)) &&
@@ -4679,25 +4705,47 @@
                 (!info.address || !l.includes(info.address))
             );
 
-            if (unknownLines.length > 0) info.name = unknownLines[0].trim();
+            // Detect Title first to help isolate Name/Company
+            const titleWords = ['manager', 'director', 'president', 'ceo', 'cfo', 'coo', 'owner', 'founder', 'vp', 'vice', 'chief', 'head', 'lead', 'associate', 'representative', 'consultant', 'executive', 'officer', 'agent'];
 
-            if (unknownLines.length > 1) {
-                const secondLine = unknownLines[1].trim();
-                const titleWords = ['manager', 'director', 'president', 'ceo', 'cfo', 'coo', 'owner', 'founder', 'vp', 'vice', 'chief', 'head', 'lead', 'associate', 'representative', 'consultant', 'executive'];
+            let titleIndex = -1;
 
-                if (titleWords.some(word => secondLine.toLowerCase().includes(word))) {
-                    info.title = secondLine;
-                    if (unknownLines.length > 2) info.company = unknownLines[2].trim();
-                } else {
-                    info.company = secondLine; // Assume Company if not title
-                    if (unknownLines.length > 2) info.title = unknownLines[2].trim();
+            // Find line that looks like a title
+            for (let i = 0; i < unknownLines.length; i++) {
+                if (titleWords.some(word => fuzzyContains(unknownLines[i], word))) {
+                    info.title = unknownLines[i];
+                    titleIndex = i;
+                    break;
                 }
             }
+
+            // Guess Name (Before title, or first line)
+            if (titleIndex > 0) {
+                // Name is likely the line BEFORE title
+                info.name = unknownLines[titleIndex - 1];
+                // Company is likely line AFTER title? or maybe 2 lines before?
+                // Heuristic: If title is index 1, Name is 0. Company might be 2 or not there.
+                if (unknownLines.length > titleIndex + 1) {
+                    info.company = unknownLines[titleIndex + 1];
+                }
+            } else {
+                // No title found. Fallback:
+                if (unknownLines.length > 0) {
+                    // Check if first line triggers "garbage" detector?
+                    // (Already filtered symbol-only lines, but check for weird mixed casing?)
+                    info.name = unknownLines[0];
+                }
+                if (unknownLines.length > 1) {
+                    info.company = unknownLines[1]; // Guess second line is company
+                }
+            }
+
+            // Cleanup Name (Remove common prefixes like "Name:")
+            if (info.name) info.name = info.name.replace(/^(name|contact)[:\s]*/i, '');
 
             return info;
         }
 
-        // Save extracted contact to business
         window.saveExtractedContact = async function () {
             if (!currentScanBusinessId) return;
 
