@@ -447,7 +447,48 @@ def import_csv():
         'errors': errors
     })
 
-if __name__ == '__main__':
+# --- DEBUG ENDPOINT (Temporary) ---
+@app.route('/api/debug/status')
+def debug_status():
+    import os
+    import json # Need to import json for this endpoint
+    status = {
+        "engine": database.get_engine(),
+        "db_count": "Unknown",
+        "json_count": "Unknown",
+        "json_exists": os.path.exists('data/businesses.json'),
+        "env_db_url_set": bool(os.environ.get('DATABASE_URL')),
+        "last_error": "Check logs"
+    }
+    
+    # Check DB
+    try:
+        conn = get_db_connection()
+        if status["engine"] == 'sqlite':
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) FROM businesses")
+            status["db_count"] = cur.fetchone()[0]
+        else:
+            # Postgres
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) FROM businesses")
+            row = cur.fetchone()
+            status["db_count"] = row['count']
+        conn.close()
+    except Exception as e:
+        status["db_error"] = str(e)
 
+    # Check JSON
+    try:
+        if status["json_exists"]:
+            with open('data/businesses.json', 'r') as f:
+                data = json.load(f)
+                status["json_count"] = len(data.get('businesses', []))
+    except Exception as e:
+        status["json_error"] = str(e)
         
-    app.run(debug=True, port=8000, threaded=True, use_reloader=False)
+    return jsonify(status)
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port, debug=False)
