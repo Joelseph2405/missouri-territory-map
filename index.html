@@ -7331,6 +7331,9 @@
         function renderContactsList(list) {
             const container = document.getElementById('contactsListContainer');
 
+            // Defensive Check: Ensure list is an array
+            if (!list || !Array.isArray(list)) list = [];
+
             if (list.length === 0) {
                 container.innerHTML = '<div style="text-align:center; color:#94a3b8; margin-top:20px;">No contacts found.</div>';
                 return;
