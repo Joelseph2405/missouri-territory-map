@@ -5201,28 +5201,36 @@
         }
 
         function downloadVCard(info) {
+            // Ensure we have a name
+            const contactName = info.name || 'Unknown Contact';
+            const fileName = contactName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+
             // 1. Construct vCard string
             const vcard = [
                 'BEGIN:VCARD',
                 'VERSION:3.0',
-                `FN:${info.name}`,
-                `ORG:${info.company}`,
-                `TITLE:${info.title}`,
-                `TEL;TYPE=WORK,VOICE:${info.phone}`,
-                `EMAIL;TYPE=WORK:${info.email}`,
+                `FN:${contactName}`,
+                `N:${contactName.split(' ').reverse().join(';')};;;`,
+                `ORG:${info.company || ''}`,
+                `TITLE:${info.title || ''}`,
+                `TEL;TYPE=WORK,VOICE:${info.phone || ''}`,
+                `EMAIL;TYPE=WORK:${info.email || ''}`,
                 `ADR;TYPE=WORK:;;${info.address || ''};;;;`,
                 'END:VCARD'
             ].join('\n');
+
+            console.log("Generating vCard for:", contactName);
 
             // 2. Create Blob and Link
             const blob = new Blob([vcard], { type: 'text/vcard' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${info.name.replace(/\s+/g, '_')}.vcf`;
+            a.download = `${fileName}.vcf`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         window.saveExtractedContact = async function () {
