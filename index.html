@@ -5049,19 +5049,24 @@
                 if (!businessMatch && !nameMatch) {
                     const choice = confirm(`New Business: "${info.company || 'Unknown'}"\nNew Contact: "${info.name}"\n\nCreate Business, Add Contact, and Save to Phone?`);
                     if (choice) {
-                        // 1. Create Business
-                        const newBizId = await autoSaveBusiness(info);
-                        if (newBizId) {
-                            // 2. Create Contact linked to new business
-                            await autoSaveContact(info, newBizId);
+                        try {
+                            // 1. Create Business
+                            const newBizId = await autoSaveBusiness(info);
+                            if (newBizId) {
+                                // 2. Create Contact linked to new business
+                                await autoSaveContact(info, newBizId);
 
-                            // 3. Save to Phone
-                            downloadVCard(info);
+                                // 3. Save to Phone
+                                downloadVCard(info);
 
-                            // Refresh map/list?
-                            loadBusinesses();
+                                // Show success message
+                                alert(`✅ Success!\n\nBusiness "${info.company}" created\nContact "${info.name}" added\nvCard downloaded to your device`);
 
-                            closeCardScanner();
+                                closeCardScanner();
+                            }
+                        } catch (error) {
+                            console.error("Error in Scenario 3:", error);
+                            // Error alerts are already shown by the individual functions
                         }
                     }
                     // If they cancel, do we want to fall back to manual buttons?
@@ -5106,39 +5111,56 @@
 
         // Helper to Auto-Save Business (skipping UI form submission)
         async function autoSaveBusiness(info) {
-            const payload = {
-                name: info.company || (info.name + "'s Business"),
-                address: info.address || 'Unknown Address',
-                phone: info.phone,
-                customerStatus: 'prospective', // Default
-                priority: 'medium',
-                lat: 0, lng: 0, // Server will likely need to geocode or we accept 0 for now
-                visits: [],
-                contacts: []
-            };
-
-            // Geocode logic is usually in addBusiness(). 
-            // We should use the existing addBusiness API.
             try {
-                // We need coordinates for the map. 
-                // Let's assume the server or existing logic handles geocoding if we send address?
-                // The current /api/businesses POST doesn't seem to geocode automatically?
-                // Actually the import_csv does, but add_business endpoint takes lat/lng directly.
-                // We might need to call geocoding helper or just let it exist without coords for now.
-                // Let's rely on the user to fix location later? 
-                // OR duplicate the geocoding fetch logic from 'saveBusiness()'
+                // Geocode the address first to get coordinates
+                let lat = 38.5767; // Default to Missouri center
+                let lng = -92.1735;
+
+                if (info.address && info.address !== 'Unknown Address') {
+                    try {
+                        const coords = await geocodeAddress(info.address, '', '');
+                        if (coords && coords.lat && coords.lng) {
+                            lat = coords.lat;
+                            lng = coords.lng;
+                            console.log(`Geocoded address to: ${lat}, ${lng}`);
+                        }
+                    } catch (geocodeError) {
+                        console.warn("Geocoding failed, using default coordinates:", geocodeError);
+                    }
+                }
+
+                const payload = {
+                    name: info.company || (info.name + "'s Business"),
+                    address: info.address || 'Unknown Address',
+                    phone: info.phone,
+                    customerStatus: 'prospective',
+                    priority: 'medium',
+                    lat: lat,
+                    lng: lng,
+                    visits: [],
+                    contacts: []
+                };
 
                 const response = await fetch('/api/businesses', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+
                 const data = await response.json();
-                alert(`Business "${data.name}" created!`);
+                console.log("Business created:", data);
+
+                // Refresh the map to show the new business
+                await loadBusinesses();
+
                 return data.id;
             } catch (e) {
-                console.error(e);
-                alert("Failed to auto-create business.");
+                console.error("Error in autoSaveBusiness:", e);
+                alert("Failed to create business: " + e.message);
                 return null;
             }
         }
@@ -5147,23 +5169,34 @@
         async function autoSaveContact(info, businessId) {
             const payload = {
                 name: info.name,
-                title: info.title,
-                phone: info.phone,
-                email: info.email,
+                title: info.title || '',
+                phone: info.phone || '',
+                email: info.email || '',
                 business_id: businessId,
                 business_name: info.company
             };
 
             try {
-                await fetch('/api/contacts', {
+                const response = await fetch('/api/contacts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                alert(`Contact "${info.name}" added!`);
+
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log("Contact created:", data);
+
+                // Refresh businesses to update contact lists
+                await loadBusinesses();
+
             } catch (e) {
-                console.error(e);
-                alert("Failed to save contact.");
+                console.error("Error in autoSaveContact:", e);
+                alert("Failed to save contact: " + e.message);
+                throw e;
             }
         }
 
