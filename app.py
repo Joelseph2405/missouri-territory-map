@@ -528,8 +528,16 @@ def scan_google():
         response = requests.post(URL, json=payload)
         
         if response.status_code != 200:
-            print(f"Google Vision Error: {response.text}")
-            return jsonify({'error': 'Google Vision API Failed', 'details': response.text}), 500
+            error_detail = response.text
+            print(f"Google Vision Error: {error_detail}")
+            # Try to parse JSON error if possible
+            try:
+                err_json = response.json()
+                if 'error' in err_json:
+                    error_detail = err_json['error']['message']
+            except:
+                pass
+            return jsonify({'error': 'Google Vision API Failed', 'details': error_detail}), 500
             
         return jsonify(response.json())
 
