@@ -4565,6 +4565,57 @@
             if (overlay) overlay.style.display = 'none'; // Hide Overlay
         };
 
+        // Helper: Convert Google Vision "Pages/Blocks/Paragraphs" into "Lines"
+        function processGoogleVisionResponse(visionResult) {
+            const lines = [];
+
+            // Google returns a hierarchy: Page -> Block -> Paragraph -> Word -> Symbol
+            // We want to reconstruct "Lines". 
+            // Simplest approach: Use the 'textAnnotations' (index 1+) which are often words/lines, 
+            // but grouping them is safer.
+
+            // Let's iterate over blocks/paragraphs to build lines.
+            if (!visionResult.fullTextAnnotation || !visionResult.fullTextAnnotation.pages) return [];
+
+            visionResult.fullTextAnnotation.pages.forEach(page => {
+                page.blocks.forEach(block => {
+                    block.paragraphs.forEach(paragraph => {
+                        // A paragraph is often a line or multiple lines.
+                        // But words inside usually have coordinates.
+
+                        // Simple approach: Treat each Paragraph as a "Line" segment provided they align horizontally?
+                        // Actually, joining all words in a paragraph is usually safe.
+
+                        let paraText = "";
+                        let maxHeight = 0;
+                        let minY = Infinity;
+                        let maxY = -Infinity;
+
+                        paragraph.words.forEach(word => {
+                            let wordText = "";
+                            word.symbols.forEach(sym => wordText += sym.text);
+                            paraText += wordText + " ";
+
+                            // Calculate height of this word
+                            // vertices: [TL, TR, BR, BL]
+                            if (word.boundingBox && word.boundingBox.vertices) {
+                                const v = word.boundingBox.vertices;
+                                const h = (v[3]?.y - v[0]?.y) || (v[2]?.y - v[1]?.y);
+                                if (h > maxHeight) maxHeight = h;
+                            }
+                        });
+
+                        lines.push({
+                            text: paraText.trim(),
+                            height: maxHeight || 10 // fallback
+                        });
+                    });
+                });
+            });
+
+            return lines;
+        }
+
         // IMAGE PREPROCESSING FOR BETTER OCR
         function preprocessImage(dataUrl) {
             return new Promise((resolve) => {
