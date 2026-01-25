@@ -4698,6 +4698,24 @@
             });
         }
 
+        // Helper: Fuzzy Match (used by multiple functions)
+        function fuzzyContains(source, target) {
+            if (!source || !target) return false;
+            const s = source.toLowerCase().replace(/[^a-z]/g, '');
+            const t = target.toLowerCase().replace(/[^a-z]/g, '');
+            if (s.includes(t)) return true;
+            if (t.length > 4) {
+                let matchCount = 0;
+                let sIdx = 0;
+                for (let i = 0; i < t.length; i++) {
+                    const found = s.indexOf(t[i], sIdx);
+                    if (found >= sIdx) { matchCount++; sIdx = found + 1; }
+                }
+                return matchCount >= t.length - 1;
+            }
+            return false;
+        }
+
         // Parse business card text (Layout Analysis + NLP Expert Agent)
         function parseBusinessCardText(text, linesData = []) {
             const info = {
@@ -4742,23 +4760,6 @@
             } else {
                 console.warn("NLP Library NOT loaded. Falling back to Heuristics.");
             }
-
-            // Helper: Fuzzy Match
-            const fuzzyContains = (source, target) => {
-                const s = source.toLowerCase().replace(/[^a-z]/g, '');
-                const t = target.toLowerCase().replace(/[^a-z]/g, '');
-                if (s.includes(t)) return true;
-                if (t.length > 4) {
-                    let matchCount = 0;
-                    let sIdx = 0;
-                    for (let i = 0; i < t.length; i++) {
-                        const found = s.indexOf(t[i], sIdx);
-                        if (found >= sIdx) { matchCount++; sIdx = found + 1; }
-                    }
-                    return matchCount >= t.length - 1;
-                }
-                return false;
-            };
 
             // 1. Extract Email (Regex is best for this)
             const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
