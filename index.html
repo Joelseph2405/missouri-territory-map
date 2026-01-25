@@ -7321,6 +7321,8 @@
 
         window.filterGlobalContacts = function () {
             const term = document.getElementById('contactSearchRef').value.toLowerCase();
+            if (!allContacts || !Array.isArray(allContacts)) allContacts = []; // Safety
+
             const filtered = allContacts.filter(c =>
                 (c.name && c.name.toLowerCase().includes(term)) ||
                 (c.business_name && c.business_name.toLowerCase().includes(term))
