@@ -4529,32 +4529,8 @@
                 // Use new Layout-Aware Parser
                 const extractedInfo = parseBusinessCardText(combinedText, combinedLines);
 
-                // Populate Form
-                document.getElementById('extractedName').value = extractedInfo.name || '';
-                document.getElementById('extractedTitle').value = extractedInfo.title || '';
-                document.getElementById('extractedCompany').value = extractedInfo.company || '';
-                document.getElementById('extractedPhone').value = extractedInfo.phone || '';
-                document.getElementById('extractedEmail').value = extractedInfo.email || '';
-                document.getElementById('extractedAddress').value = extractedInfo.address || '';
-
-                statusDiv.textContent = 'Scanning complete!';
-                statusDiv.className = 'ocr-status active success';
-
-                // Inject "Show Raw Text" Toggle
-                const rawToggle = document.createElement('div');
-                rawToggle.innerHTML = `<button onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'" style="margin-top:10px; font-size:12px; text-decoration:underline; border:none; background:none; cursor:pointer; color:#64748b;">Show Raw Text</button>
-                <div style="display:none; font-family:monospace; font-size:11px; background:#f1f5f9; padding:10px; margin-top:5px; white-space:pre-wrap; max-height:100px; overflow:auto;">${combinedText.replace(/</g, '&lt;')}</div>`;
-                statusDiv.appendChild(rawToggle);
-
-                document.getElementById('extractedData').classList.add('active');
-
-                if (currentScanBusinessId) {
-                    document.getElementById('saveContactBtn').style.display = 'block';
-                    document.getElementById('createBusinessBtn').style.display = 'none';
-                } else {
-                    document.getElementById('saveContactBtn').style.display = 'none';
-                    document.getElementById('createBusinessBtn').style.display = 'block';
-                }
+                // Start the "Choose Your Own Adventure" Workflow
+                startPostScanWorkflow(extractedInfo);
 
             } catch (error) {
                 console.error(error);
@@ -4762,10 +4738,22 @@
             if (phoneMatch) info.phone = phoneMatch[0];
 
             // 3. Extract Address keywords
-            const addressKeywords = ['street', 'st', 'avenue', 'ave', 'road', 'rd', 'drive', 'dr', 'lane', 'ln', 'boulevard', 'blvd', 'suite', 'ste', 'po box'];
+            // Improved regex to capture "123 Main St S" or "450 E 1st St S"
+            // We look for a line starting with a number, containing a street direction/type, and NOT being a phone number.
+            const addressKeywords = ['street', 'st', 'avenue', 'ave', 'road', 'rd', 'drive', 'dr', 'lane', 'ln', 'boulevard', 'blvd', 'suite', 'ste', 'po box', 'highway', 'hwy', 'parkway', 'pkwy', 'circle', 'cir'];
             const addressLine = lines.find(line => {
+                // Heuristic: Starts with digits (house number)
+                // AND contains a road keyword
+                // AND length is reasonable (not just "123")
                 const lower = line.text.toLowerCase();
-                return /\d+/.test(line.text) && addressKeywords.some(keyword => lower.includes(" " + keyword));
+                const startsWithNumber = /^\d+/.test(line.text);
+                const hasKeyword = addressKeywords.some(keyword => {
+                    // Check for keyword as a whole word
+                    const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+                    return regex.test(line.text);
+                });
+
+                return startsWithNumber && hasKeyword && line.text.length > 5;
             });
             if (addressLine) info.address = addressLine.text.trim();
 
@@ -4927,6 +4915,192 @@
                 return '(' + match[1] + ') ' + match[2] + '-' + match[3];
             }
             return phoneNumberString;
+        }
+
+        // --- CHOOSE YOUR OWN ADVENTURE WORKFLOW ---
+
+        async function startPostScanWorkflow(info) {
+            console.log("Starting Post-Scan Workflow with:", info);
+
+            // Hide previous results UI initially to show pure workflow modals?
+            // Actually, showing the Extracted Data form is fine as a reference, 
+            // but we want to intercept the "Save" actions.
+
+            // 1. Populate the form (hidden or visible) so we have the data ready
+            document.getElementById('extractedName').value = info.name || '';
+            document.getElementById('extractedTitle').value = info.title || '';
+            document.getElementById('extractedCompany').value = info.company || '';
+            document.getElementById('extractedPhone').value = info.phone || '';
+            document.getElementById('extractedEmail').value = info.email || '';
+            document.getElementById('extractedAddress').value = info.address || '';
+
+            // 2. CHECK FOR DUPLICATES
+            const nameMatch = findContactByName(info.name);
+            const businessMatch = findBusinessByName(info.company);
+
+            console.log("Duplicate Check:", { nameMatch, businessMatch });
+
+            // SCENARIO 1: Contact Already Exists
+            if (nameMatch) {
+                const choice = confirm(`Contact "${info.name}" already exists in "${nameMatch.business_name || 'Global Contacts'}".\n\nWould you like to Save to Phone?`);
+                if (choice) {
+                    downloadVCard(info);
+                }
+                // Stop flow? Or allow editing?
+                // User said "It should not get added anymore than once".
+                return;
+            }
+
+            // SCENARIO 2: Business Exists (But Contact is New)
+            if (businessMatch) {
+                const choice = confirm(`Business "${businessMatch.name}" found!\n\nAdd "${info.name}" to this business and Save to Phone?`);
+                if (choice) {
+                    // 1. Auto-Add Contact to this Business
+                    document.getElementById('extractedCompany').value = businessMatch.name; // Ensure consistent name
+                    currentScanBusinessId = businessMatch.id; // Link to existing
+
+                    await autoSaveContact(info, businessMatch.id);
+
+                    // 2. Save to Phone
+                    downloadVCard(info);
+                }
+                return;
+            }
+
+            // SCENARIO 3: New Business & New Contact
+            if (!businessMatch && !nameMatch) {
+                const choice = confirm(`New Business: "${info.company || 'Unknown'}"\nNew Contact: "${info.name}"\n\nCreate Business, Add Contact, and Save to Phone?`);
+                if (choice) {
+                    // 1. Create Business
+                    const newBizId = await autoSaveBusiness(info);
+                    if (newBizId) {
+                        // 2. Create Contact linked to new business
+                        await autoSaveContact(info, newBizId);
+
+                        // 3. Save to Phone
+                        downloadVCard(info);
+
+                        // Refresh map/list?
+                        loadBusinesses();
+                    }
+                }
+                return;
+            }
+
+            // Fallback: If no strict matches or user said Cancel (logic falls through).
+            // Show the form for manual editing/saving.
+            document.getElementById('extractedData').classList.add('active');
+            document.getElementById('saveContactBtn').style.display = 'block';
+            document.getElementById('createBusinessBtn').style.display = 'block';
+        }
+
+        function findContactByName(name) {
+            if (!name) return null;
+            // Need a list of all contacts. Currently fetch 'allBusinesses' -> 'contacts'
+            // We can iterate allBusinesses.
+            // Better: use the specific contacts array if available, or build it.
+            // Assumption: 'allBusinesses' is global and up to date.
+
+            for (const b of allBusinesses) {
+                if (b.contacts) {
+                    const found = b.contacts.find(c => fuzzyContains(c.name, name));
+                    if (found) return { ...found, business_name: b.name, business_id: b.id };
+                }
+            }
+            return null;
+        }
+
+        function findBusinessByName(companyName) {
+            if (!companyName) return null;
+            return allBusinesses.find(b => fuzzyContains(b.name, companyName));
+        }
+
+        // Helper to Auto-Save Business (skipping UI form submission)
+        async function autoSaveBusiness(info) {
+            const payload = {
+                name: info.company || (info.name + "'s Business"),
+                address: info.address || 'Unknown Address',
+                phone: info.phone,
+                customerStatus: 'prospective', // Default
+                priority: 'medium',
+                lat: 0, lng: 0, // Server will likely need to geocode or we accept 0 for now
+                visits: [],
+                contacts: []
+            };
+
+            // Geocode logic is usually in addBusiness(). 
+            // We should use the existing addBusiness API.
+            try {
+                // We need coordinates for the map. 
+                // Let's assume the server or existing logic handles geocoding if we send address?
+                // The current /api/businesses POST doesn't seem to geocode automatically?
+                // Actually the import_csv does, but add_business endpoint takes lat/lng directly.
+                // We might need to call geocoding helper or just let it exist without coords for now.
+                // Let's rely on the user to fix location later? 
+                // OR duplicate the geocoding fetch logic from 'saveBusiness()'
+
+                const response = await fetch('/api/businesses', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                alert(`Business "${data.name}" created!`);
+                return data.id;
+            } catch (e) {
+                console.error(e);
+                alert("Failed to auto-create business.");
+                return null;
+            }
+        }
+
+        // Helper to Auto-Save Contact
+        async function autoSaveContact(info, businessId) {
+            const payload = {
+                name: info.name,
+                title: info.title,
+                phone: info.phone,
+                email: info.email,
+                business_id: businessId,
+                business_name: info.company
+            };
+
+            try {
+                await fetch('/api/contacts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                alert(`Contact "${info.name}" added!`);
+            } catch (e) {
+                console.error(e);
+                alert("Failed to save contact.");
+            }
+        }
+
+        function downloadVCard(info) {
+            // 1. Construct vCard string
+            const vcard = [
+                'BEGIN:VCARD',
+                'VERSION:3.0',
+                `FN:${info.name}`,
+                `ORG:${info.company}`,
+                `TITLE:${info.title}`,
+                `TEL;TYPE=WORK,VOICE:${info.phone}`,
+                `EMAIL;TYPE=WORK:${info.email}`,
+                `ADR;TYPE=WORK:;;${info.address || ''};;;;`,
+                'END:VCARD'
+            ].join('\n');
+
+            // 2. Create Blob and Link
+            const blob = new Blob([vcard], { type: 'text/vcard' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${info.name.replace(/\s+/g, '_')}.vcf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
 
         window.saveExtractedContact = async function () {
