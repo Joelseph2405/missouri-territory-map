@@ -4295,6 +4295,9 @@
 
             document.getElementById('ocrStatus').classList.remove('active');
             document.getElementById('extractedData').classList.remove('active');
+
+            // Show the main process button, hide legacy buttons
+            document.getElementById('processScanBtn').style.display = 'block';
             document.getElementById('saveContactBtn').style.display = 'none';
             document.getElementById('createBusinessBtn').style.display = 'none';
 
@@ -4950,107 +4953,142 @@
         // --- CHOOSE YOUR OWN ADVENTURE WORKFLOW ---
 
         async function processScan() {
-            // Read values from form (Review Step)
-            const info = {
-                name: document.getElementById('extractedName').value.trim(),
-                title: document.getElementById('extractedTitle').value.trim(),
-                company: document.getElementById('extractedCompany').value.trim(),
-                phone: document.getElementById('extractedPhone').value.trim(),
-                email: document.getElementById('extractedEmail').value.trim(),
-                address: document.getElementById('extractedAddress').value.trim()
-            };
+            console.log("processScan() called - Review & Save button clicked");
+            try {
+                // Read values from form (Review Step)
+                const info = {
+                    name: document.getElementById('extractedName').value.trim(),
+                    title: document.getElementById('extractedTitle').value.trim(),
+                    company: document.getElementById('extractedCompany').value.trim(),
+                    phone: document.getElementById('extractedPhone').value.trim(),
+                    email: document.getElementById('extractedEmail').value.trim(),
+                    address: document.getElementById('extractedAddress').value.trim()
+                };
 
-            if (!info.name) {
-                alert("Please enter at least a Name.");
-                return;
+                console.log("Extracted info:", info);
+
+                if (!info.name) {
+                    alert("Please enter at least a Name.");
+                    return;
+                }
+
+                await startPostScanWorkflow(info);
+            } catch (error) {
+                console.error("Error in processScan:", error);
+                alert("Error in Review & Save: " + error.message);
             }
-
-            await startPostScanWorkflow(info);
         }
 
         async function startPostScanWorkflow(info) {
             console.log("Starting Post-Scan Workflow with:", info);
 
-            // Hide previous results UI initially to show pure workflow modals?
-            // Actually, showing the Extracted Data form is fine as a reference, 
-            // but we want to intercept the "Save" actions.
+            try {
+                // Hide previous results UI initially to show pure workflow modals?
+                // Actually, showing the Extracted Data form is fine as a reference, 
+                // but we want to intercept the "Save" actions.
 
-            // 1. Populate the form (hidden or visible) so we have the data ready
-            document.getElementById('extractedName').value = info.name || '';
-            document.getElementById('extractedTitle').value = info.title || '';
-            document.getElementById('extractedCompany').value = info.company || '';
-            document.getElementById('extractedPhone').value = info.phone || '';
-            document.getElementById('extractedEmail').value = info.email || '';
-            document.getElementById('extractedAddress').value = info.address || '';
+                // 1. Populate the form (hidden or visible) so we have the data ready
+                document.getElementById('extractedName').value = info.name || '';
+                document.getElementById('extractedTitle').value = info.title || '';
+                document.getElementById('extractedCompany').value = info.company || '';
+                document.getElementById('extractedPhone').value = info.phone || '';
+                document.getElementById('extractedEmail').value = info.email || '';
+                document.getElementById('extractedAddress').value = info.address || '';
 
-            // 2. CHECK FOR DUPLICATES
-            const nameMatch = findContactByName(info.name);
-            const businessMatch = findBusinessByName(info.company);
-
-            console.log("Duplicate Check:", { nameMatch, businessMatch });
-
-            // SCENARIO 1: Contact Already Exists
-            if (nameMatch) {
-                const choice = confirm(`Contact "${info.name}" already exists in "${nameMatch.business_name || 'Global Contacts'}".\n\nWould you like to Save to Phone?`);
-                if (choice) {
-                    downloadVCard(info);
-                }
-                // Stop flow? Or allow editing?
-                // User said "It should not get added anymore than once".
-                return;
-            }
-
-            // SCENARIO 2: Business Exists (But Contact is New)
-            if (businessMatch) {
-                const choice = confirm(`Business "${businessMatch.name}" found!\n\nAdd "${info.name}" to this business and Save to Phone?`);
-                if (choice) {
-                    // 1. Auto-Add Contact to this Business
-                    document.getElementById('extractedCompany').value = businessMatch.name; // Ensure consistent name
-                    currentScanBusinessId = businessMatch.id; // Link to existing
-
-                    await autoSaveContact(info, businessMatch.id);
-
-                    // 2. Save to Phone
-                    downloadVCard(info);
-                }
-                return;
-            }
-
-            // SCENARIO 3: New Business & New Contact
-            if (!businessMatch && !nameMatch) {
-                const choice = confirm(`New Business: "${info.company || 'Unknown'}"\nNew Contact: "${info.name}"\n\nCreate Business, Add Contact, and Save to Phone?`);
-                if (choice) {
-                    // 1. Create Business
-                    const newBizId = await autoSaveBusiness(info);
-                    if (newBizId) {
-                        // 2. Create Contact linked to new business
-                        await autoSaveContact(info, newBizId);
-
-                        // 3. Save to Phone
-                        downloadVCard(info);
-
-                        // Refresh map/list?
-                        loadBusinesses();
+                // Ensure businessesData is loaded
+                if (typeof businessesData === 'undefined' || !businessesData) {
+                    console.warn("businessesData not loaded yet, attempting to load...");
+                    try {
+                        await loadBusinesses(); // Try to load if missing
+                        console.log("businessesData loaded successfully");
+                    } catch (loadError) {
+                        console.error("Failed to load businesses:", loadError);
+                        alert("Failed to load business data. Please refresh the page and try again.");
+                        return;
                     }
                 }
-                return;
-            }
 
-            // Fallback: If no strict matches or user said Cancel (logic falls through).
-            // Show the form for manual editing/saving.
-            document.getElementById('extractedData').classList.add('active');
-            document.getElementById('saveContactBtn').style.display = 'block';
-            document.getElementById('createBusinessBtn').style.display = 'block';
+                // 2. CHECK FOR DUPLICATES
+                const nameMatch = findContactByName(info.name);
+                const businessMatch = findBusinessByName(info.company);
+
+                console.log("Duplicate Check:", { nameMatch, businessMatch });
+
+                // SCENARIO 1: Contact Already Exists
+                if (nameMatch) {
+                    const choice = confirm(`Contact "${info.name}" already exists in "${nameMatch.business_name || 'Global Contacts'}".\n\nWould you like to Save to Phone?`);
+                    if (choice) {
+                        downloadVCard(info);
+                    }
+                    // Stop flow? Or allow editing?
+                    // User said "It should not get added anymore than once".
+                    closeCardScanner();
+                    return;
+                }
+
+                // SCENARIO 2: Business Exists (But Contact is New)
+                if (businessMatch) {
+                    const choice = confirm(`Business "${businessMatch.name}" found!\n\nAdd "${info.name}" to this business and Save to Phone?`);
+                    if (choice) {
+                        // 1. Auto-Add Contact to this Business
+                        document.getElementById('extractedCompany').value = businessMatch.name; // Ensure consistent name
+                        currentScanBusinessId = businessMatch.id; // Link to existing
+
+                        await autoSaveContact(info, businessMatch.id);
+
+                        // 2. Save to Phone
+                        downloadVCard(info);
+
+                        closeCardScanner();
+                    }
+                    return;
+                }
+
+                // SCENARIO 3: New Business & New Contact
+                if (!businessMatch && !nameMatch) {
+                    const choice = confirm(`New Business: "${info.company || 'Unknown'}"\nNew Contact: "${info.name}"\n\nCreate Business, Add Contact, and Save to Phone?`);
+                    if (choice) {
+                        // 1. Create Business
+                        const newBizId = await autoSaveBusiness(info);
+                        if (newBizId) {
+                            // 2. Create Contact linked to new business
+                            await autoSaveContact(info, newBizId);
+
+                            // 3. Save to Phone
+                            downloadVCard(info);
+
+                            // Refresh map/list?
+                            loadBusinesses();
+
+                            closeCardScanner();
+                        }
+                    }
+                    // If they cancel, do we want to fall back to manual buttons?
+                    // Currently we return, so "Nothing happens".
+                    // Let's remove the return so it falls through to manual buttons if cancelled.
+                    if (choice) return;
+                }
+
+                // Fallback: If no strict matches or user said Cancel (logic falls through).
+                // Show the form for manual editing/saving.
+                document.getElementById('extractedData').classList.add('active');
+                document.getElementById('saveContactBtn').style.display = 'block';
+                document.getElementById('createBusinessBtn').style.display = 'block';
+            } catch (error) {
+                console.error("Error in startPostScanWorkflow:", error);
+                alert("An error occurred while processing the scan: " + error.message);
+            }
         }
 
         function findContactByName(name) {
             if (!name) return null;
-            // Need a list of all contacts. Currently fetch 'allBusinesses' -> 'contacts'
-            // We can iterate allBusinesses.
+            // Need a list of all contacts. Currently fetch 'businessesData' -> 'contacts'
+            // We can iterate businessesData.
             // Better: use the specific contacts array if available, or build it.
-            // Assumption: 'allBusinesses' is global and up to date.
+            // Assumption: 'businessesData' is global and up to date.
+            if (typeof businessesData === 'undefined') return null;
 
-            for (const b of allBusinesses) {
+            for (const b of businessesData) {
                 if (b.contacts) {
                     const found = b.contacts.find(c => fuzzyContains(c.name, name));
                     if (found) return { ...found, business_name: b.name, business_id: b.id };
@@ -5061,7 +5099,8 @@
 
         function findBusinessByName(companyName) {
             if (!companyName) return null;
-            return allBusinesses.find(b => fuzzyContains(b.name, companyName));
+            if (typeof businessesData === 'undefined') return null;
+            return businessesData.find(b => fuzzyContains(b.name, companyName));
         }
 
         // Helper to Auto-Save Business (skipping UI form submission)
