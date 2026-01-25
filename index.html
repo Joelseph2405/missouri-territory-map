@@ -4667,13 +4667,24 @@
             // "compromise" library is exposed as "nlp"
             // We combine all text for better sentence analysis
             const fullText = lines.map(l => l.text).join('\n');
-            const doc = nlp(fullText);
 
-            // Extract NLP Entities
-            const people = doc.people().json().map(p => p.text);
-            const organizations = doc.organizations().json().map(o => o.text);
+            let people = [];
+            let organizations = [];
 
-            console.log("NLP Thinking... People:", people, "Orgs:", organizations);
+            // DEFENSIVE CHECK: Ensure NLP library loaded
+            if (typeof nlp !== 'undefined') {
+                try {
+                    const doc = nlp(fullText);
+                    // Extract NLP Entities
+                    people = doc.people().json().map(p => p.text);
+                    organizations = doc.organizations().json().map(o => o.text);
+                    console.log("NLP Thinking... People:", people, "Orgs:", organizations);
+                } catch (e) {
+                    console.warn("NLP Analysis Failed:", e);
+                }
+            } else {
+                console.warn("NLP Library NOT loaded. Falling back to Heuristics.");
+            }
 
             // Helper: Fuzzy Match
             const fuzzyContains = (source, target) => {
@@ -4745,7 +4756,7 @@
                             // Largest text is NOT a company, but NLP didn't flag it as a person.
                             // It might be a person NLP missed (e.g. "Au E").
                             // Or it might be a weird title.
-                            // Let's fallback to "Largest Text" heuristic if grammatical name is found elsewhere?
+                            // Fallback to "Largest Text" heuristic if grammatical name is found elsewhere?
                             // User complained about "Au e". NLP would likely NOT flag "Au e" as a person.
                             // So if NLP found "Ryan Barron" elsewhere, use that.
                             info.name = people[0];
@@ -4756,6 +4767,7 @@
                 }
             } else {
                 // NLP failed to find ANY person. Fallback to Size Heuristic.
+                console.log("NLP found no persons. Using Size Heuristic.");
                 if (sortedByHeight.length > 0) {
                     const largest = sortedByHeight[0];
                     const isCompany = /inc\.?|llc|ltd|corp\.?|group|solutions|company/i.test(largest.text);
