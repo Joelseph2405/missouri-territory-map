@@ -4976,7 +4976,7 @@
                 company ? `ORG:${company}` : '',
                 phone ? `TEL;TYPE=CELL:${phone}` : '',
                 email ? `EMAIL:${email}` : '',
-                address ? `ADR;TYPE=WORK:;;${address.replace(/,/g, ';')};;;;` : '',
+                address ? `ADR;TYPE=WORK:;;${address.replace(/;/g, ',')};;;;` : '',
                 'END:VCARD'
             ].filter(Boolean).join('\n');
 
@@ -7424,7 +7424,7 @@
                 c.business_name ? `ORG:${c.business_name}` : '',
                 c.phone ? `TEL;TYPE=CELL:${c.phone}` : '',
                 c.email ? `EMAIL:${c.email}` : '',
-                c.address ? `ADR;TYPE=WORK:;;${c.address.replace(/,/g, ';')};;;;` : '',
+                c.address ? `ADR;TYPE=WORK:;;${c.address.replace(/;/g, ',')};;;;` : '',
                 c.notes ? `NOTE:${c.notes}` : '',
                 'END:VCARD'
             ].filter(Boolean).join('\n');
