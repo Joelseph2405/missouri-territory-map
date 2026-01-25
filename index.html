@@ -4927,7 +4927,9 @@
                 document.getElementById('extractedData').classList.remove('active');
 
                 // Refresh Global Contacts Tray UI if it's open
-                renderGlobalContacts();
+                if (typeof loadGlobalContacts === 'function') {
+                    loadGlobalContacts();
+                }
 
                 closeScanner();
 
