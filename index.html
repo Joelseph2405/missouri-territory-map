@@ -2547,6 +2547,12 @@
 
             <div class="modal-buttons">
                 <button class="modal-button modal-button-secondary" onclick="closeCardScanner()">Cancel</button>
+
+                <!-- NEW: Process Button for Manual Review Flow -->
+                <button id="processScanBtn" class="modal-button modal-button-primary" style="background:#8b5cf6;"
+                    onclick="processScan()">Review & Save</button>
+
+                <!-- Legacy/Fallback Buttons (Hidden by default) -->
                 <button id="saveContactBtn" class="modal-button modal-button-primary" onclick="saveExtractedContact()"
                     style="display: none;">Add Contact to Business</button>
                 <button id="createBusinessBtn" class="modal-button modal-button-primary"
@@ -4529,8 +4535,31 @@
                 // Use new Layout-Aware Parser
                 const extractedInfo = parseBusinessCardText(combinedText, combinedLines);
 
-                // Start the "Choose Your Own Adventure" Workflow
-                startPostScanWorkflow(extractedInfo);
+                // Populate Form for Review
+                document.getElementById('extractedName').value = extractedInfo.name || '';
+                document.getElementById('extractedTitle').value = extractedInfo.title || '';
+                document.getElementById('extractedCompany').value = extractedInfo.company || '';
+                document.getElementById('extractedPhone').value = extractedInfo.phone || '';
+                document.getElementById('extractedEmail').value = extractedInfo.email || '';
+                document.getElementById('extractedAddress').value = extractedInfo.address || '';
+
+                statusDiv.textContent = 'Scanning complete! Please review below.';
+                statusDiv.className = 'ocr-status active success';
+
+                // Inject "Show Raw Text" Toggle
+                const rawToggle = document.createElement('div');
+                rawToggle.innerHTML = `<button onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'" style="margin-top:10px; font-size:12px; text-decoration:underline; border:none; background:none; cursor:pointer; color:#64748b;">Show Raw Text</button>
+                <div style="display:none; font-family:monospace; font-size:11px; background:#f1f5f9; padding:10px; margin-top:5px; white-space:pre-wrap; max-height:100px; overflow:auto;">${combinedText.replace(/</g, '&lt;')}</div>`;
+                statusDiv.appendChild(rawToggle);
+
+                document.getElementById('extractedData').classList.add('active');
+
+                // Show Process Button, Hide Legacy
+                document.getElementById('processScanBtn').style.display = 'block';
+                document.getElementById('legacyButtons').style.display = 'none';
+
+                // We DO NOT call startPostScanWorkflow here anymore.
+                // We wait for user to click "Review & Save" (processScan)
 
             } catch (error) {
                 console.error(error);
@@ -4918,6 +4947,25 @@
         }
 
         // --- CHOOSE YOUR OWN ADVENTURE WORKFLOW ---
+
+        async function processScan() {
+            // Read values from form (Review Step)
+            const info = {
+                name: document.getElementById('extractedName').value.trim(),
+                title: document.getElementById('extractedTitle').value.trim(),
+                company: document.getElementById('extractedCompany').value.trim(),
+                phone: document.getElementById('extractedPhone').value.trim(),
+                email: document.getElementById('extractedEmail').value.trim(),
+                address: document.getElementById('extractedAddress').value.trim()
+            };
+
+            if (!info.name) {
+                alert("Please enter at least a Name.");
+                return;
+            }
+
+            await startPostScanWorkflow(info);
+        }
 
         async function startPostScanWorkflow(info) {
             console.log("Starting Post-Scan Workflow with:", info);
