@@ -4869,84 +4869,67 @@
         }
 
         window.saveExtractedContact = async function () {
-            if (!currentScanBusinessId) return;
-
-            const business = businessesData.find(b => b.id === currentScanBusinessId);
-            if (!business) return;
-
             // Get extracted values
             const contactName = document.getElementById('extractedName').value.trim();
             const contactTitle = document.getElementById('extractedTitle').value.trim();
             const contactPhone = document.getElementById('extractedPhone').value.trim();
             const contactEmail = document.getElementById('extractedEmail').value.trim();
             const contactNotes = document.getElementById('extractedNotes').value.trim();
+            const contactAddress = document.getElementById('extractedAddress').value.trim();
+            const contactCompany = document.getElementById('extractedCompany').value.trim();
 
             if (!contactName) {
                 alert('Please enter a contact name.');
                 return;
             }
 
-            // Initialize contacts array if it doesn't exist
-            if (!business.contacts) {
-                business.contacts = [];
-            }
+            // Logic: 
+            // 1. Create GLOBAL contact (POST /api/contacts)
+            // 2. If business associated (currentScanBusinessId), it will be linked via payload
 
-            // Generate new contact ID
-            const newContactId = business.contacts.length > 0
-                ? Math.max(...business.contacts.map(c => c.id)) + 1
-                : 1;
-
-            // Create new contact
-            const newContact = {
-                id: newContactId,
+            const payload = {
                 name: contactName,
                 title: contactTitle,
                 phone: contactPhone,
                 email: contactEmail,
                 notes: contactNotes,
-                isPrimary: business.contacts.length === 0, // First contact is primary
-                createdAt: new Date().toISOString()
+                address: contactAddress,
+                business_id: currentScanBusinessId || null,
+                business_name: contactCompany
             };
-
-            // Add contact to business
-            business.contacts.push(newContact);
-
-            // Update business phone if not set
-            if (!business.phone && contactPhone) {
-                business.phone = contactPhone;
-            }
 
             try {
                 // Save to API
-                await apiCall(`${API_URL}/${business.id}`, 'PUT', business);
+                const response = await fetch('/api/contacts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-                updateBusinessMarker(business);
-                closeCardScanner();
+                if (!response.ok) throw new Error("Failed to save contact");
 
-                // SPECIAL HAHDLING FOR SAFE NOTE MODAL
-                if (window.scanningForSafeModal) {
-                    window.scanningForSafeModal = false;
+                const savedContact = await response.json();
 
-                    // Add to dropdown in Safe Modal
-                    const select = document.getElementById('safeContactSelect');
-                    if (select) {
-                        const opt = document.createElement('option');
-                        opt.value = contactName;
-                        opt.textContent = contactName;
-                        opt.selected = true;
-                        select.appendChild(opt);
+                // Update local 'allContacts' immediately so we don't need a full reload
+                allContacts.push(savedContact);
+
+                // If linked to a business locally, update that object too
+                if (currentScanBusinessId) {
+                    const business = businessesData.find(b => b.id === currentScanBusinessId);
+                    if (business) {
+                        if (!business.contacts) business.contacts = [];
+                        business.contacts.push(savedContact);
+                        updateBusinessMarker(business); // refresh map marker data if needed
                     }
-                    // No alert, just seamless return
-                    showToast(`✅ Added ${contactName}`);
-                } else {
-                    alert(`✅ Contact added successfully!\n\nContact: ${contactName}\nBusiness: ${business.name}`);
                 }
 
-                // CRITICAL FIX: Refresh Global Contacts List
-                if (typeof loadGlobalContacts === 'function') {
-                    console.log("Refreshing global contacts list...");
-                    loadGlobalContacts();
-                }
+                alert('Contact Saved!');
+                document.getElementById('extractedData').classList.remove('active');
+
+                // Refresh Global Contacts Tray UI if it's open
+                renderGlobalContacts();
+
+                closeScanner();
 
             } catch (e) {
                 console.error('Error saving extracted contact:', e);
@@ -4968,15 +4951,32 @@
                 return;
             }
 
+            // Split name for N property (Last;First;Middle;Prefix;Suffix)
+            // Simple heuristic: Last word is family name, rest is given name
+            const parts = name.split(' ');
+            let nProperty = '';
+            if (parts.length > 1) {
+                const last = parts.pop();
+                const first = parts.join(' ');
+                nProperty = `N:${last};${first};;;`;
+            } else {
+                nProperty = `N:${name};;;;;`;
+            }
+
+            // NOTE: ADR format is PO Box;Extended;Street;City;State;Zip;Country
+            // We just have one string, so we put it in Street for now
+            // If it contains commas, we might try to split, but simple is safer.
+
             const vcard = [
                 'BEGIN:VCARD',
                 'VERSION:3.0',
+                nProperty,
                 `FN:${name}`,
                 title ? `TITLE:${title}` : '',
                 company ? `ORG:${company}` : '',
                 phone ? `TEL;TYPE=CELL:${phone}` : '',
                 email ? `EMAIL:${email}` : '',
-                address ? `ADR;TYPE=WORK:;;${address};;;;` : '',
+                address ? `ADR;TYPE=WORK:;;${address.replace(/,/g, ';')};;;;` : '',
                 'END:VCARD'
             ].filter(Boolean).join('\n');
 
@@ -7404,14 +7404,27 @@
             if (!c) return;
 
             // Simple vCard 3.0 format
+            // Split name for N property
+            const parts = c.name.split(' ');
+            let nProperty = '';
+            if (parts.length > 1) {
+                const last = parts.pop();
+                const first = parts.join(' ');
+                nProperty = `N:${last};${first};;;`;
+            } else {
+                nProperty = `N:${c.name};;;;;`;
+            }
+
             const vcard = [
                 'BEGIN:VCARD',
                 'VERSION:3.0',
+                nProperty,
                 `FN:${c.name}`,
                 c.title ? `TITLE:${c.title}` : '',
                 c.business_name ? `ORG:${c.business_name}` : '',
                 c.phone ? `TEL;TYPE=CELL:${c.phone}` : '',
                 c.email ? `EMAIL:${c.email}` : '',
+                c.address ? `ADR;TYPE=WORK:;;${c.address.replace(/,/g, ';')};;;;` : '',
                 c.notes ? `NOTE:${c.notes}` : '',
                 'END:VCARD'
             ].filter(Boolean).join('\n');
