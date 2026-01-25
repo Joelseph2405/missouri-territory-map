@@ -4499,7 +4499,15 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Server Error: ${response.statusText}`);
+                    // Try to get detailed error from JSON
+                    let errorMsg = `Server Error: ${response.statusText}`;
+                    try {
+                        const errData = await response.json();
+                        if (errData.details) errorMsg = `Google Error: ${errData.details}`;
+                        else if (errData.error) errorMsg = `Server Error: ${errData.error}`;
+                    } catch (e) { /* ignore JSON parse error */ }
+
+                    throw new Error(errorMsg);
                 }
 
                 const data = await response.json();
