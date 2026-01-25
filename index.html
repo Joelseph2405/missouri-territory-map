@@ -4861,11 +4861,72 @@
                 }
             }
 
+            // 5. POST-PROCESSING: Fix Name/Title Merging
+            // Users report "Ryan Barron - President" coming in as Name.
+            if (info.name) {
+                // Check if Name contains a Title separator
+                const separatorRegex = /[-|,]\s+([A-Za-z]+.*)/;
+                const match = info.name.match(separatorRegex);
+                if (match) {
+                    const potentialTitle = match[1];
+                    // Verify if the potential title looks like a title
+                    if (titleWords.some(word => fuzzyContains(potentialTitle, word)) || potentialTitle.length < 20) {
+                        // Split it
+                        const newName = info.name.replace(match[0], '').trim();
+                        // Only update if legitimate
+                        if (newName.length > 2) {
+                            info.name = newName;
+                            // Only set title if not already found (or override if this is better?)
+                            // Usually this explicit split is better than a random line search.
+                            info.title = potentialTitle.trim();
+                        }
+                    }
+                }
+            }
+
+            // 6. POST-PROCESSING: Fix Title containing Address
+            // Users report "SEALING SERVICES Wright City, MO"
+            if (info.title) {
+                // Regex for Zip Code (5 digits at end or near end)
+                const zipRegex = /\d{5}/;
+                // Regex for State (Comma + 2 UPPERCASE)
+                const stateRegex = /,\s*[A-Z]{2}/;
+
+                if (zipRegex.test(info.title) || stateRegex.test(info.title)) {
+                    // It has address parts. 
+                    // Try to split logic? Or just strip the address part?
+
+                    // Simple approach: Split by comma if present
+                    if (info.title.includes(',')) {
+                        const parts = info.title.split(',');
+                        // Assume first part is title, rest is address garbage
+                        info.title = parts[0].trim();
+                    } else {
+                        // Just strip zip?
+                        info.title = info.title.replace(zipRegex, '').trim();
+                    }
+                }
+            }
+
+            // 7. Phone Formatting
+            if (info.phone) {
+                info.phone = formatPhoneNumber(info.phone);
+            }
+
             // Cleanup
             if (info.name) info.name = info.name.replace(/^(name|contact)[:\s]*/i, '');
             if (info.title) info.title = info.title.replace(/^(title|job|position)[:\s]*/i, '');
 
             return info;
+        }
+
+        function formatPhoneNumber(phoneNumberString) {
+            var cleaned = ('' + phoneNumberString).replace(/\D/g, '');
+            var match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+            if (match) {
+                return '(' + match[1] + ') ' + match[2] + '-' + match[3];
+            }
+            return phoneNumberString;
         }
 
         window.saveExtractedContact = async function () {
