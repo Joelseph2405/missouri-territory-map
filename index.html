@@ -4476,50 +4476,45 @@
             document.getElementById('videoContainer').classList.remove('active');
 
             // Process Images
-            const imagesToProcess = [];
-            if (scannedImages.front) imagesToProcess.push(scannedImages.front);
-            if (scannedImages.back) imagesToProcess.push(scannedImages.back);
+            // For API cost reasons, let's just process the FRONT image (which usually has the info)
+            // If we want back later, we can stitch them.
+            const imageToProcess = scannedImages.front;
 
-            if (imagesToProcess.length === 0) return;
+            if (!imageToProcess) return;
 
             const statusDiv = document.getElementById('ocrStatus');
-            statusDiv.textContent = 'Processing... (This usually takes a few seconds)';
+            statusDiv.textContent = 'Contacting Google Cloud Vision... ☁️';
+            statusDiv.className = 'ocr-status active processing';
 
             // Show Overlay
             const overlay = document.getElementById('scannerProcessingOverlay');
             if (overlay) overlay.style.display = 'flex';
 
             try {
-                // Process sequentially
-                let combinedText = "";
-                let combinedLines = []; // Store lines with bbox info
+                // Call Backend Proxy
+                const response = await fetch('/api/scan-google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageToProcess })
+                });
 
-                for (let i = 0; i < imagesToProcess.length; i++) {
-                    statusDiv.textContent = `Optimizing image ${i + 1}/${imagesToProcess.length}...`;
-
-                    const processedImage = await preprocessImage(imagesToProcess[i]);
-
-                    statusDiv.textContent = `Reading text ${i + 1}/${imagesToProcess.length}...`;
-                    const result = await Tesseract.recognize(
-                        processedImage,
-                        'eng',
-                        { logger: m => console.log(m) }
-                    );
-                    combinedText += result.data.text + "\n";
-
-                    // Collect line data for Layout Analysis
-                    if (result.data.lines) {
-                        result.data.lines.forEach(line => {
-                            // Calculate height from bbox
-                            const height = line.bbox.y1 - line.bbox.y0;
-                            combinedLines.push({
-                                text: line.text.trim(),
-                                height: height,
-                                confidence: line.confidence
-                            });
-                        });
-                    }
+                if (!response.ok) {
+                    throw new Error(`Server Error: ${response.statusText}`);
                 }
+
+                const data = await response.json();
+                console.log("Google Vision Data:", data);
+
+                // Process Google Response
+                const visionResult = data.responses[0];
+                if (!visionResult || !visionResult.fullTextAnnotation) {
+                    throw new Error("No text found on card.");
+                }
+
+                const combinedText = visionResult.fullTextAnnotation.text;
+
+                // Transform Google's "Words" into "Lines with Height" for our Parser
+                const combinedLines = processGoogleVisionResponse(visionResult);
 
                 statusDiv.textContent = 'Analyzing layout...';
 
@@ -4535,6 +4530,7 @@
                 document.getElementById('extractedAddress').value = extractedInfo.address || '';
 
                 statusDiv.textContent = 'Scanning complete!';
+                statusDiv.className = 'ocr-status active success';
 
                 // Inject "Show Raw Text" Toggle
                 const rawToggle = document.createElement('div');
@@ -4553,19 +4549,13 @@
                 }
 
             } catch (error) {
-                console.error('OCR Error:', error);
-                statusDiv.textContent = '❌ Error processing image.';
+                console.error(error);
+                statusDiv.textContent = 'Error during scanning: ' + error.message;
                 statusDiv.className = 'ocr-status active error';
-                document.getElementById('extractedData').classList.add('active');
-                if (currentScanBusinessId) {
-                    document.getElementById('saveContactBtn').style.display = 'block';
-                    document.getElementById('createBusinessBtn').style.display = 'none';
-                } else {
-                    document.getElementById('saveContactBtn').style.display = 'none';
-                    document.getElementById('createBusinessBtn').style.display = 'block';
-                }
-                if (overlay) overlay.style.display = 'none'; // Hide Overlay
+                document.getElementById('createBusinessBtn').style.display = 'block';
             }
+            if (overlay) overlay.style.display = 'none'; // Hide Overlay
+        }
         };
 
         // IMAGE PREPROCESSING FOR BETTER OCR

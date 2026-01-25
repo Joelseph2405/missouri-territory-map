@@ -489,6 +489,54 @@ def debug_status():
         
     return jsonify(status)
 
+@app.route('/api/scan-google', methods=['POST'])
+def scan_google():
+    try:
+        data = request.json
+        image_data = data.get('image')
+        
+        if not image_data:
+            return jsonify({'error': 'No image provided'}), 400
+
+        # Remove header if present (data:image/jpeg;base64,...)
+        if ',' in image_data:
+            image_data = image_data.split(',')[1]
+
+        # Google Cloud Vision API Key
+        # SECURITY NOTE: Ideally this should be in os.environ.
+        # Hardcoded for immediate user resolution.
+        API_KEY = "AIzaSyCRwbLXMc7lzU_s_oqPknGqOPS8X3narzs"
+        URL = f"https://vision.googleapis.com/v1/images:annotate?key={API_KEY}"
+        
+        payload = {
+            "requests": [
+                {
+                    "image": {
+                        "content": image_data
+                    },
+                    "features": [
+                        {
+                            "type": "DOCUMENT_TEXT_DETECTION"
+                        }
+                    ]
+                }
+            ]
+        }
+        
+        import requests
+        print("Sending request to Google Cloud Vision...")
+        response = requests.post(URL, json=payload)
+        
+        if response.status_code != 200:
+            print(f"Google Vision Error: {response.text}")
+            return jsonify({'error': 'Google Vision API Failed', 'details': response.text}), 500
+            
+        return jsonify(response.json())
+
+    except Exception as e:
+        print(f"Server Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port, debug=False)
