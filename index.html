@@ -5518,7 +5518,7 @@
 
         window.getAllContacts = function () {
             let contacts = [];
-            window.businessesData.forEach(biz => {
+            businessesData.forEach(biz => {
                 if (biz.contacts && biz.contacts.length > 0) {
                     biz.contacts.forEach(c => {
                         contacts.push({
